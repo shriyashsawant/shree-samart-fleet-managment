@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = 'https://shree-samart-fleet-managment.onrender.com/api';
 const ANALYTICS_URL = `${API_URL}/analytics`;
 const BILLS_URL = `${API_URL}/bills`;
 

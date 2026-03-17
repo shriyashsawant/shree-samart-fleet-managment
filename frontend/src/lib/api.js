@@ -32,99 +32,99 @@ api.interceptors.response.use(
 
 // Auth APIs
 export const authAPI = {
-  login: (data) => api.post('/auth/login', data),
-  me: () => api.get('/auth/me'),
+  login: (data) => api.post('/api/auth/login', data),
+  me: () => api.get('/api/auth/me'),
 }
 
 // Dashboard APIs
 export const dashboardAPI = {
-  getStats: () => api.get('/dashboard/stats'),
+  getStats: () => api.get('/api/dashboard/stats'),
 }
 
 // Vehicle APIs
 export const vehicleAPI = {
-  getAll: () => api.get('/vehicles'),
-  getById: (id) => api.get(`/vehicles/${id}`),
-  create: (data) => api.post('/vehicles', data),
-  update: (id, data) => api.put(`/vehicles/${id}`, data),
-  delete: (id) => api.delete(`/vehicles/${id}`),
-  getStats: () => api.get('/vehicles/stats'),
-  getDocuments: (id) => api.get(`/vehicles/${id}/documents`),
-  uploadDocument: (id, formData) => api.post(`/vehicles/${id}/documents`, formData, {
+  getAll: () => api.get('/api/vehicles'),
+  getById: (id) => api.get(`/api/vehicles/${id}`),
+  create: (data) => api.post('/api/vehicles', data),
+  update: (id, data) => api.put(`/api/vehicles/${id}`, data),
+  delete: (id) => api.delete(`/api/vehicles/${id}`),
+  getStats: () => api.get('/api/vehicles/stats'),
+  getDocuments: (id) => api.get(`/api/vehicles/${id}/documents`),
+  uploadDocument: (id, formData) => api.post(`/api/vehicles/${id}/documents`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
 }
 
 // Vehicle Log APIs
 export const vehicleLogAPI = {
-  getByVehicle: (vehicleId) => api.get(`/vehicle-logs/vehicle/${vehicleId}`),
-  getByVehicleAndType: (vehicleId, logType) => api.get(`/vehicle-logs/vehicle/${vehicleId}/type/${logType}`),
-  create: (data) => api.post('/vehicle-logs', data),
-  update: (id, data) => api.put(`/vehicle-logs/${id}`, data),
-  delete: (id) => api.delete(`/vehicle-logs/${id}`),
+  getByVehicle: (vehicleId) => api.get(`/api/vehicle-logs/vehicle/${vehicleId}`),
+  getByVehicleAndType: (vehicleId, logType) => api.get(`/api/vehicle-logs/vehicle/${vehicleId}/type/${logType}`),
+  create: (data) => api.post('/api/vehicle-logs', data),
+  update: (id, data) => api.put(`/api/vehicle-logs/${id}`, data),
+  delete: (id) => api.delete(`/api/vehicle-logs/${id}`),
 }
 
 // Driver APIs
 export const driverAPI = {
-  getAll: () => api.get('/drivers'),
-  getById: (id) => api.get(`/drivers/${id}`),
-  getByVehicle: (vehicleId) => api.get(`/drivers/vehicle/${vehicleId}`),
-  create: (data) => api.post('/drivers', data),
-  update: (id, data) => api.put(`/drivers/${id}`, data),
-  delete: (id) => api.delete(`/drivers/${id}`),
+  getAll: () => api.get('/api/drivers'),
+  getById: (id) => api.get(`/api/drivers/${id}`),
+  getByVehicle: (vehicleId) => api.get(`/api/drivers/vehicle/${vehicleId}`),
+  create: (data) => api.post('/api/drivers', data),
+  update: (id, data) => api.put(`/api/drivers/${id}`, data),
+  delete: (id) => api.delete(`/api/drivers/${id}`),
 }
 
 // Expense APIs
 export const expenseAPI = {
-  getAll: (params) => api.get('/expenses', { params }),
-  getById: (id) => api.get(`/expenses/${id}`),
-  create: (data) => api.post('/expenses', data),
-  update: (id, data) => api.put(`/expenses/${id}`, data),
-  delete: (id) => api.delete(`/expenses/${id}`),
+  getAll: (params) => api.get('/api/expenses', { params }),
+  getById: (id) => api.get(`/api/expenses/${id}`),
+  create: (data) => api.post('/api/expenses', data),
+  update: (id, data) => api.put(`/api/expenses/${id}`, data),
+  delete: (id) => api.delete(`/api/expenses/${id}`),
 }
 
 // Maintenance APIs
 export const maintenanceAPI = {
-  getAll: (params) => api.get('/maintenance', { params }),
-  getById: (id) => api.get(`/maintenance/${id}`),
-  create: (data) => api.post('/maintenance', data),
-  update: (id, data) => api.put(`/maintenance/${id}`, data),
-  delete: (id) => api.delete(`/maintenance/${id}`),
+  getAll: (params) => api.get('/api/maintenance', { params }),
+  getById: (id) => api.get(`/api/maintenance/${id}`),
+  create: (data) => api.post('/api/maintenance', data),
+  update: (id, data) => api.put(`/api/maintenance/${id}`, data),
+  delete: (id) => api.delete(`/api/maintenance/${id}`),
 }
 
 // Payment APIs
 export const paymentAPI = {
-  getAll: (params) => api.get('/payments', { params }),
-  getById: (id) => api.get(`/payments/${id}`),
-  create: (data) => api.post('/payments', data),
-  update: (id, data) => api.put(`/payments/${id}`, data),
-  delete: (id) => api.delete(`/payments/${id}`),
+  getAll: (params) => api.get('/api/payments', { params }),
+  getById: (id) => api.get(`/api/payments/${id}`),
+  create: (data) => api.post('/api/payments', data),
+  update: (id, data) => api.put(`/api/payments/${id}`, data),
+  delete: (id) => api.delete(`/api/payments/${id}`),
 }
 
 // Client APIs
 export const clientAPI = {
-  getAll: () => api.get('/clients'),
-  getById: (id) => api.get(`/clients/${id}`),
-  create: (data) => api.post('/clients', data),
-  update: (id, data) => api.put(`/clients/${id}`, data),
-  delete: (id) => api.delete(`/clients/${id}`),
+  getAll: () => api.get('/api/clients'),
+  getById: (id) => api.get(`/api/clients/${id}`),
+  create: (data) => api.post('/api/clients', data),
+  update: (id, data) => api.put(`/api/clients/${id}`, data),
+  delete: (id) => api.delete(`/api/clients/${id}`),
 }
 
 // Bill APIs
 export const billAPI = {
-  getAll: (params) => api.get('/bills', { params }),
-  getById: (id) => api.get(`/bills/${id}`),
-  create: (data) => api.post('/bills', data),
-  update: (id, data) => api.put(`/bills/${id}`, data),
-  delete: (id) => api.delete(`/bills/${id}`),
+  getAll: (params) => api.get('/api/bills', { params }),
+  getById: (id) => api.get(`/api/bills/${id}`),
+  create: (data) => api.post('/api/bills', data),
+  update: (id, data) => api.put(`/api/bills/${id}`, data),
+  delete: (id) => api.delete(`/api/bills/${id}`),
 }
 
 // Reminder APIs
 export const reminderAPI = {
-  getAll: (params) => api.get('/reminders', { params }),
-  getPending: () => api.get('/reminders/pending'),
-  complete: (id) => api.put(`/reminders/${id}/complete`),
-  delete: (id) => api.delete(`/reminders/${id}`),
+  getAll: (params) => api.get('/api/reminders', { params }),
+  getPending: () => api.get('/api/reminders/pending'),
+  complete: (id) => api.put(`/api/reminders/${id}/complete`),
+  delete: (id) => api.delete(`/api/reminders/${id}`),
 }
 
 // OCR APIs
@@ -132,11 +132,11 @@ export const ocrAPI = {
   extractInvoice: (file) => {
     const formData = new FormData()
     formData.append('file', file)
-    return api.post('/ocr/extract', formData, {
+    return api.post('/api/ocr/extract', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
-  healthCheck: () => api.get('/ocr/health'),
+  healthCheck: () => api.get('/api/ocr/health'),
 }
 
 export default api
