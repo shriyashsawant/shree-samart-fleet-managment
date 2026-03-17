@@ -156,33 +156,33 @@ export const attendanceAPI = {
   getByDriver: (driverId, startDate, endDate) => 
     api.get(`/api/attendance/driver/${driverId}`, { params: { startDate, endDate } }),
   mark: (data) => api.post('/api/attendance/mark', data),
-  delete: (id) => axios.delete(`${API_URL}/attendance/${id}`)
+  delete: (id) => api.delete(`/api/attendance/${id}`)
 }
 
 export const tyreAPI = {
-  getAll: () => axios.get(`${API_URL}/tyres`),
-  getByVehicle: (vehicleId) => axios.get(`${API_URL}/tyres/vehicle/${vehicleId}`),
-  create: (data) => axios.post(`${API_URL}/tyres`, data),
-  update: (id, data) => axios.put(`${API_URL}/tyres/${id}`, data),
-  delete: (id) => axios.delete(`${API_URL}/tyres/${id}`)
+  getAll: () => api.get('/api/tyres'),
+  getByVehicle: (vehicleId) => api.get(`/api/tyres/vehicle/${vehicleId}`),
+  create: (data) => api.post('/api/tyres', data),
+  update: (id, data) => api.put(`/api/tyres/${id}`, data),
+  delete: (id) => api.delete(`/api/tyres/${id}`)
 }
 
 export const advanceAPI = {
-  getAll: () => axios.get(`${API_URL}/advances`),
-  getPending: () => axios.get(`${API_URL}/advances/pending`),
-  getByDriver: (driverId) => axios.get(`${API_URL}/advances/driver/${driverId}`),
-  create: (data) => axios.post(`${API_URL}/advances`, data),
-  settle: (id) => axios.post(`${API_URL}/advances/${id}/settle`),
-  delete: (id) => axios.delete(`${API_URL}/advances/${id}`)
+  getAll: () => api.get('/api/advances'),
+  getPending: () => api.get('/api/advances/pending'),
+  getByDriver: (driverId) => api.get(`/api/advances/driver/${driverId}`),
+  create: (data) => api.post('/api/advances', data),
+  settle: (id) => api.post(`/api/advances/${id}/settle`),
+  delete: (id) => api.delete(`/api/advances/${id}`)
 }
 
 export const inventoryAPI = {
-  getAll: () => axios.get(`${API_URL}/inventory`),
-  getLowStock: () => axios.get(`${API_URL}/inventory/low-stock`),
-  create: (data) => axios.post(`${API_URL}/inventory`, data),
-  update: (id, data) => axios.put(`${API_URL}/inventory/${id}`, data),
-  adjustStock: (id, quantity) => axios.post(`${API_URL}/inventory/${id}/stock?quantity=${quantity}`),
-  delete: (id) => axios.delete(`${API_URL}/inventory/${id}`)
+  getAll: () => api.get('/api/inventory'),
+  getLowStock: () => api.get('/api/inventory/low-stock'),
+  create: (data) => api.post('/api/inventory', data),
+  update: (id, data) => api.put(`/api/inventory/${id}`, data),
+  adjustStock: (id, quantity) => api.post(`/api/inventory/${id}/stock?quantity=${quantity}`),
+  delete: (id) => api.delete(`/api/inventory/${id}`)
 }
 
 // Trip APIs
@@ -216,15 +216,17 @@ export const tenantAPI = {
 }
 
 export default api
+
 export const driverDocumentAPI = {
-  getByDriver: (id) => axios.get(`${API_URL}/driver-documents/driver/${id}`),
-  upload: (data) => axios.post(`${API_URL}/driver-documents`, data, {
+  getByDriver: (id) => api.get(`/api/driver-documents/driver/${id}`),
+  upload: (data) => api.post('/api/driver-documents', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  delete: (id) => axios.delete(`${API_URL}/driver-documents/${id}`)
+  delete: (id) => api.delete(`/api/driver-documents/${id}`)
 }
+
 export const tyreLogAPI = {
-  getByTyre: (id) => axios.get(`${API_URL}/tyre-logs/tyre/${id}`),
-  create: (data) => axios.post(`${API_URL}/tyre-logs`, data),
-  delete: (id) => axios.delete(`${API_URL}/tyre-logs/${id}`)
+  getByTyre: (id) => api.get(`/api/ tyre-logs/ tyre/${id}`),
+  create: (data) => api.post('/api/ tyre-logs', data),
+  delete: (id) => api.delete(`/api/ tyre-logs/${id}`)
 }
