@@ -29,21 +29,21 @@ import {
 import { cn } from '../lib/utils'
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Command Center', path: '/' },
-  { icon: Truck, label: 'Fleet Assets', path: '/vehicles' },
-  { icon: Users, label: 'Operators', path: '/drivers' },
-  { icon: Navigation, label: 'Trip Logistics', path: '/trips' },
-  { icon: Receipt, label: 'Burn Rate', path: '/expenses' },
-  { icon: Wrench, label: 'Unit Health', path: '/maintenance' },
-  { icon: Disc, label: 'Tyre Intel', path: '/tyres' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: Truck, label: 'Vehicles', path: '/vehicles' },
+  { icon: Users, label: 'Drivers', path: '/drivers' },
+  { icon: Navigation, label: 'Trips', path: '/trips' },
+  { icon: Receipt, label: 'Expenses', path: '/expenses' },
+  { icon: Wrench, label: 'Maintenance', path: '/maintenance' },
+  { icon: Disc, label: 'Tyres', path: '/tyres' },
   { icon: ShieldCheck, label: 'Compliance', path: '/compliance' },
-  { icon: FileText, label: 'Revenue Log', path: '/billing' },
-  { icon: CreditCard, label: 'Clearance', path: '/payments' },
-  { icon: Wallet, label: 'Cash Advances', path: '/advances' },
-  { icon: Building2, label: 'Partners', path: '/clients' },
-  { icon: Bell, label: 'Watchtower', path: '/reminders' },
-  { icon: BarChart3, label: 'Intelligence', path: '/analytics' },
-  { icon: SettingsIcon, label: 'Control Hub', path: '/settings' },
+  { icon: FileText, label: 'Bills', path: '/billing' },
+  { icon: CreditCard, label: 'Payments', path: '/payments' },
+  { icon: Wallet, label: 'Driver Advances', path: '/advances' },
+  { icon: Building2, label: 'Clients', path: '/clients' },
+  { icon: Bell, label: 'Reminders', path: '/reminders' },
+  { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+  { icon: SettingsIcon, label: 'Settings', path: '/settings' },
 ]
 
 export default function Layout() {
