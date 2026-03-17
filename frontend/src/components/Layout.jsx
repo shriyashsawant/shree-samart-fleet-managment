@@ -43,7 +43,7 @@ const navItems = [
   { icon: Building2, label: 'Partners', path: '/clients' },
   { icon: Bell, label: 'Watchtower', path: '/reminders' },
   { icon: BarChart3, label: 'Intelligence', path: '/analytics' },
-  { icon: SettingsIcon, label: 'Control Hub', path: '/settings' }, // Added new item
+  { icon: SettingsIcon, label: 'Control Hub', path: '/settings' },
 ]
 
 export default function Layout() {
@@ -65,7 +65,7 @@ export default function Layout() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-dark-900/40 backdrop-blur-md z-[60] lg:hidden"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] lg:hidden"
             onClick={() => setMobileOpen(false)}
           />
         )}
@@ -73,86 +73,98 @@ export default function Layout() {
 
       <motion.aside
         initial={false}
-        animate={{ width: sidebarOpen ? 280 : 100, x: mobileOpen ? 0 : undefined }}
+        animate={{ width: sidebarOpen ? 280 : 80, x: mobileOpen ? 0 : undefined }}
         className={cn(
-          "fixed left-0 top-0 h-full bg-dark-950 text-white z-[70] flex flex-col border-r border-white/5 transition-all duration-500 bg-mesh shadow-[20px_0_40px_rgba(0,0,0,0.1)]",
+          "fixed left-0 top-0 h-full bg-gray-100 border-r border-gray-200 z-[70] flex flex-col transition-all duration-300",
           mobileOpen ? "w-[280px]" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="h-24 flex items-center justify-between px-8 border-b border-white/5">
+        <div className="h-24 flex items-center justify-between px-6 border-b border-gray-200">
           <AnimatePresence mode="wait">
             {sidebarOpen && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20 ring-4 ring-primary-500/10">
-                  <Zap className="w-6 h-6 text-white" />
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-black text-lg tracking-tighter uppercase leading-none">Samarth</span>
-                  <span className="text-[10px] font-black text-primary-400 uppercase tracking-widest leading-none mt-1">Enterprise Fleet</span>
+                  <span className="font-bold text-base tracking-tight text-gray-900">Samarth</span>
+                  <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Enterprise Fleet</span>
                 </div>
               </motion.div>
             )}
+            {!sidebarOpen && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center mx-auto">
+                <Zap className="w-5 h-5 text-white" />
+              </motion.div>
+            )}
           </AnimatePresence>
-          <button onClick={() => setMobileOpen(false)} className="lg:hidden p-2 hover:bg-white/10 rounded-xl">
-            <X className="w-6 h-6" />
+          <button onClick={() => setMobileOpen(false)} className="lg:hidden p-2 hover:bg-gray-200 rounded-lg">
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        <nav className="flex-1 py-10 px-4 space-y-2 overflow-y-auto scrollbar-hide font-inter">
+        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
-              key={item.path} to={item.path} onClick={() => setMobileOpen(false)}
+              key={item.path} 
+              to={item.path} 
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) => cn(
-                "flex items-center gap-4 px-5 py-4 rounded-[1.5rem] transition-all duration-300 group relative",
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
                 isActive 
-                  ? "bg-white/10 text-white ring-1 ring-white/10 shadow-2xl" 
-                  : "text-gray-300 hover:text-white"
+                  ? "bg-gray-800 text-white shadow-md" 
+                  : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
               )}
             >
-              <item.icon className={cn("w-6 h-6 transition-transform group-hover:scale-110", location.pathname === item.path ? "text-primary-500" : "text-gray-400 group-hover:text-white")} />
-              {sidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-gray-200">{item.label}</span>}
-              {location.pathname === item.path && (
-                <motion.div layoutId="nav-glow" className="absolute left-0 w-1 h-6 bg-primary-500 rounded-full my-auto inset-y-0" />
+              <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700")} />
+              {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+              {isActive && (
+                <motion.div layoutId="nav-indicator" className="absolute left-0 w-1 h-6 bg-gray-800 rounded-r-full my-auto inset-y-0" />
               )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-8 border-t border-white/5">
-          <button onClick={handleLogout} className="flex items-center gap-4 w-full px-5 py-4 rounded-[1.5rem] text-rose-400 hover:bg-rose-500/10 transition-all group">
-            <LogOut className="w-6 h-6 transition-transform group-hover:-translate-x-1 text-rose-400" />
-            {sidebarOpen && <span className="text-sm font-bold uppercase tracking-wider text-rose-400">Logout</span>}
+        <div className="p-4 border-t border-gray-200">
+          <button onClick={handleLogout} className={cn(
+            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-red-50 w-full",
+            sidebarOpen ? "" : "justify-center"
+          )}>
+            <LogOut className="w-5 h-5 text-red-500" />
+            {sidebarOpen && <span className="text-sm font-medium text-red-600">Logout</span>}
           </button>
         </div>
       </motion.aside>
 
-      <div className={cn("transition-all duration-500 min-h-screen bg-mesh", sidebarOpen ? "lg:ml-[280px]" : "lg:ml-[100px]")}>
-        <header className="h-24 bg-white/70 backdrop-blur-xl border-b border-dark-100 flex items-center justify-between px-10 sticky top-0 z-50">
-          <div className="flex items-center gap-6">
-            <button onClick={() => setMobileOpen(true)} className="lg:hidden p-3 bg-dark-50 rounded-2xl hover:bg-dark-100 transition-colors"><Menu className="w-6 h-6" /></button>
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex p-3 bg-dark-50 rounded-2xl hover:bg-dark-100 transition-colors shadow-sm ring-1 ring-dark-100">
-              <Grid className={cn("w-6 h-6 transition-all", !sidebarOpen ? "rotate-45" : "rotate-0")} />
+      <div className={cn("transition-all duration-300 min-h-screen", sidebarOpen ? "lg:ml-[280px]" : "lg:ml-[80px]")}>
+        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-40">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setMobileOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
+              <Menu className="w-5 h-5 text-gray-600" />
             </button>
-            <div className="hidden md:flex items-center gap-3 px-6 py-3 bg-dark-50 rounded-[1.25rem] w-96 border border-dark-100 focus-within:ring-2 focus-within:ring-primary-500/20 transition-all">
-              <Search className="w-4 h-4 text-dark-400" />
-              <input type="text" placeholder="Access Command Console..." className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest w-full placeholder:text-dark-300" />
-            </div>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Grid className={cn("w-5 h-5 text-gray-600", !sidebarOpen && "rotate-90")} />
+            </button>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 pl-6 border-l border-dark-100">
-               <div className="text-right hidden sm:block">
-                  <p className="text-[9px] font-black text-dark-300 uppercase tracking-[0.2em] leading-none mb-1">Authenticated As</p>
-                  <p className="text-[11px] font-black text-dark-900 uppercase">Master Admin</p>
-               </div>
-               <div className="w-12 h-12 bg-dark-900 rounded-2xl flex items-center justify-center shadow-xl ring-4 ring-dark-50">
-                 <User className="w-6 h-6 text-white" />
-               </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 w-64">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none text-sm w-full text-gray-700 placeholder:text-gray-400" />
+            </div>
+            <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-medium text-gray-500">Authenticated As</p>
+                <p className="text-sm font-semibold text-gray-900">Master Admin</p>
+              </div>
+              <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
             </div>
           </div>
         </header>
 
-        <main className="p-10">
+        <main className="p-6">
           <Outlet />
         </main>
       </div>
