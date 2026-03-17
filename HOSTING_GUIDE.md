@@ -46,23 +46,26 @@ shree-samarth-enterprise/
    - **Build Command**: `./mvnw clean package -DskipTests`
    - **Start Command**: `java -jar target/shreesamarth-enterprise-1.0.0.jar`
 
-### 2.2 Add Environment Variables
-In Render dashboard → your service → Environment:
+### 2.2 Environment Variables (Optional - for production)
+In Render dashboard → your service → Environment, add if needed:
 ```
-JAVA_OPTS=-Xmx512m
+DATABASE_URL=<provided by Render Postgres - usually automatic>
 SPRING_PROFILES_ACTIVE=prod
-SERVER_PORT=10000  # Render provides PORT env var
+SERVER_PORT=10000
 ```
+
+> **Note**: The Native environment on Render will automatically detect Java 17 from runtime.txt. If using PostgreSQL, Render will automatically set DATABASE_URL.
 
 ### 2.3 Update application.properties for Production
 Add to `backend/src/main/resources/application.properties`:
 ```
-# Render will provide DATABASE_URL for PostgreSQL
-spring.datasource.url=${DATABASE_URL:jdbc:h2:mem:shreesamarth}
+# Use DATABASE_URL from Render (PostgreSQL)
+spring.datasource.url=${DATABASE_URL:jdbc:postgresql://localhost:5432/shreesamarth}
 spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.username=${DB_USER:postgres}
+spring.datasource.password=${DB_PASSWORD:password}
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.format_sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 # File upload configuration for Render
@@ -74,6 +77,8 @@ spring.web.resources.static-locations=file:./uploads/
 # Update OCR service URL to point to your Render OCR service
 ocr.service.url=https://shreesamarth-ocr.onrender.com
 ```
+
+> **IMPORTANT**: For local development, use H2 (in-memory database). For production on Render, it will use PostgreSQL automatically.
 
 ### 2.4 Enable PostgreSQL on Render
 1. In Render dashboard → "New +" → "PostgreSQL"
