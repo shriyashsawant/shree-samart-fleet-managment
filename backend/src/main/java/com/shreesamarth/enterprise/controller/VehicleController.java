@@ -1,0 +1,145 @@
+package com.shreesamarth.enterprise.controller;
+
+import com.shreesamarth.enterprise.entity.Vehicle;
+import com.shreesamarth.enterprise.entity.VehicleDocument;
+import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
+import com.shreesamarth.enterprise.repository.VehicleRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/vehicles")
+@RequiredArgsConstructor
+public class VehicleController {
+
+    private final VehicleRepository vehicleRepository;
+    private final VehicleDocumentRepository documentRepository;
+
+    @GetMapping
+    public ResponseEntity<List<Vehicle>> getAllVehicles() {
+        return ResponseEntity.ok(vehicleRepository.findAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Vehicle> getVehicleById(@PathVariable Long id) {
+        return vehicleRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<Vehicle> createVehicle(@RequestBody Vehicle vehicle) {
+        if (vehicleRepository.existsByVehicleNumber(vehicle.getVehicleNumber())) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(vehicleRepository.save(vehicle));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Vehicle> updateVehicle(@PathVariable Long id, @RequestBody Vehicle vehicle) {
+        return vehicleRepository.findById(id)
+                .map(existing -> {
+                    vehicle.setId(id);
+                    vehicle.setCreatedAt(existing.getCreatedAt());
+                    return ResponseEntity.ok(vehicleRepository.save(vehicle));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
+        if (vehicleRepository.existsById(id)) {
+            vehicleRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/{id}/documents")
+    public ResponseEntity<List<VehicleDocument>> getVehicleDocuments(@PathVariable Long id) {
+        return ResponseEntity.ok(documentRepository.findByVehicleId(id));
+    }
+
+    @PostMapping("/{id}/documents")
+    public ResponseEntity<VehicleDocument> uploadDocument(
+            @PathVariable Long id,
+            @RequestParam("documentType") String documentType,
+            @RequestParam("expiryDate") String expiryDate,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+
+        String uploadDir = "./uploads/documents/" + id;
+        Files.createDirectories(Paths.get(uploadDir));
+        
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = Paths.get(uploadDir, fileName);
+        Files.write(filePath, file.getBytes());
+
+        VehicleDocument document = new VehicleDocument();
+        document.setVehicle(vehicle);
+        document.setDocumentType(documentType);
+        document.setDocumentName(file.getOriginalFilename());
+        document.setFilePath(filePath.toString());
+        document.setExpiryDate(expiryDate != null && !expiryDate.isEmpty() ? LocalDate.parse(expiryDate) : null);
+
+        return ResponseEntity.ok(documentRepository.save(document));
+    }
+
+    @DeleteMapping("/documents/{docId}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long docId) {
+        documentRepository.deleteById(docId);
+        return ResponseEntity.ok().build();
+    }
+
+    // Vehicle Statistics Endpoint
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getVehicleStats() {
+        List<Vehicle> allVehicles = vehicleRepository.findAll();
+        
+        int totalVehicles = allVehicles.size();
+        int activeVehicles = (int) allVehicles.stream()
+                .filter(v -> "ACTIVE".equals(v.getStatus()))
+                .count();
+        int underMaintenance = (int) allVehicles.stream()
+                .filter(v -> "UNDER_MAINTENANCE".equals(v.getStatus()))
+                .count();
+        
+        // Calculate average fuel economy
+        BigDecimal avgFuelEconomy = allVehicles.stream()
+                .filter(v -> v.getFuelEconomy() != null)
+                .map(Vehicle::getFuelEconomy)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        if (totalVehicles > 0) {
+            avgFuelEconomy = avgFuelEconomy.divide(
+                    new BigDecimal(totalVehicles), 
+                    2, 
+                    RoundingMode.HALF_UP
+            );
+        }
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalVehicles", totalVehicles);
+        stats.put("activeVehicles", activeVehicles);
+        stats.put("underMaintenance", underMaintenance);
+        stats.put("avgFuelEconomy", avgFuelEconomy);
+        
+        return ResponseEntity.ok(stats);
+    }
+}

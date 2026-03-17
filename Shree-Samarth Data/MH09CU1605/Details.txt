@@ -1,0 +1,77 @@
+Vehicle Data : 
+Vehicle Number - MH09CU1605
+Model - LPK 2518TCBSIII
+Purchase Date - /38/G750
+Chassis Number - MAT448062D3E10979
+Engine Number - B591803231E63327001
+Insurance Company 
+EMI details
+Vehicle Status Active 
+
+Documents upload:
+RC
+Insurance
+PUC
+Passing Certificate
+Pollution Certificate
+
+Driver Data : 
+Driver Name - Janak Biswakarma 
+Phone Number - 
+91 90358 67447
+Address - Bengaluru Karnataka 
+Aadhaar Number - 258671660132
+Driving License Number - 
+MH 12 20210046267
+License Expiry Date -
+ 13- 02-2041
+Joining Date
+End Date
+Salary - 30,000
+Assigned Vehicle
+Status - Active 
+Files:
+Driving License PDF
+Aadhaar Card
+
+
+
+Vehicle:
+
+Vehicle Number: MH09CU1605
+Manufacturer: TATA MOTORS LTD
+Model: LPK 2518TC BSIII
+Vehicle Class: Goods Carrier (HGV)
+Fuel Type: Diesel
+Chassis Number: MAT448062D3E10979
+Engine Number: B591803231E63327001
+Registration Date: 16-12-2013
+Owner Name: MARUTI PATIL
+Address: Rajopadhye Nagar, Kolhapur
+Financer: AU Small Finance Bank Ltd
+Vehicle Status: Active
+
+Driver assigned:
+
+Driver Name: Janak Biswakarma
+Phone: +91 9035867447
+Address: Bengaluru, Karnataka
+Aadhaar: 258671660132
+License No: MH12 20210046267
+License Expiry: 13-02-2041
+Salary: ₹30,000
+Status: Active
+Assigned Vehicle: MH09CU1605
+
+Documents stored in system:
+
+RC
+Insurance
+PUC
+Passing Certificate
+Pollution Certificate
+
+Driver documents:
+
+Driving License PDF
+Aadhaar Card

@@ -1,0 +1,47 @@
+Vehicle No. - MH43Y2651
+Model name - EICHER 
+Purchase date - 
+Chassis Number - MC236GRC0EA001727
+Engine Number - 3IK84132674
+Vehicle status - Active 
+
+Driver name - Rabin 
+Diver Number - +91 72495 32760
+Kalyangar Bengluru, karnataka 
+Aadhar No. - 732880818926
+Driving licence No. -
+ MH02 20080179498
+Licence expiry date - 
+14 - 7-  2029
+Joined date - 
+Salary - 30,000
+Satus - Active
+
+
+
+Vehicle:
+
+Vehicle Number: MH43Y2651
+Manufacturer: VE Commercial Vehicles Ltd
+Model: Eicher
+Vehicle Class: Goods Carrier (HGV)
+Fuel Type: Diesel
+Chassis Number: MC236GRC0EA001727
+Engine Number: 3IK84132674
+Registration Date: 02-05-2014
+Owner Name: MARUTI PATIL
+Address: Haripriya Nagar, Kolhapur
+Financer: Indostar Capital Finance Ltd
+Vehicle Status: Active
+
+Driver:
+
+Driver Name: Rabin
+Phone: +91 7249532760
+Address: Bengaluru, Karnataka
+Aadhaar: 732880818926
+License No: MH02 20080179498
+License Expiry: 14-07-2029
+Salary: ₹30,000
+Status: Active
+Assigned Vehicle: MH43Y2651
