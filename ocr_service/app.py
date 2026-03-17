@@ -196,7 +196,7 @@ def parse_invoice_text(text):
     
     return result
 
-@app.route('/api/ocr/extract', methods=['POST'])
+@app.route('/extract', methods=['POST'])
 def extract_invoice():
     """Main endpoint to extract invoice data from uploaded image/PDF"""
     if 'file' not in request.files:
@@ -242,7 +242,7 @@ def extract_invoice():
         if os.path.exists(file_path):
             os.remove(file_path)
 
-@app.route('/api/ocr/health', methods=['GET'])
+@app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'service': 'OCR Invoice Scanner', 'type': 'ocr.space API'})
