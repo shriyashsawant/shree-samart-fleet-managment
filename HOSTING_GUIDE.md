@@ -41,16 +41,17 @@ shree-samarth-enterprise/
    - **Name**: `shreesamarth-backend`
    - **Region**: Choose closest to your users
    - **Branch**: `main`
-   - **Root Directory**: `backend` (IMPORTANT - this is where mvnw is located)
-   - **Environment**: **Native** (NOT Docker - this is critical!)
+   - **Root Directory**: `backend`
+   - **Environment**: **Docker**
+   - **Dockerfile Path**: `backend/Dockerfile`
    - **Build Command**: (leave empty - JAR is pre-built)
-   - **Start Command**: `java -jar enterprise-1.0.0.jar`
+   - **Start Command**: (will be from Dockerfile)
 
 ### 2.2 Environment Variables (Optional - for production)
 In Render dashboard → your service → Environment, add if needed:
 ```
 SPRING_PROFILES_ACTIVE=prod
-SERVER_PORT=10000
+SPRING_PROFILES_ACTIVE
 
 # SendGrid (optional - for email reminders)
 SENDGRID_API_KEY=SG.xxxxxx
@@ -349,5 +350,7 @@ The system uses environment variables to switch between local and production:
 5. Consider adding CDN for static assets
 
 ---
+
+**Deployment Complete!** Your Shree Samarth Fleet Management System is now hosted and accessible to your users.
 
 **Deployment Complete!** Your Shree Samarth Fleet Management System is now hosted and accessible to your users.
