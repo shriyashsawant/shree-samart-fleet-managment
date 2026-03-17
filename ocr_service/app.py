@@ -3,6 +3,7 @@
 # Requires: pip install requests
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 import re
 import os
@@ -10,6 +11,8 @@ import tempfile
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+# Allow all origins for the OCR service since it's a private internal utility
+CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # OCR.space API (free, no installation required)

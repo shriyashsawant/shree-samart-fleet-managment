@@ -71,7 +71,7 @@ public class OcrController {
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
             
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                    ocrServiceUrl + "/api/ocr/extract",
+                    ocrServiceUrl + "/extract",
                     requestEntity,
                     Map.class
             );
@@ -118,7 +118,7 @@ public class OcrController {
         try {
             // Check external OCR service
             ResponseEntity<Map> response = restTemplate.getForEntity(
-                    ocrServiceUrl + "/api/ocr/health",
+                    ocrServiceUrl + "/health",
                     Map.class
             );
             result.put("status", "connected");
