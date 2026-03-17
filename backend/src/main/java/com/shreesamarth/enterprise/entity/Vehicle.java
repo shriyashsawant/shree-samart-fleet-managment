@@ -82,6 +82,10 @@ public class Vehicle {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "vehicle"})
     private List<VehicleLog> vehicleLogs = new ArrayList<>();
 
+    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "vehicle"})
+    private List<VehicleCompliance> complianceRecords = new ArrayList<>();
+
     @Column(name = "fuel_economy", precision = 5, scale = 2)
     private BigDecimal fuelEconomy; // km per liter
 

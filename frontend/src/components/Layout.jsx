@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   Search,
   User,
-  BarChart3
+  BarChart3,
+  ShieldCheck
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -27,6 +28,7 @@ const navItems = [
   { icon: Users, label: 'Drivers', path: '/drivers' },
   { icon: Receipt, label: 'Expenses', path: '/expenses' },
   { icon: Wrench, label: 'Maintenance', path: '/maintenance' },
+  { icon: ShieldCheck, label: 'Compliance', path: '/compliance' },
   { icon: FileText, label: 'Billing', path: '/billing' },
   { icon: CreditCard, label: 'Payments', path: '/payments' },
   { icon: Building2, label: 'Clients', path: '/clients' },

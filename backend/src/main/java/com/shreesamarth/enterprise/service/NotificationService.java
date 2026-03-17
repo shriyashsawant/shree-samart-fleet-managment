@@ -20,6 +20,7 @@ public class NotificationService {
     private final MaintenanceRepository maintenanceRepository;
     private final PaymentRepository paymentRepository;
     private final ReminderRepository reminderRepository;
+    private final VehicleComplianceRepository complianceRepository;
     private final EmailService emailService;
 
     // Owner's email for notifications
@@ -149,6 +150,61 @@ public class NotificationService {
                         " needs " + maintenance.getMaintenanceType() + " by " + maintenance.getNextDueDate(),
                         severity
                     );
+                }
+            }
+        }
+    }
+
+    // Run every day at 8:30 AM to check for expiring compliance documents
+    @Scheduled(cron = "0 30 8 * * ?")
+    public void checkComplianceExpiry() {
+        LocalDate today = LocalDate.now();
+        LocalDate fifteenDaysFromNow = today.plusDays(15);
+        LocalDate thirtyDaysFromNow = today.plusDays(30);
+
+        log.info("Running vehicle compliance expiry check...");
+        
+        List<VehicleCompliance> complianceRecords = complianceRepository.findAll();
+        for (VehicleCompliance record : complianceRecords) {
+            if (record.getExpiryDate() != null) {
+                // If expiring in 30 days, or already expired
+                if (record.getExpiryDate().isBefore(thirtyDaysFromNow)) {
+                    String vehicleNumber = record.getVehicle() != null ? 
+                        record.getVehicle().getVehicleNumber() : "Unknown";
+                    
+                    String severity = record.getExpiryDate().isBefore(today) ? "HIGH" : 
+                                    record.getExpiryDate().isBefore(today.plusDays(5)) ? "HIGH" : "MEDIUM";
+                    
+                    String typeName = record.getType();
+                    if ("Fitness Certificate".equalsIgnoreCase(typeName)) {
+                        typeName = "Fitness Certificate (Vehicle Passing)";
+                    } else if ("Road Tax".equalsIgnoreCase(typeName)) {
+                        typeName = "Road Tax (RTO Payment)";
+                    }
+
+                    String title = "⚠ " + typeName + " Expiring";
+                    String description = "Vehicle: " + vehicleNumber + "\n" +
+                                       typeName + " expiring in " + 
+                                       java.time.temporal.ChronoUnit.DAYS.between(today, record.getExpiryDate()) + " days.\n" +
+                                       "Expiry Date: " + record.getExpiryDate();
+
+                    createReminder(
+                        "COMPLIANCE",
+                        title,
+                        description,
+                        severity
+                    );
+                    
+                    // Send email if it's getting close (15 days)
+                    if (record.getExpiryDate().isBefore(fifteenDaysFromNow)) {
+                        emailService.sendReminderEmail(
+                            OWNER_EMAIL,
+                            typeName + " Expiry Alert",
+                            title + " - " + vehicleNumber,
+                            description,
+                            severity
+                        );
+                    }
                 }
             }
         }

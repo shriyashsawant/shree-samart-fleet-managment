@@ -11,6 +11,7 @@ import Payments from './pages/Payments'
 import Reminders from './pages/Reminders'
 import Clients from './pages/Clients'
 import Analytics from './pages/Analytics'
+import Compliance from './pages/Compliance'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -38,6 +39,7 @@ function App() {
           <Route path="reminders" element={<Reminders />} />
           <Route path="clients" element={<Clients />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="compliance" element={<Compliance />} />
         </Route>
       </Routes>
     </BrowserRouter>
