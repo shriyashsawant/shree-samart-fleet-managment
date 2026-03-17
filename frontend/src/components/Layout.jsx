@@ -109,17 +109,24 @@ export default function Layout() {
               key={item.path} 
               to={item.path} 
               onClick={() => setMobileOpen(false)}
-              className={({ isActive }) => cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
-                isActive 
-                  ? "bg-gray-800 text-white shadow-md" 
-                  : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-              )}
+              className={(props) => {
+                const isActive = props?.isActive ?? false
+                return cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
+                  isActive 
+                    ? "bg-gray-800 text-white shadow-md" 
+                    : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                )
+              }}
             >
-              <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700")} />
-              {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-              {isActive && (
-                <motion.div layoutId="nav-indicator" className="absolute left-0 w-1 h-6 bg-gray-800 rounded-r-full my-auto inset-y-0" />
+              {({ isActive }) => (
+                <>
+                  <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700")} />
+                  {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+                  {isActive && (
+                    <motion.div layoutId="nav-indicator" className="absolute left-0 w-1 h-6 bg-gray-800 rounded-r-full my-auto inset-y-0" />
+                  )}
+                </>
               )}
             </NavLink>
           ))}
