@@ -41,8 +41,9 @@ shree-samarth-enterprise/
    - **Name**: `shreesamarth-backend`
    - **Region**: Choose closest to your users
    - **Branch**: `main`
+   - **Root Directory**: `backend` (IMPORTANT - this is where mvnw is located)
    - **Build Command**: `./mvnw clean package -DskipTests`
-   - **Start Command**: `java -jar target/shreesamarth-enterprise-0.0.1-SNAPSHOT.jar`
+   - **Start Command**: `java -jar target/shreesamarth-enterprise-1.0.0.jar`
    - **Environment**: Docker (or use "Native" environment with Java 17)
 
 ### 2.2 Add Environment Variables
