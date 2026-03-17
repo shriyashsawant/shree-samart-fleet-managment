@@ -1,23 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Truck, MoreVertical, Edit, Trash2, Eye, FileText, Wrench, Activity, Fuel, AlertTriangle, ClipboardList } from 'lucide-react'
-import { vehicleAPI, vehicleLogAPI } from '../lib/api'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Truck, MoreVertical, Edit, Trash2, Eye, FileText, Wrench, Activity, Fuel, AlertTriangle, ClipboardList, TrendingUp, TrendingDown, Users, Search, CheckCircle2 } from 'lucide-react'
+import { vehicleAPI, vehicleLogAPI, analyticsAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn, getStatusColor } from '../lib/utils'
 
 export default function Vehicles() {
+  const navigate = useNavigate()
   const [vehicles, setVehicles] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showLogModal, setShowLogModal] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [stats, setStats] = useState({
     totalVehicles: 0,
     activeVehicles: 0,
     underMaintenance: 0,
     avgFuelEconomy: 0
   })
-  const [vehicleLogs, setVehicleLogs] = useState([])
-  const [selectedLogVehicle, setSelectedLogVehicle] = useState(null)
 
   useEffect(() => {
     loadVehicles()
@@ -26,7 +27,7 @@ export default function Vehicles() {
 
   const loadVehicles = async () => {
     try {
-      const response = await vehicleAPI.getAll()
+      const response = await analyticsAPI.getVehicleSummaryList()
       setVehicles(response.data)
     } catch (error) {
       console.error('Failed to load vehicles:', error)
@@ -44,16 +45,8 @@ export default function Vehicles() {
     }
   }
 
-  const loadVehicleLogs = async (vehicleId) => {
-    try {
-      const response = await vehicleLogAPI.getByVehicle(vehicleId)
-      setVehicleLogs(response.data)
-    } catch (error) {
-      console.error('Failed to load logs:', error)
-    }
-  }
-
-  const handleDelete = async (id) => {
+  const handleDelete = async (e, id) => {
+    e.stopPropagation()
     if (confirm('Are you sure you want to delete this vehicle?')) {
       try {
         await vehicleAPI.delete(id)
@@ -65,187 +58,129 @@ export default function Vehicles() {
     }
   }
 
-  const openLogModal = (vehicle) => {
-    setSelectedLogVehicle(vehicle)
-    loadVehicleLogs(vehicle.id)
-    setShowLogModal(true)
-  }
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter(v =>
+      v.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.model.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [vehicles, searchTerm])
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-dark-900">Vehicles</h1>
-          <p className="text-dark-500 mt-1">Manage your cement mixer fleet</p>
+          <h1 className="text-4xl font-black text-dark-900 tracking-tight">
+            Fleet <span className="text-gradient">Control</span>
+          </h1>
+          <p className="text-dark-500 font-medium mt-1">Real-time oversight of your technical fleet and drivers.</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/30"
-        >
-          <Plus className="w-5 h-5" />
-          Add Vehicle
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+            <input 
+              type="text" 
+              placeholder="Search by ID or Model..." 
+              className="interactive-field pl-10 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button 
+            onClick={() => { setSelectedVehicle(null); setShowModal(true); }}
+            className="btn-primary"
+          >
+            <Plus className="w-5 h-5" /> Register Vehicle
+          </button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-dark-100"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-500">Total Vehicles</p>
-              <p className="text-2xl font-bold text-dark-900">{stats.totalVehicles}</p>
-            </div>
-            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-              <Truck className="w-6 h-6 text-primary-600" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-dark-100"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-500">Active Today</p>
-              <p className="text-2xl font-bold text-green-600">{stats.activeVehicles}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <Activity className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-dark-100"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-500">Under Maintenance</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.underMaintenance}</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-              <Wrench className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-dark-100"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-dark-500">Avg Fuel Economy</p>
-              <p className="text-2xl font-bold text-dark-900">{stats.avgFuelEconomy || 0} <span className="text-sm">km/L</span></p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Fuel className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard label="Total Units" value={stats.total} icon={Truck} color="primary" />
+        <StatCard label="Active Status" value={stats.active} icon={CheckCircle2} color="green" />
+        <StatCard label="In Maintenance" value={stats.maintenance} icon={Wrench} color="orange" />
+        <StatCard label="Driver Assigns" value={stats.active} icon={Users} color="blue" />
       </div>
 
-      {/* Vehicle Cards Grid */}
       {loading ? (
-        <div className="flex items-center justify-center h-64">
+        <div className="h-64 flex items-center justify-center">
           <div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {vehicles.map((vehicle, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredVehicles.map((v) => (
             <motion.div
-              key={vehicle.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-sm border border-dark-100 overflow-hidden card-hover group"
+              layout
+              key={v.id}
+              onClick={() => navigate(`/vehicles/${v.id}`)}
+              className="bg-white rounded-3xl overflow-hidden border border-dark-100 premium-shadow group cursor-pointer hover:border-primary-500 transition-all duration-500 flex flex-col h-full"
             >
-              {/* Card Header */}
-              <div className="bg-gradient-to-r from-dark-800 to-dark-700 p-4">
-                <div className="flex items-start justify-between">
+              <div className="p-6 flex-1 bg-mesh">
+                <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
-                      <Truck className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 bg-dark-900 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg group-hover:scale-110 transition-transform duration-500">
+                      {v.vehicleNumber?.slice(-2)}
                     </div>
                     <div>
-                      <h3 className="font-bold text-white text-lg">{vehicle.vehicleNumber}</h3>
-                      <p className="text-dark-300 text-sm">{vehicle.model}</p>
+                      <h3 className="text-xl font-black text-dark-900 tracking-tight">{v.vehicleNumber}</h3>
+                      <p className="text-xs font-bold text-dark-400 uppercase tracking-widest">{v.model}</p>
                     </div>
                   </div>
-                  <span className={cn("px-3 py-1 rounded-full text-xs font-medium", getStatusColor(vehicle.status))}>
-                    {vehicle.status}
+                  <span className={cn(
+                    "px-3 py-1 rounded-full text-[10px] font-black tracking-widest border uppercase",
+                    v.status === 'ACTIVE' 
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                      : "bg-orange-50 text-orange-600 border-orange-100"
+                  )}>
+                    {v.status}
                   </span>
                 </div>
-              </div>
 
-              {/* Card Body */}
-              <div className="p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-dark-500">Insurance</p>
-                    <p className="font-medium text-dark-900">{vehicle.insuranceCompany || '-'}</p>
+                <div className="space-y-4">
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 group-hover:bg-emerald-50 transition-colors">
+                      <p className="text-[9px] font-black text-emerald-600 uppercase mb-1 flex items-center gap-1.5 tracking-widest">
+                        <TrendingUp className="w-3 h-3" /> Yield
+                      </p>
+                      <p className="text-sm font-black text-dark-900">{formatCurrency(v.revenue)}</p>
+                    </div>
+                    <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100/50 group-hover:bg-rose-50 transition-colors">
+                      <p className="text-[9px] font-black text-rose-600 uppercase mb-1 flex items-center gap-1.5 tracking-widest">
+                        <TrendingDown className="w-3 h-3" /> Burn
+                      </p>
+                      <p className="text-sm font-black text-dark-900">{formatCurrency(v.expenses)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-dark-500">Expiry</p>
-                    <p className="font-medium text-dark-900">{formatDate(vehicle.insuranceExpiry)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-dark-500">Monthly EMI</p>
-                    <p className="font-medium text-primary-600">{formatCurrency(vehicle.emiAmount)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-dark-500">Fuel Economy</p>
-                    <p className="font-medium text-dark-900">{vehicle.fuelEconomy || '-'} km/L</p>
+
+                  <div className="pt-6 border-t border-dark-100/50 flex flex-col gap-3">
+                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-dark-400">
+                        <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Operator</span>
+                        <span className="text-dark-900">{v.driverName || 'Unassigned'}</span>
+                     </div>
+                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-dark-400">
+                        <span className="flex items-center gap-2"><Activity className="w-3.5 h-3.5" /> Mobility</span>
+                        <span className={cn(v.status === 'ACTIVE' ? "text-emerald-600" : "text-orange-600")}>{v.status}</span>
+                     </div>
                   </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="pt-4 border-t border-dark-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <p className="text-xs text-dark-500">Chassis</p>
-                      <p className="text-sm font-medium text-dark-700 truncate max-w-[100px]">{vehicle.chassisNumber?.slice(-6) || '-'}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-dark-500">Engine</p>
-                      <p className="text-sm font-medium text-dark-700 truncate max-w-[100px]">{vehicle.engineNumber?.slice(-6) || '-'}</p>
-                    </div>
+                <div className="mt-8 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setSelectedVehicle(v); setShowModal(true); }}
+                      className="p-2.5 bg-white hover:bg-dark-900 hover:text-white rounded-xl text-dark-600 transition-all shadow-sm border border-dark-100"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => handleDelete(e, v.id)}
+                      className="p-2.5 bg-white hover:bg-rose-600 hover:text-white rounded-xl text-rose-500 transition-all shadow-sm border border-rose-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => openLogModal(vehicle)}
-                      className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Vehicle Logs"
-                    >
-                      <ClipboardList className="w-4 h-4 text-blue-500" />
-                    </button>
-                    <button
-                      onClick={() => { setSelectedVehicle(vehicle); setShowModal(true); }}
-                      className="p-2 hover:bg-dark-100 rounded-lg transition-colors"
-                    >
-                      <Edit className="w-4 h-4 text-dark-600" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(vehicle.id)}
-                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-dark-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">
+                    View Intelligence <Eye className="w-4 h-4" />
                   </div>
                 </div>
               </div>
@@ -262,17 +197,33 @@ export default function Vehicles() {
           onSave={() => { setShowModal(false); setSelectedVehicle(null); loadVehicles(); loadStats(); }}
         />
       )}
-
-      {/* Vehicle Log Modal */}
-      {showLogModal && selectedLogVehicle && (
-        <VehicleLogModal
-          vehicle={selectedLogVehicle}
-          logs={vehicleLogs}
-          onClose={() => { setShowLogModal(false); setSelectedLogVehicle(null); }}
-          onSave={() => loadVehicleLogs(selectedLogVehicle.id)}
-        />
-      )}
     </div>
+  )
+}
+
+function StatCard({ label, value, icon: Icon, color }) {
+  const colors = {
+    primary: "bg-primary-100 text-primary-600",
+    green: "bg-emerald-100 text-emerald-600",
+    orange: "bg-orange-100 text-orange-600",
+    blue: "bg-blue-100 text-blue-600"
+  }
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-xl p-6 shadow-sm border border-dark-100"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold text-dark-400 uppercase tracking-widest mb-1">{label}</p>
+          <p className="text-2xl font-black text-dark-900 tracking-tight">{value}</p>
+        </div>
+        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", colors[color])}>
+          <Icon className="w-6 h-6" />
+        </div>
+      </div>
+    </motion.div>
   )
 }
 

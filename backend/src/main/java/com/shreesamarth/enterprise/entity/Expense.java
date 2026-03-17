@@ -42,6 +42,15 @@ public class Expense {
     @Column(name = "bill_file_path")
     private String billFilePath;
 
+    @Column(name = "fuel_quantity", precision = 10, scale = 2)
+    private java.math.BigDecimal fuelQuantity;
+
+    @Column(name = "fuel_rate", precision = 10, scale = 2)
+    private java.math.BigDecimal fuelRate;
+
+    @Column(name = "odometer_reading")
+    private Long odometerReading;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

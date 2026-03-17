@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, FileText, Download, Printer, Edit, Trash2, Upload, Camera, Check, AlertCircle, X } from 'lucide-react'
+import { Plus, FileText, Download, Printer, Edit, Trash2, Upload, Camera, Check, AlertCircle, X, Search } from 'lucide-react'
 import { billAPI, clientAPI, vehicleAPI, ocrAPI } from '../lib/api'
-import { formatCurrency, formatDate } from '../lib/utils'
+import { formatCurrency, formatDate, cn } from '../lib/utils'
 
 export default function Billing() {
   const [bills, setBills] = useState([])
@@ -13,6 +13,7 @@ export default function Billing() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedBill, setSelectedBill] = useState(null)
   const [editingBill, setEditingBill] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [extractedData, setExtractedData] = useState(null)
 
   useEffect(() => { loadData() }, [])
@@ -103,119 +104,169 @@ export default function Billing() {
     setShowModal(true)
   }
 
+  const filteredBills = bills.filter(b => 
+    b.billNo?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    b.client?.partyName?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between">
+    <div className="space-y-8 pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-dark-900">Billing</h1>
-          <p className="text-dark-500">Generate & manage bills with GST</p>
+          <h1 className="text-4xl font-black text-dark-900 tracking-tight">
+            Revenue <span className="text-gradient">Intelligence</span>
+          </h1>
+          <p className="text-dark-500 font-medium mt-1">Manage billing, GST compliance, and financial records.</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={exportToExcel} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg shadow-lg shadow-green-600/30">
-            <Download className="w-5 h-5" />Export CSV
+        <div className="flex flex-wrap gap-3">
+          <button onClick={exportToExcel} className="btn-secondary">
+            <Download className="w-4 h-4" /> Export CSV
           </button>
-          <button onClick={() => setShowUploadModal(true)} className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg shadow-lg shadow-purple-600/30">
-            <Camera className="w-5 h-5" />Scan Invoice
+          <button onClick={() => setShowUploadModal(true)} className="btn-secondary border-purple-200 text-purple-700 hover:bg-purple-50">
+            <Camera className="w-4 h-4" /> Scan Invoice
           </button>
-          <button onClick={() => { setExtractedData(null); setShowModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg shadow-lg shadow-primary-600/30">
-            <Plus className="w-5 h-5" />Create Bill
+          <button onClick={() => { setExtractedData(null); setShowModal(true); }} className="btn-primary">
+            <Plus className="w-5 h-5" /> Create Bill
           </button>
         </div>
       </div>
       
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
-          <p className="text-emerald-100 text-sm">Total Billing Amount</p>
-          <p className="text-2xl font-bold mt-1">{formatCurrency(totalRevenue)}</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="bg-dark-900 rounded-[2rem] p-8 text-white premium-shadow relative overflow-hidden group col-span-1 md:col-span-2 shadow-2xl shadow-primary-900/40"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/20 blur-[100px] -mr-32 -mt-32" />
+          <div className="relative z-10 flex flex-col justify-between h-full">
+            <div>
+               <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
+                 <FileText className="w-6 h-6 text-primary-400" />
+               </div>
+               <p className="text-[10px] font-black text-primary-400 uppercase tracking-[0.3em] mb-2 font-outfit">Aggregate Gross Billing</p>
+               <h2 className="text-4xl font-black tracking-tight">{formatCurrency(totalRevenue)}</h2>
+            </div>
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+               <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Verified Transactions</span>
+               <span className="text-xs font-black text-emerald-400">{bills.length} Records</span>
+            </div>
+          </div>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-xl p-4 border">
-          <p className="text-dark-500 text-sm">Total Basic</p>
-          <p className="text-xl font-bold text-dark-900 mt-1">{formatCurrency(totalBasic)}</p>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-xl p-4 border">
-          <p className="text-dark-500 text-sm">Total CGST</p>
-          <p className="text-xl font-bold text-blue-600 mt-1">{formatCurrency(totalCgst)}</p>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white rounded-xl p-4 border">
-          <p className="text-dark-500 text-sm">Total SGST</p>
-          <p className="text-xl font-bold text-blue-600 mt-1">{formatCurrency(totalSgst)}</p>
-        </motion.div>
+
+        <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-6">
+           <StatMini label="Taxable Yield" value={formatCurrency(totalBasic)} icon={Check} color="blue" />
+           <StatMini label="Accrued GST" value={formatCurrency(totalCgst + totalSgst)} icon={AlertCircle} color="amber" />
+           <div className="col-span-2">
+              <div className="bg-white rounded-[1.5rem] p-6 border border-dark-100 flex items-center justify-between group hover:border-primary-500 transition-all duration-300">
+                 <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center text-primary-600">
+                       <Upload className="w-5 h-5" />
+                    </div>
+                    <div>
+                       <p className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Digital Input</p>
+                       <p className="text-sm font-black text-dark-900 uppercase tracking-tight">Rapid OCR Intake</p>
+                    </div>
+                 </div>
+                 <button onClick={() => setShowUploadModal(true)} className="px-4 py-2 bg-dark-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary-600 transition-colors shadow-lg shadow-dark-900/20">
+                    Deploy Lens
+                 </button>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 mt-8">
+         <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
+            <input 
+              type="text" 
+              placeholder="Search by Bill No or Client..." 
+              className="interactive-field pl-12 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+         </div>
       </div>
 
       {loading ? <div className="h-64 flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full" /></div> : (
-        <div className="bg-white rounded-xl shadow-sm border border-dark-100 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-dark-50 border-b">
-              <tr>
-                <th className="text-left p-4 text-sm font-semibold text-dark-600">Bill No</th>
-                <th className="text-left p-4 text-sm font-semibold text-dark-600">Date</th>
-                <th className="text-left p-4 text-sm font-semibold text-dark-600">Party Name</th>
-                <th className="text-left p-4 text-sm font-semibold text-dark-600">Party GST</th>
-                <th className="text-right p-4 text-sm font-semibold text-dark-600">Basic</th>
-                <th className="text-right p-4 text-sm font-semibold text-dark-600">GST</th>
-                <th className="text-right p-4 text-sm font-semibold text-dark-600">Total</th>
-                <th className="text-left p-4 text-sm font-semibold text-dark-600">Type</th>
-                <th className="text-center p-4 text-sm font-semibold text-dark-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {bills.map(b => (
-                <tr key={b.id} className="hover:bg-dark-50">
-                  <td className="p-4 font-medium">#{b.billNo}</td>
-                  <td className="p-4">{formatDate(b.billDate)}</td>
-                  <td className="p-4">{b.client?.partyName || '-'}</td>
-                  <td className="p-4 text-xs font-mono">{b.client?.gstNumber || '-'}</td>
-                  <td className="p-4 text-right">{formatCurrency(b.basicAmount)}</td>
-                  <td className="p-4 text-right text-blue-600">{formatCurrency((parseFloat(b.cgstAmount)||0) + (parseFloat(b.sgstAmount)||0))}</td>
-                  <td className="p-4 text-right font-bold text-primary-600">{formatCurrency(b.totalAmount)}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      b.billType === 'Diseal' ? 'bg-orange-100 text-orange-700' : 
-                      b.billType === 'Main' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {b.billType || 'General'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button 
-                        onClick={() => setSelectedBill(b)}
-                        className="p-2 hover:bg-dark-100 rounded-lg"
-                        title="View Bill"
-                      >
-                        <Printer className="w-4 h-4 text-dark-600" />
-                      </button>
-                      <button 
-                        onClick={() => setEditingBill(b)}
-                        className="p-2 hover:bg-blue-50 rounded-lg"
-                        title="Edit Bill"
-                      >
-                        <Edit className="w-4 h-4 text-blue-500" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(b.id)}
-                        className="p-2 hover:bg-red-50 rounded-lg"
-                        title="Delete Bill"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
-                  </td>
+        <div className="bg-white rounded-[2.5rem] border border-dark-100 overflow-hidden premium-shadow bg-mesh">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-dark-100">
+                  <th className="px-8 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest">Protocol</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest">Counterparty</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest text-right">Yield</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest text-right">Tax Modality</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest text-right">Consolidated</th>
+                  <th className="px-8 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest text-center">Protocol Actions</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot className="bg-dark-50 font-bold">
-              <tr>
-                <td colSpan={4} className="p-4 text-right">Sub Total:</td>
-                <td className="p-4 text-right">{formatCurrency(totalBasic)}</td>
-                <td className="p-4 text-right">{formatCurrency(totalCgst + totalSgst)}</td>
-                <td className="p-4 text-right text-primary-600">{formatCurrency(totalRevenue)}</td>
-                <td colSpan={2}></td>
-              </tr>
-            </tfoot>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-dark-100">
+                {filteredBills.map(b => (
+                  <tr key={b.id} className="group hover:bg-dark-50/50 transition-all duration-300">
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-dark-900 tracking-tight">INV-{b.billNo}</span>
+                        <span className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-0.5">{formatDate(b.billDate)}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-dark-800 tracking-tight">{b.client?.partyName || '-'}</span>
+                        <span className="text-[10px] font-black text-primary-500 uppercase tracking-[0.1em] mt-1">{b.client?.gstNumber || 'NON-GST'}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                       <span className="text-sm font-black text-dark-900 font-mono tracking-tighter">{formatCurrency(b.basicAmount)}</span>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                       <div className="flex flex-col items-end">
+                          <span className="text-xs font-black text-amber-600 font-mono tracking-tighter">{formatCurrency((parseFloat(b.cgstAmount)||0) + (parseFloat(b.sgstAmount)||0))}</span>
+                          <span className="text-[9px] font-black text-dark-300 uppercase tracking-widest mt-0.5">{b.gstPercentage}% Slab</span>
+                       </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <span className="text-sm font-black text-emerald-600 bg-emerald-50 px-4 py-1.5 rounded-xl border border-emerald-100 font-mono tracking-tighter">
+                        {formatCurrency(b.totalAmount)}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => setSelectedBill(b)} 
+                          className="p-2.5 bg-white hover:bg-dark-900 hover:text-white rounded-xl text-dark-400 shadow-sm border border-dark-100 transition-all duration-300"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setEditingBill(b)} 
+                          className="p-2.5 bg-white hover:bg-primary-600 hover:text-white rounded-xl text-dark-400 shadow-sm border border-dark-100 transition-all duration-300"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(b.id)} 
+                          className="p-2.5 bg-white hover:bg-rose-600 hover:text-white rounded-xl text-rose-400 shadow-sm border border-rose-100 transition-all duration-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredBills.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-8 py-20 text-center">
+                       <FileText className="w-12 h-12 text-dark-200 mx-auto mb-4" />
+                       <p className="text-[10px] font-black text-dark-400 uppercase tracking-widest">No matching transactional records detected</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       
@@ -289,12 +340,15 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold">Scan Invoice</h2>
-          <button onClick={onClose} className="p-2 hover:bg-dark-100 rounded-lg">
-            <X className="w-5 h-5" />
+    <div className="fixed inset-0 bg-dark-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col premium-shadow">
+        <div className="p-6 border-b border-dark-100 flex justify-between items-center glass-card">
+          <div>
+            <h2 className="text-2xl font-black text-dark-900 tracking-tight">Lens <span className="text-gradient">Scanner</span></h2>
+            <p className="text-xs text-dark-500 font-bold uppercase tracking-widest mt-0.5">Automated Intelligence</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-dark-100 rounded-xl transition-colors">
+            <X className="w-5 h-5 text-dark-400" />
           </button>
         </div>
         
@@ -413,6 +467,31 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
   )
 }
 
+function StatMini({ label, value, icon: Icon, color }) {
+  const colors = {
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100"
+  }
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      className="bg-white rounded-2xl p-5 border border-dark-100 shadow-sm group hover:border-primary-200 transition-all"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${colors[color] || colors.blue}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-dark-400 text-[10px] font-bold uppercase tracking-widest">{label}</p>
+          <p className="text-xl font-black text-dark-900 tracking-tight">{value}</p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose, onSave }) {
   // Find matching client by GST number
   const findClientByGst = (gst) => {
@@ -453,17 +532,18 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">{bill ? 'Edit Bill' : 'Create Bill'}</h2>
+    <div className="fixed inset-0 bg-dark-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto premium-shadow">
+        <div className="p-6 border-b border-dark-100 glass-card">
+          <h2 className="text-2xl font-black text-dark-900 tracking-tight">{bill ? 'Update' : 'Generate'} <span className="text-gradient">Invoice</span></h2>
           {extractedData && (
-            <p className="text-sm text-purple-600 mt-1 flex items-center gap-1">
-              <Camera className="w-4 h-4" /> Data extracted from scanned invoice
-            </p>
+            <div className="flex items-center gap-2 mt-2 py-1 px-3 bg-purple-50 text-purple-600 rounded-lg w-fit">
+              <Camera className="w-4 h-4" /> 
+              <span className="text-[10px] font-bold uppercase tracking-widest">AI Assisted Data</span>
+            </div>
           )}
         </div>
-        <form onSubmit={handle} className="p-6 space-y-4">
+        <form onSubmit={handle} className="p-8 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Bill No</label>
@@ -652,11 +732,11 @@ function BillPrintModal({ bill, onClose }) {
           </div>
         </div>
         
-        <div className="p-4 border-t flex gap-3 justify-end">
-          <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg">
-            <Printer className="w-4 h-4" /> Print
+        <div className="p-8 border-t border-dark-100 glass-card flex gap-3 justify-end sticky bottom-0">
+          <button onClick={() => window.print()} className="btn-primary">
+            <Printer className="w-4 h-4" /> Print Document
           </button>
-          <button onClick={onClose} className="px-4 py-2 border rounded-lg">Close</button>
+          <button onClick={onClose} className="btn-secondary">Close</button>
         </div>
       </motion.div>
     </div>

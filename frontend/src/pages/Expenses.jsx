@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Receipt, Edit, Trash2, Filter } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Receipt, Edit, Trash2, Filter, Fuel, GlassWater, Activity, Calendar, Truck, DollarSign, Search, CheckCircle2, X } from 'lucide-react'
 import { expenseAPI, vehicleAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
@@ -11,11 +11,10 @@ export default function Expenses() {
   const [vehicles, setVehicles] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [selectedExpense, setSelectedExpense] = useState(null)
   const [filter, setFilter] = useState({ vehicleId: '', expenseType: '' })
 
-  useEffect(() => {
-    loadData()
-  }, [filter])
+  useEffect(() => { loadData() }, [filter])
 
   const loadData = async () => {
     try {
@@ -26,19 +25,19 @@ export default function Expenses() {
       setExpenses(expensesRes.data)
       setVehicles(vehiclesRes.data)
     } catch (error) {
-      console.error('Failed to load data:', error)
+      console.error('Failed to load operational burn data:', error)
     } finally {
       setLoading(false)
     }
   }
 
   const handleDelete = async (id) => {
-    if (confirm('Delete this expense?')) {
+    if (confirm('Authorize deletion of this operational expense record?')) {
       try {
         await expenseAPI.delete(id)
         loadData()
       } catch (error) {
-        console.error('Failed to delete:', error)
+        console.error('Authorization failed:', error)
       }
     }
   }
@@ -46,137 +45,242 @@ export default function Expenses() {
   const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0)
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8 pb-20 font-inter">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-dark-900">Expenses</h1>
-          <p className="text-dark-500 mt-1">Track daily vehicle expenses</p>
+        <div className="font-outfit">
+          <h1 className="text-4xl font-black text-dark-900 tracking-tighter uppercase leading-none">
+            <span className="text-gradient">Burn</span> Rate
+          </h1>
+          <p className="text-xs font-bold text-dark-400 uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+            <Activity className="w-3 h-3 text-amber-500" /> Operational Expenditure Log
+          </p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 shadow-lg shadow-primary-600/30">
-          <Plus className="w-5 h-5" /> Add Expense
+        <button onClick={() => setShowModal(true)} className="btn-primary">
+          <Plus className="w-5 h-5" /> Log Expenditure
         </button>
       </div>
 
-      {/* Summary Card */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-amber-100">Total Expenses</p>
-            <p className="text-4xl font-bold mt-2">{formatCurrency(totalExpenses)}</p>
-          </div>
-          <Receipt className="w-16 h-16 text-white/30" />
-        </div>
-      </motion.div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Summary Card */}
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="lg:col-span-1 bg-dark-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-amber-900/20 bg-mesh">
+           <div className="relative z-10">
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] font-outfit mb-2">Total Operational Burn</p>
+              <h2 className="text-5xl font-black tracking-tighter">{formatCurrency(totalExpenses)}</h2>
+              <div className="mt-8 pt-8 border-t border-white/10 flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-dark-300">Tracking Active</span>
+                 </div>
+                 <Receipt className="w-10 h-10 text-white/10" />
+              </div>
+           </div>
+        </motion.div>
 
-      {/* Filters */}
-      <div className="flex gap-4">
-        <select value={filter.vehicleId} onChange={(e) => setFilter({ ...filter, vehicleId: e.target.value })} className="px-4 py-2 border border-dark-200 rounded-lg">
-          <option value="">All Vehicles</option>
-          {vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber}</option>)}
-        </select>
+        {/* Filters Panel */}
+        <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-dark-100 p-10 premium-shadow bg-mesh flex flex-col justify-between">
+           <div>
+              <h3 className="text-xl font-black text-dark-900 uppercase tracking-tight mb-6">Filter Intelligence</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                   <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Target Unit</label>
+                   <select value={filter.vehicleId} onChange={(e) => setFilter({ ...filter, vehicleId: e.target.value })} className="interactive-field">
+                     <option value="">Full Fleet</option>
+                     {vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber}</option>)}
+                   </select>
+                </div>
+                <div className="space-y-1.5">
+                   <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Expenditure Type</label>
+                   <select value={filter.expenseType} onChange={(e) => setFilter({ ...filter, expenseType: e.target.value })} className="interactive-field">
+                     <option value="">All Streams</option>
+                     {EXPENSE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                   </select>
+                </div>
+              </div>
+           </div>
+           <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-8 flex items-center gap-2">
+              <Search className="w-3 h-3" /> Refining {expenses.length} transaction records
+           </p>
+        </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full" /></div>
+        <div className="flex items-center justify-center h-64 bg-mesh rounded-[2.5rem] border border-dark-100">
+          <div className="animate-spin w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full shadow-2xl" />
+        </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-dark-100 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-dark-50 border-b border-dark-100">
-              <tr>
-                <th className="text-left px-6 py-3 text-sm font-semibold text-dark-600">Date</th>
-                <th className="text-left px-6 py-3 text-sm font-semibold text-dark-600">Vehicle</th>
-                <th className="text-left px-6 py-3 text-sm font-semibold text-dark-600">Type</th>
-                <th className="text-left px-6 py-3 text-sm font-semibold text-dark-600">Diesel by Client</th>
-                <th className="text-right px-6 py-3 text-sm font-semibold text-dark-600">Amount</th>
-                <th className="text-right px-6 py-3 text-sm font-semibold text-dark-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-dark-100">
-              {expenses.map((expense) => (
-                <tr key={expense.id} className="hover:bg-dark-50">
-                  <td className="px-6 py-4 text-dark-900">{formatDate(expense.date)}</td>
-                  <td className="px-6 py-4 text-dark-900 font-medium">{expense.vehicle?.vehicleNumber || '-'}</td>
-                  <td className="px-6 py-4 text-dark-600">{expense.expenseType}</td>
-                  <td className="px-6 py-4">
-                    {expense.dieselProvidedByClient ? (
-                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">Yes</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">No</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right font-semibold text-dark-900">{formatCurrency(expense.amount)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => handleDelete(expense.id)} className="p-2 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4 text-red-500" /></button>
-                  </td>
+        <div className="bg-white rounded-[2.5rem] border border-dark-100 overflow-hidden premium-shadow">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-dark-50 border-b border-dark-100">
+                  <th className="px-10 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest">Operational Cycle</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest">Deployed Unit</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest">Stream</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest text-center">Telemetry</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest text-right">Burn Amount</th>
+                  <th className="px-10 py-6 text-[10px] font-black text-dark-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-dark-50">
+                {expenses.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="py-20 text-center">
+                       <Receipt className="w-16 h-16 text-dark-100 mx-auto mb-4" />
+                       <p className="font-black text-[10px] text-dark-300 uppercase tracking-widest">No Expenditures Detected</p>
+                    </td>
+                  </tr>
+                ) : (
+                  expenses.map((expense) => (
+                    <tr key={expense.id} className="group hover:bg-dark-50/50 transition-all duration-300">
+                      <td className="px-10 py-6 text-sm font-bold text-dark-900">{formatDate(expense.date)}</td>
+                      <td className="px-10 py-6">
+                         <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-white border border-dark-100 flex items-center justify-center text-[10px] font-black text-dark-900 shadow-sm">
+                               {expense.vehicle?.vehicleNumber?.slice(-4)}
+                            </div>
+                            <span className="text-xs font-black uppercase text-dark-900">{expense.vehicle?.vehicleNumber}</span>
+                         </div>
+                      </td>
+                      <td className="px-10 py-6">
+                         <span className={cn(
+                           "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                           expense.expenseType === 'DIESEL' ? "bg-indigo-50 text-indigo-600 border-indigo-100" : "bg-dark-50 text-dark-500 border-dark-100"
+                         )}>
+                           {expense.expenseType}
+                         </span>
+                      </td>
+                      <td className="px-10 py-6 text-center">
+                         {expense.expenseType === 'DIESEL' ? (
+                           <div className="flex flex-col items-center">
+                              <span className="text-[10px] font-bold text-dark-500">{expense.fuelQuantity || '-'} LTRS</span>
+                              <span className="text-[10px] font-black text-dark-900 font-mono mt-1">{expense.odometerReading ? `${expense.odometerReading} KM` : 'NO_MILEAGE'}</span>
+                           </div>
+                         ) : <span className="text-[10px] font-bold text-dark-300 italic">N/A</span>}
+                      </td>
+                      <td className="px-10 py-6 text-right font-black text-dark-900">{formatCurrency(expense.amount)}</td>
+                      <td className="px-10 py-6 text-right">
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                           <button onClick={() => { setSelectedExpense(expense); setShowModal(true); }} className="p-2 hover:bg-white rounded-xl shadow-sm border border-dark-100 transition-all"><Edit className="w-4 h-4 text-dark-400" /></button>
+                           <button onClick={() => handleDelete(expense.id)} className="p-2 hover:bg-rose-50 rounded-xl shadow-sm border border-rose-100 transition-all"><Trash2 className="w-4 h-4 text-rose-500" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {showModal && <ExpenseModal vehicles={vehicles} onClose={() => setShowModal(false)} onSave={() => { setShowModal(false); loadData(); }} />}
+      {showModal && (
+        <ExpenseModal 
+          expense={selectedExpense} 
+          vehicles={vehicles} 
+          onClose={() => { setShowModal(false); setSelectedExpense(null); }} 
+          onSave={() => { setShowModal(false); setSelectedExpense(null); loadData(); }} 
+        />
+      )}
     </div>
   )
 }
 
-function ExpenseModal({ vehicles, onClose, onSave }) {
-  const [formData, setFormData] = useState({ vehicle: { id: '' }, expenseType: 'DIESEL', amount: '', date: new Date().toISOString().split('T')[0], dieselProvidedByClient: false, notes: '' })
+function ExpenseModal({ expense, vehicles, onClose, onSave }) {
+  const [formData, setFormData] = useState({ 
+    vehicle: { id: expense?.vehicle?.id || '' }, 
+    expenseType: expense?.expenseType || 'DIESEL', 
+    amount: expense?.amount || '', 
+    date: expense?.date || new Date().toISOString().split('T')[0], 
+    dieselProvidedByClient: expense?.dieselProvidedByClient || false, 
+    fuelQuantity: expense?.fuelQuantity || '',
+    fuelRate: expense?.fuelRate || '',
+    odometerReading: expense?.odometerReading || '',
+    notes: expense?.notes || '' 
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await expenseAPI.create(formData)
+      if (expense?.id) await expenseAPI.update(expense.id, formData)
+      else await expenseAPI.create(formData)
       onSave()
     } catch (error) {
-      console.error('Failed to save:', error)
+      console.error('Teletransmission failed:', error)
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-xl w-full max-w-md">
-        <div className="p-6 border-b border-dark-100"><h2 className="text-xl font-bold text-dark-900">Add Expense</h2></div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <div className="fixed inset-0 bg-dark-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden flex flex-col premium-shadow">
+        <div className="p-8 border-b border-dark-100 glass-card flex items-center justify-between font-outfit">
           <div>
-            <label className="block text-sm font-medium text-dark-700 mb-1">Vehicle</label>
-            <select value={formData.vehicle.id} onChange={(e) => setFormData({ ...formData, vehicle: { id: e.target.value } })} className="w-full px-4 py-2 border border-dark-200 rounded-lg" required>
-              <option value="">Select Vehicle</option>
-              {vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber}</option>)}
-            </select>
+            <h2 className="text-2xl font-black text-dark-900 tracking-tight">{expense ? 'Modify' : 'Log'} <span className="text-gradient">Expenditure</span></h2>
+            <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-1">Operational Transaction Hub</p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-dark-700 mb-1">Expense Type</label>
-            <select value={formData.expenseType} onChange={(e) => setFormData({ ...formData, expenseType: e.target.value })} className="w-full px-4 py-2 border border-dark-200 rounded-lg">
-              {EXPENSE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-dark-700 mb-1">Amount</label>
-              <input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full px-4 py-2 border border-dark-200 rounded-lg" required />
+          <button onClick={onClose} className="p-2 hover:bg-dark-100 rounded-full transition-colors"><X className="w-8 h-8 text-dark-200" /></button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-10 space-y-8 overflow-y-auto bg-mesh font-inter">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-1.5">
+               <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Target Unit</label>
+               <select value={formData.vehicle.id} onChange={(e) => setFormData({ ...formData, vehicle: { id: e.target.value } })} className="interactive-field" required>
+                 <option value="">Assign Vehicle</option>
+                 {vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber}</option>)}
+               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-dark-700 mb-1">Date</label>
-              <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2 border border-dark-200 rounded-lg" />
+            <div className="space-y-1.5">
+               <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Stream Category</label>
+               <select value={formData.expenseType} onChange={(e) => setFormData({ ...formData, expenseType: e.target.value })} className="interactive-field">
+                 {EXPENSE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+               </select>
             </div>
+            
+            <FormGroup label="Expenditure Amount" value={formData.amount} onChange={(v) => setFormData({ ...formData, amount: v })} type="number" required />
+            <FormGroup label="Transaction Date" value={formData.date} onChange={(v) => setFormData({ ...formData, date: v })} type="date" required />
+
+            {formData.expenseType === 'DIESEL' && (
+              <>
+                <div className="col-span-2 p-6 bg-dark-50 rounded-3xl border border-dark-100 space-y-6">
+                   <div className="flex items-center gap-2 mb-4">
+                      <Fuel className="w-4 h-4 text-primary-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-dark-900">Vocational Fuel Telemetry</span>
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <FormGroup label="Fuel Vol. (Ltrs)" value={formData.fuelQuantity} onChange={(v) => setFormData({ ...formData, fuelQuantity: v })} type="number" />
+                      <FormGroup label="Rate per Ltr" value={formData.fuelRate} onChange={(v) => setFormData({ ...formData, fuelRate: v })} type="number" />
+                      <FormGroup label="Odometer Reading" value={formData.odometerReading} onChange={(v) => setFormData({ ...formData, odometerReading: v })} type="number" />
+                   </div>
+                   <div className="flex items-center gap-3 pt-4 border-t border-dark-100/50">
+                      <input type="checkbox" checked={formData.dieselProvidedByClient} onChange={(e) => setFormData({ ...formData, dieselProvidedByClient: e.target.checked })} className="w-5 h-5 rounded-lg border-dark-200 text-primary-600 focus:ring-primary-500/20 transition-all" />
+                      <label className="text-xs font-bold text-dark-700 uppercase tracking-tight">External Supply (Client Provided Diesel)</label>
+                   </div>
+                </div>
+              </>
+            )}
           </div>
-          {formData.expenseType === 'DIESEL' && (
-            <div className="flex items-center gap-2">
-              <input type="checkbox" checked={formData.dieselProvidedByClient} onChange={(e) => setFormData({ ...formData, dieselProvidedByClient: e.target.checked })} className="w-4 h-4" />
-              <label className="text-sm text-dark-700">Diesel provided by client</label>
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-dark-700 mb-1">Notes</label>
-            <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="w-full px-4 py-2 border border-dark-200 rounded-lg" rows={2} />
+
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Audit Intelligence (Notes)</label>
+            <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="interactive-field resize-none h-24" placeholder="Detail any operational anomalies or specific transaction context..." />
           </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border border-dark-200 rounded-lg">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-lg">Save</button>
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-dark-50">
+            <button type="button" onClick={onClose} className="btn-secondary">Dismiss</button>
+            <button type="submit" className="btn-primary px-10">Authorize Log</button>
           </div>
         </form>
       </motion.div>
+    </div>
+  )
+}
+
+function FormGroup({ label, value, onChange, type = "text", required }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">{label}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="interactive-field" required={required} placeholder={`Enter ${label}...`} />
     </div>
   )
 }

@@ -75,10 +75,24 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getVehicleProfitByMonth(vehicleId, month));
     }
 
-    // Get Document Health Score: /api/vehicles/{id}/document-health
+    // Get Document Health Score: /api/analytics/vehicles/{id}/document-health
     @GetMapping("/vehicles/{id}/document-health")
     public ResponseEntity<DocumentHealthDTO> getDocumentHealth(@PathVariable("id") Long vehicleId) {
         return ResponseEntity.ok(analyticsService.getDocumentHealth(vehicleId));
+    }
+
+    // Get Vehicle Summaries for card view: /api/analytics/vehicles/summary
+    @GetMapping("/vehicles/summary")
+    public ResponseEntity<List<VehicleSummaryDTO>> getVehicleSummaries(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(analyticsService.getVehicleSummaries(tenantId));
+    }
+
+    // Get Detailed Vehicle Profile: /api/analytics/vehicles/{id}/profile
+    @GetMapping("/vehicles/{id}/profile")
+    public ResponseEntity<VehicleProfileDTO> getVehicleProfile(@PathVariable("id") Long vehicleId) {
+        return ResponseEntity.ok(analyticsService.getVehicleProfile(vehicleId));
     }
 
     private Long getTenantId(UserDetails userDetails) {

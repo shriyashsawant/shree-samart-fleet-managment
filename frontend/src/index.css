@@ -1,80 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   * {
-    @apply border-dark-200;
+    @apply border-dark-200 transition-colors duration-200;
   }
   
   body {
-    @apply bg-dark-50 text-dark-900 font-sans antialiased;
+    @apply bg-[#F8FAFC] text-dark-900 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  input, select, textarea {
+    @apply bg-white border border-dark-200 rounded-xl px-4 py-2.5 text-dark-900 transition-all duration-300;
+    @apply focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 focus:outline-none;
+  }
+
+  label {
+    @apply text-xs font-bold text-dark-500 uppercase tracking-widest mb-1.5 block;
   }
 }
 
 @layer components {
-  .glass-effect {
-    @apply bg-white/80 backdrop-blur-lg border border-white/20;
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
   }
   
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  .premium-shadow {
+    @apply shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)];
   }
-  
-  .gradient-border {
-    @apply relative;
-    background: linear-gradient(#fff, #fff) padding-box,
-                linear-gradient(135deg, #3b82f6, #8b5cf6) border-box;
-    border: 2px solid transparent;
+
+  .btn-primary {
+    @apply px-6 py-2.5 bg-primary-600 text-white rounded-xl font-semibold shadow-lg shadow-primary-600/20 hover:shadow-xl hover:shadow-primary-600/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-2.5 bg-white text-dark-700 border border-dark-200 rounded-xl font-semibold hover:bg-dark-50 transition-all duration-300 flex items-center justify-center gap-2;
+  }
+
+  .interactive-field {
+    @apply hover:border-dark-300 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/5;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-dark-900 via-primary-800 to-primary-600;
   }
   
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  .bg-mesh {
+    background-color: #f8fafc;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(217,100%,97%,1) 0, transparent 50%), 
+      radial-gradient(at 50% 0%, hsla(215,100%,92%,1) 0, transparent 50%), 
+      radial-gradient(at 100% 0%, hsla(210,100%,98%,1) 0, transparent 50%);
   }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+
+  .scrollbar-refined::-webkit-scrollbar {
+    width: 5px;
+  }
+  .scrollbar-refined::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .scrollbar-refined::-webkit-scrollbar-thumb {
+    @apply bg-dark-200 rounded-full hover:bg-dark-300 transition-colors;
   }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
 }
-
-::-webkit-scrollbar-track {
-  @apply bg-dark-100;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-dark-300 rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-dark-400;
-}
-
-/* Animation delays */
-.animation-delay-100 {
-  animation-delay: 100ms;
-}
-
-.animation-delay-200 {
-  animation-delay: 200ms;
-}
-
-.animation-delay-300 {
-  animation-delay: 300ms;
-}
-
-.animation-delay-400 {
-  animation-delay: 400ms;
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
 }

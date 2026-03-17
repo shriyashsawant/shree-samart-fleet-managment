@@ -156,8 +156,16 @@ public class OcrController {
         
         dto.setBillNo((String) body.get("bill_no"));
         dto.setDate((String) body.get("date"));
+        dto.setCompanyName((String) body.get("company_name"));
+        dto.setCompanyGst((String) body.get("company_gst"));
+        dto.setCompanyMobile((String) body.get("company_mobile"));
+        dto.setCompanyAddress((String) body.get("company_address"));
+        dto.setInvoiceType((String) body.get("invoice_type"));
         dto.setPartyName((String) body.get("party_name"));
         dto.setPartyGst((String) body.get("party_gst"));
+        dto.setPartyPan((String) body.get("party_pan"));
+        dto.setPartyAddress((String) body.get("party_address"));
+        dto.setServiceDescription((String) body.get("service_description"));
         dto.setHsnCode((String) body.get("hsn_code"));
         
         if (body.get("basic_amount") != null) {
@@ -176,6 +184,9 @@ public class OcrController {
         dto.setBillType((String) body.get("bill_type"));
         dto.setMonth((String) body.get("month"));
         dto.setYear((String) body.get("year"));
+        dto.setBankName((String) body.get("bank_name"));
+        dto.setBankAccountNo((String) body.get("bank_account_no"));
+        dto.setBankIfsc((String) body.get("bank_ifsc"));
         
         if (body.get("confidence") != null) {
             dto.setConfidence(((Number) body.get("confidence")).doubleValue());

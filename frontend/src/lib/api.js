@@ -36,6 +36,18 @@ export const authAPI = {
   me: () => api.get('/api/auth/me'),
 }
 
+// Analytics & Reporting APIs
+export const analyticsAPI = {
+  getVehicleProfit: () => api.get('/api/analytics/vehicle-profit'),
+  getMonthlyProfit: (months) => api.get('/api/analytics/monthly-profit', { params: { months } }),
+  getExpenseBreakdown: () => api.get('/api/analytics/expense-breakdown'),
+  getGstSummary: (months) => api.get('/api/analytics/gst-summary', { params: { months } }),
+  getPartyRevenue: () => api.get('/api/analytics/party-revenue'),
+  getIdleAlerts: () => api.get('/api/analytics/idle-alerts'),
+  getVehicleSummaryList: () => api.get('/api/analytics/vehicles/summary'),
+  getVehicleProfile: (id) => api.get(`/api/analytics/vehicles/${id}/profile`),
+}
+
 // Dashboard APIs
 export const dashboardAPI = {
   getStats: () => api.get('/api/dashboard/stats'),
@@ -127,6 +139,64 @@ export const reminderAPI = {
   delete: (id) => api.delete(`/api/reminders/${id}`),
 }
 
+// Compliance APIs
+export const complianceAPI = {
+  getAll: () => api.get('/api/compliance'),
+  getByVehicle: (id) => api.get(`/api/compliance/vehicle/${id}`),
+  create: (formData) => api.post('/api/compliance', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update: (id, data) => api.put(`/api/compliance/${id}`, data),
+  delete: (id) => api.delete(`/api/compliance/${id}`),
+}
+
+// Attendance APIs
+export const attendanceAPI = {
+  getAll: (date) => api.get('/api/attendance', { params: { date } }),
+  getByDriver: (driverId, startDate, endDate) => 
+    api.get(`/api/attendance/driver/${driverId}`, { params: { startDate, endDate } }),
+  mark: (data) => api.post('/api/attendance/mark', data),
+  delete: (id) => axios.delete(`${API_URL}/attendance/${id}`)
+}
+
+export const tyreAPI = {
+  getAll: () => axios.get(`${API_URL}/tyres`),
+  getByVehicle: (vehicleId) => axios.get(`${API_URL}/tyres/vehicle/${vehicleId}`),
+  create: (data) => axios.post(`${API_URL}/tyres`, data),
+  update: (id, data) => axios.put(`${API_URL}/tyres/${id}`, data),
+  delete: (id) => axios.delete(`${API_URL}/tyres/${id}`)
+}
+
+export const advanceAPI = {
+  getAll: () => axios.get(`${API_URL}/advances`),
+  getPending: () => axios.get(`${API_URL}/advances/pending`),
+  getByDriver: (driverId) => axios.get(`${API_URL}/advances/driver/${driverId}`),
+  create: (data) => axios.post(`${API_URL}/advances`, data),
+  settle: (id) => axios.post(`${API_URL}/advances/${id}/settle`),
+  delete: (id) => axios.delete(`${API_URL}/advances/${id}`)
+}
+
+export const inventoryAPI = {
+  getAll: () => axios.get(`${API_URL}/inventory`),
+  getLowStock: () => axios.get(`${API_URL}/inventory/low-stock`),
+  create: (data) => axios.post(`${API_URL}/inventory`, data),
+  update: (id, data) => axios.put(`${API_URL}/inventory/${id}`, data),
+  adjustStock: (id, quantity) => axios.post(`${API_URL}/inventory/${id}/stock?quantity=${quantity}`),
+  delete: (id) => axios.delete(`${API_URL}/inventory/${id}`)
+}
+
+// Trip APIs
+export const tripAPI = {
+  getAll: () => api.get('/api/trips'),
+  getById: (id) => api.get(`/api/trips/${id}`),
+  getByVehicle: (vehicleId) => api.get(`/api/trips/vehicle/${vehicleId}`),
+  getByDriver: (driverId) => api.get(`/api/trips/driver/${driverId}`),
+  getByClient: (clientId) => api.get(`/api/trips/client/${clientId}`),
+  create: (data) => api.post('/api/trips', data),
+  update: (id, data) => api.put(`/api/trips/${id}`, data),
+  delete: (id) => api.delete(`/api/trips/${id}`),
+}
+
 // OCR APIs
 export const ocrAPI = {
   extractInvoice: (file) => {
@@ -139,4 +209,22 @@ export const ocrAPI = {
   healthCheck: () => api.get('/api/ocr/health'),
 }
 
+export const tenantAPI = {
+  getMe: () => api.get('/api/tenant/me'),
+  updateMe: (data) => api.put('/api/tenant/me', data),
+  updateLogo: (logoPath) => api.post('/api/tenant/me/logo', { logoPath }),
+}
+
 export default api
+export const driverDocumentAPI = {
+  getByDriver: (id) => axios.get(`${API_URL}/driver-documents/driver/${id}`),
+  upload: (data) => axios.post(`${API_URL}/driver-documents`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  delete: (id) => axios.delete(`${API_URL}/driver-documents/${id}`)
+}
+export const tyreLogAPI = {
+  getByTyre: (id) => axios.get(`${API_URL}/tyre-logs/tyre/${id}`),
+  create: (data) => axios.post(`${API_URL}/tyre-logs`, data),
+  delete: (id) => axios.delete(`${API_URL}/tyre-logs/${id}`)
+}

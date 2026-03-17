@@ -25,6 +25,7 @@ public class AnalyticsService {
     private final PaymentRepository paymentRepository;
     private final ClientRepository clientRepository;
     private final VehicleDocumentRepository vehicleDocumentRepository;
+    private final DriverRepository driverRepository;
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("MMM");
 
@@ -511,6 +512,101 @@ public class AnalyticsService {
                 expiringCount,
                 expiredCount,
                 status
+        );
+    }
+
+    public List<VehicleSummaryDTO> getVehicleSummaries(Long tenantId) {
+        List<Vehicle> vehicles = vehicleRepository.findByTenantId(tenantId);
+        List<Driver> drivers = driverRepository.findAll();
+
+        return vehicles.stream().map(v -> {
+            BigDecimal revenue = getVehicleRevenue(v.getId());
+            BigDecimal expenses = getVehicleExpenses(v.getId());
+            
+            String driverName = drivers.stream()
+                    .filter(d -> d.getAssignedVehicle() != null && d.getAssignedVehicle().getId().equals(v.getId()))
+                    .map(Driver::getName)
+                    .findFirst()
+                    .orElse("Unassigned");
+
+            return new VehicleSummaryDTO(
+                v.getId(),
+                v.getVehicleNumber(),
+                v.getModel(),
+                v.getStatus(),
+                driverName,
+                revenue,
+                expenses
+            );
+        }).collect(Collectors.toList());
+    }
+
+    public VehicleProfileDTO getVehicleProfile(Long vehicleId) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+        
+        Driver driver = driverRepository.findAll().stream()
+                .filter(d -> d.getAssignedVehicle() != null && d.getAssignedVehicle().getId().equals(vehicleId))
+                .findFirst()
+                .orElse(null);
+
+        BigDecimal revenue = getVehicleRevenue(vehicleId);
+        BigDecimal expenses = getVehicleExpenses(vehicleId);
+        
+        List<Expense> latestExpenses = expenseRepository.findAll().stream()
+                .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
+                .sorted((a, b) -> b.getDate().compareTo(a.getDate()))
+                .limit(10)
+                .collect(Collectors.toList());
+
+        List<Maintenance> latestMaintenance = maintenanceRepository.findAll().stream()
+                .filter(m -> m.getVehicle() != null && m.getVehicle().getId().equals(vehicleId))
+                .sorted((a, b) -> b.getDate().compareTo(a.getDate()))
+                .limit(10)
+                .collect(Collectors.toList());
+
+        List<Bill> latestBills = billRepository.findAll().stream()
+                .filter(b -> b.getVehicle() != null && b.getVehicle().getId().equals(vehicleId))
+                .sorted((a, b) -> b.getBillDate().compareTo(a.getBillDate()))
+                .limit(10)
+                .collect(Collectors.toList());
+
+        List<VehicleDocument> documents = vehicleDocumentRepository.findByVehicleId(vehicleId);
+
+        // Find Milestones
+        LocalDate lastOilChange = latestMaintenance.stream()
+                .filter(m -> m.getMaintenanceType() != null && m.getMaintenanceType().toUpperCase().contains("OIL"))
+                .map(Maintenance::getDate)
+                .findFirst()
+                .orElse(null);
+
+        LocalDate lastTyreChange = latestMaintenance.stream()
+                .filter(m -> m.getMaintenanceType() != null && (m.getMaintenanceType().toUpperCase().contains("TYRE") || m.getMaintenanceType().toUpperCase().contains("TIRE")))
+                .map(Maintenance::getDate)
+                .findFirst()
+                .orElse(null);
+
+        Expense lastFuel = expenseRepository.findAll().stream()
+                .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
+                .filter(e -> "DIESEL".equalsIgnoreCase(e.getExpenseType()))
+                .sorted((a, b) -> b.getDate().compareTo(a.getDate()))
+                .findFirst()
+                .orElse(null);
+
+        return new VehicleProfileDTO(
+            vehicle,
+            driver,
+            revenue,
+            expenses,
+            revenue.subtract(expenses),
+            latestExpenses,
+            latestMaintenance,
+            latestBills,
+            documents,
+            lastOilChange,
+            lastTyreChange,
+            lastFuel != null ? lastFuel.getDate() : null,
+            lastFuel != null ? lastFuel.getAmount() : null
         );
     }
 

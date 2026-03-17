@@ -39,6 +39,21 @@ public class Tenant {
     @Column(length = 20)
     private String status = "ACTIVE";
 
+    @Column(length = 255)
+    private String logoPath;
+
+    @Column(length = 20)
+    private String panNumber;
+
+    @Column(length = 100)
+    private String bankName;
+
+    @Column(length = 50)
+    private String accountNumber;
+
+    @Column(length = 20)
+    private String ifscCode;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

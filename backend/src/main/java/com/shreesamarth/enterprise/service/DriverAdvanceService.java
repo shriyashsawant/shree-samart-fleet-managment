@@ -1,0 +1,42 @@
+package com.shreesamarth.enterprise.service;
+
+import com.shreesamarth.enterprise.entity.DriverAdvance;
+import com.shreesamarth.enterprise.repository.DriverAdvanceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class DriverAdvanceService {
+    private final DriverAdvanceRepository advanceRepository;
+
+    public List<DriverAdvance> getAllAdvances() {
+        return advanceRepository.findAll();
+    }
+
+    public List<DriverAdvance> getAdvancesByDriver(Long driverId) {
+        return advanceRepository.findByDriverId(driverId);
+    }
+
+    public List<DriverAdvance> getPendingAdvances() {
+        return advanceRepository.findByIsSettled(false);
+    }
+
+    public DriverAdvance saveAdvance(DriverAdvance advance) {
+        return advanceRepository.save(advance);
+    }
+
+    public DriverAdvance settleAdvance(Long id) {
+        DriverAdvance advance = advanceRepository.findById(id).orElseThrow();
+        advance.setIsSettled(true);
+        advance.setSettlementDate(LocalDate.now());
+        return advanceRepository.save(advance);
+    }
+
+    public void deleteAdvance(Long id) {
+        advanceRepository.deleteById(id);
+    }
+}
