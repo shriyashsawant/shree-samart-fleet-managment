@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
-import java.util.Objects;
 
 @Configuration
 public class DatabaseConfig {
@@ -17,14 +16,20 @@ public class DatabaseConfig {
         String databaseUrl = System.getenv("DATABASE_URL");
         
         if (databaseUrl != null && !databaseUrl.isEmpty()) {
-            // Parse Render's DATABASE_URL: postgres://username:password@host:port/database
+            // Parse Render/Supabase DATABASE_URL: postgres://username:password@host:port/database
             // Convert to Spring's format: jdbc:postgresql://host:port/database
-            String convertedUrl = convertRenderDatabaseUrl(databaseUrl);
+            String convertedUrl = convertToJdbcUrl(databaseUrl);
             
             // Parse username and password from the URL
-            String[] parts = parseDatabaseUrl(databaseUrl);
+            String[] parts = parseDatabaseCredentials(databaseUrl);
             String username = parts[0];
             String password = parts[1];
+            
+            System.out.println("=== DATABASE CONFIG ===");
+            System.out.println("Original URL: " + databaseUrl);
+            System.out.println("Converted URL: " + convertedUrl);
+            System.out.println("Username: " + username);
+            System.out.println("======================");
             
             return DataSourceBuilder.create()
                     .url(convertedUrl)
@@ -35,6 +40,9 @@ public class DatabaseConfig {
         }
         
         // Default: H2 in-memory database for local development
+        System.out.println("=== DATABASE CONFIG ===");
+        System.out.println("Using H2 in-memory database");
+        System.out.println("======================");
         return DataSourceBuilder.create()
                 .url("jdbc:h2:mem:shreesamarth")
                 .username("sa")
@@ -43,20 +51,33 @@ public class DatabaseConfig {
                 .build();
     }
     
-    private String convertRenderDatabaseUrl(String databaseUrl) {
-        // Remove postgres:// prefix and add jdbc:postgresql://
-        return "jdbc:postgresql://" + databaseUrl.substring("postgres://".length());
+    private String convertToJdbcUrl(String databaseUrl) {
+        // Convert postgres:// to jdbc:postgresql://
+        if (databaseUrl.startsWith("postgres://")) {
+            return "jdbc:" + databaseUrl;
+        } else if (databaseUrl.startsWith("postgresql://")) {
+            return "jdbc:" + databaseUrl;
+        }
+        return databaseUrl;
     }
     
-    private String[] parseDatabaseUrl(String databaseUrl) {
+    private String[] parseDatabaseCredentials(String databaseUrl) {
         // Format: postgres://username:password@host:port/database
-        String withoutPrefix = databaseUrl.substring("postgres://".length());
-        String[] hostAndDb = withoutPrefix.split("@");
-        String[] userPass = hostAndDb[0].split(":");
-        
-        String username = userPass[0];
-        String password = userPass.length > 1 ? userPass[1] : "";
-        
-        return new String[]{username, password};
+        try {
+            String withoutPrefix = databaseUrl.substring(databaseUrl.indexOf("://") + 3);
+            String[] hostAndDb = withoutPrefix.split("@");
+            if (hostAndDb.length < 2) {
+                return new String[]{"postgres", ""};
+            }
+            
+            String[] userPass = hostAndDb[0].split(":");
+            String username = userPass.length > 0 ? userPass[0] : "postgres";
+            String password = userPass.length > 1 ? userPass[1] : "";
+            
+            return new String[]{username, password};
+        } catch (Exception e) {
+            System.out.println("Error parsing database URL: " + e.getMessage());
+            return new String[]{"postgres", ""};
+        }
     }
 }
