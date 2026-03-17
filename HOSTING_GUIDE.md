@@ -49,9 +49,12 @@ shree-samarth-enterprise/
 ### 2.2 Environment Variables (Optional - for production)
 In Render dashboard → your service → Environment, add if needed:
 ```
-DATABASE_URL=<provided by Render Postgres - usually automatic>
 SPRING_PROFILES_ACTIVE=prod
 SERVER_PORT=10000
+
+# SendGrid (optional - for email reminders)
+SENDGRID_API_KEY=SG.xxxxxx
+SENDGRID_EMAIL=shreesamarthenterprises@gmail.com
 ```
 
 > **Note**: The Native environment on Render will automatically detect Java 17 from runtime.txt. If using PostgreSQL, Render will automatically set DATABASE_URL.
