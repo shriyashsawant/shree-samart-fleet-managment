@@ -69,3 +69,4 @@ com\shreesamarth\enterprise\controller\BillController.class
 com\shreesamarth\enterprise\entity\DriverDocument.class
 com\shreesamarth\enterprise\ShreeSamarthApplication.class
 com\shreesamarth\enterprise\entity\Bill.class
+com\shreesamarth\enterprise\config\DatabaseConfig.class
