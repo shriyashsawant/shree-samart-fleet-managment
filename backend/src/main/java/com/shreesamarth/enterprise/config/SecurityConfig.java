@@ -73,7 +73,9 @@ public class SecurityConfig {
             "http://localhost:3000", 
             "http://127.0.0.1:5173",
             "https://shree-samart-fleet-managment-eta.vercel.app",
-            "https://shree-samart-fleet-managment-186nes859-shriyashsawants-projects.vercel.app"
+            "https://shree-samart-fleet-managment-186nes859-shriyashsawants-projects.vercel.app",
+            "https://shree-samart-fleet-managment-cmneghabn-shriyashsawants-projects.vercel.app",
+            "https://shree-samart-fleet-managment-git-main-shriyashsawants-projects.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
