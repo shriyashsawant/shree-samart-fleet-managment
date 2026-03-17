@@ -106,11 +106,11 @@ export default function Layout() {
                 "flex items-center gap-4 px-5 py-4 rounded-[1.5rem] transition-all duration-300 group relative",
                 isActive 
                   ? "bg-white/10 text-white ring-1 ring-white/10 shadow-2xl" 
-                  : "text-dark-400 hover:text-white"
+                  : "text-gray-300 hover:text-white"
               )}
             >
-              <item.icon className={cn("w-6 h-6 transition-transform group-hover:scale-110", location.pathname === item.path ? "text-primary-500" : "text-dark-500 group-hover:text-white")} />
-              {sidebarOpen && <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>}
+              <item.icon className={cn("w-6 h-6 transition-transform group-hover:scale-110", location.pathname === item.path ? "text-primary-500" : "text-gray-400 group-hover:text-white")} />
+              {sidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-gray-200">{item.label}</span>}
               {location.pathname === item.path && (
                 <motion.div layoutId="nav-glow" className="absolute left-0 w-1 h-6 bg-primary-500 rounded-full my-auto inset-y-0" />
               )}
@@ -120,8 +120,8 @@ export default function Layout() {
 
         <div className="p-8 border-t border-white/5">
           <button onClick={handleLogout} className="flex items-center gap-4 w-full px-5 py-4 rounded-[1.5rem] text-rose-400 hover:bg-rose-500/10 transition-all group">
-            <LogOut className="w-6 h-6 transition-transform group-hover:-translate-x-1" />
-            {sidebarOpen && <span className="text-sm font-black uppercase tracking-widest">Logout</span>}
+            <LogOut className="w-6 h-6 transition-transform group-hover:-translate-x-1 text-rose-400" />
+            {sidebarOpen && <span className="text-sm font-bold uppercase tracking-wider text-rose-400">Logout</span>}
           </button>
         </div>
       </motion.aside>
