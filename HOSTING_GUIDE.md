@@ -68,9 +68,11 @@ spring.datasource.url=${DATABASE_URL:jdbc:postgresql://localhost:5432/shreesamar
 spring.datasource.driver-class-name=org.postgresql.Driver
 spring.datasource.username=${DB_USER:postgres}
 spring.datasource.password=${DB_PASSWORD:password}
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.hibernate.ddl-auto=none
 spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.datasource.hikari.data-source-properties.prepareThreshold=0
+spring.datasource.hikari.data-source-properties.sslmode=require
 
 # File upload configuration for Render
 spring.servlet.multipart.enabled=true
@@ -254,7 +256,7 @@ VITE_OCR_URL=https://shreesamarth-ocr.onrender.com/api/ocr
 
 ## Step 8: Database Initialization
 
-The application uses Hibernate auto-update (`spring.jpa.hibernate.ddl-auto=update`) which will create tables on first startup.
+The application uses Hibernate `none` mode (`spring.jpa.hibernate.ddl-auto=none`) to avoid conflicts with the Supabase connection pooler. You should ensure your database schema is created before deploying (e.g., using the Supabase SQL editor or initial deployment with `update` then switching to `none`).
 
 For production, consider:
 1. Creating backup strategy
