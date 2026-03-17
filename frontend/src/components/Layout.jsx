@@ -75,7 +75,7 @@ export default function Layout() {
         initial={false}
         animate={{ width: sidebarOpen ? 280 : 80, x: mobileOpen ? 0 : undefined }}
         className={cn(
-          "fixed left-0 top-0 h-full bg-gray-100 border-r border-gray-200 z-[70] flex flex-col transition-all duration-300",
+          "fixed left-0 top-0 h-full bg-gray-100 border-r border-gray-200 z-[70] flex flex-col transition-all duration-300 group",
           mobileOpen ? "w-[280px]" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -112,17 +112,21 @@ export default function Layout() {
               className={(props) => {
                 const isActive = props?.isActive ?? false
                 return cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative",
+                  "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative",
                   isActive 
                     ? "bg-gray-800 text-white shadow-md" 
-                    : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                    : "text-gray-600 hover:bg-gray-200 hover:text-gray-900",
+                  "group-hover:px-4"
                 )
               }}
             >
               {({ isActive }) => (
                 <>
                   <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700")} />
-                  {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+                  <span className={cn(
+                    "text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-200",
+                    sidebarOpen ? "opacity-100" : "w-0 opacity-0 group-hover:w-auto group-hover:opacity-100"
+                  )}>{item.label}</span>
                   {isActive && (
                     <motion.div layoutId="nav-indicator" className="absolute left-0 w-1 h-6 bg-gray-800 rounded-r-full my-auto inset-y-0" />
                   )}
