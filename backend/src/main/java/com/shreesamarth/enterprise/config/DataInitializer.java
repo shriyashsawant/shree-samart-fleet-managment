@@ -1,11 +1,7 @@
 package com.shreesamarth.enterprise.config;
 
-import com.shreesamarth.enterprise.entity.Tenant;
-import com.shreesamarth.enterprise.entity.User;
-import com.shreesamarth.enterprise.entity.Vehicle;
-import com.shreesamarth.enterprise.repository.TenantRepository;
-import com.shreesamarth.enterprise.repository.UserRepository;
-import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.entity.*;
+import com.shreesamarth.enterprise.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Component
 @RequiredArgsConstructor
@@ -21,7 +18,11 @@ public class DataInitializer implements CommandLineRunner {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
+    private final DriverRepository driverRepository;
+    private final ClientRepository clientRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d-M-yyyy");
 
     @Override
     public void run(String... args) {
@@ -31,9 +32,9 @@ public class DataInitializer implements CommandLineRunner {
             defaultTenant = new Tenant();
             defaultTenant.setCompanyName("Shree Samarth Enterprises");
             defaultTenant.setCompanyCode("SSE001");
-            defaultTenant.setEmail("shreesamarth@example.com");
+            defaultTenant.setEmail("shreesamarthenterprises@gmail.com");
             defaultTenant.setPhone("9876543210");
-            defaultTenant.setAddress("Mumbai, Maharashtra");
+            defaultTenant.setAddress("Kolhapur, Maharashtra");
             defaultTenant.setGstNumber("27ASXPP6488L1ZD");
             defaultTenant.setStatus("ACTIVE");
             defaultTenant = tenantRepository.save(defaultTenant);
@@ -51,58 +52,91 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(admin);
         }
 
-        // Create sample vehicles if none exist
+        // Create vehicles with real data
         if (vehicleRepository.count() == 0) {
-            // Vehicle 1
+            // Vehicle 1: MH09CU1605
             Vehicle v1 = new Vehicle();
-            v1.setVehicleNumber("MH12AB1234");
-            v1.setModel("Tata 712");
-            v1.setPurchaseDate(LocalDate.of(2020, 1, 15));
-            v1.setChassisNumber("MAT123456789");
-            v1.setEngineNumber("ENG123456789");
-            v1.setInsuranceCompany("ICICI Lombard");
-            v1.setInsuranceExpiry(LocalDate.of(2026, 12, 31));
-            v1.setEmiAmount(new BigDecimal("25000"));
-            v1.setEmiBank("HDFC Bank");
-            v1.setEmiStartDate(LocalDate.of(2020, 2, 1));
-            v1.setEmiEndDate(LocalDate.of(2025, 1, 31));
+            v1.setVehicleNumber("MH09CU1605");
+            v1.setModel("TATA LPK 2518TC BSIII");
+            v1.setManufacturer("TATA MOTORS LTD");
+            v1.setRegistrationDate(LocalDate.parse("16-12-2013", dateFormatter));
+            v1.setPurchaseDate(LocalDate.parse("16-12-2013", dateFormatter));
+            v1.setChassisNumber("MAT448062D3E10979");
+            v1.setEngineNumber("B591803231E63327001");
             v1.setStatus("ACTIVE");
             v1.setTenant(defaultTenant);
-            vehicleRepository.save(v1);
+            v1 = vehicleRepository.save(v1);
 
-            // Vehicle 2
+            // Driver 1: Janak Biswakarma
+            Driver d1 = new Driver();
+            d1.setName("Janak Biswakarma");
+            d1.setPhone("9035867447");
+            d1.setAddress("Bengaluru, Karnataka");
+            d1.setAadhaarNumber("258671660132");
+            d1.setDrivingLicense("MH12 20210046267");
+            d1.setLicenseExpiry(LocalDate.parse("13-02-2041", dateFormatter));
+            d1.setSalary(new BigDecimal("30000"));
+            d1.setJoiningDate(LocalDate.now());
+            d1.setStatus("ACTIVE");
+            d1.setAssignedVehicle(v1);
+            d1.setTenant(defaultTenant);
+            driverRepository.save(d1);
+
+            // Vehicle 2: MH43Y2651
             Vehicle v2 = new Vehicle();
-            v2.setVehicleNumber("MH12XY4567");
-            v2.setModel("Ashok Leyland 312");
-            v2.setPurchaseDate(LocalDate.of(2021, 6, 10));
-            v2.setChassisNumber("MAT987654321");
-            v2.setEngineNumber("ENG987654321");
-            v2.setInsuranceCompany("Bajaj Allianz");
-            v2.setInsuranceExpiry(LocalDate.of(2026, 6, 9));
-            v2.setEmiAmount(new BigDecimal("28000"));
-            v2.setEmiBank("Axis Bank");
-            v2.setEmiStartDate(LocalDate.of(2021, 7, 1));
-            v2.setEmiEndDate(LocalDate.of(2026, 6, 30));
+            v2.setVehicleNumber("MH43Y2651");
+            v2.setModel("EICHER");
+            v2.setManufacturer("VE Commercial Vehicles Ltd");
+            v2.setRegistrationDate(LocalDate.parse("02-05-2014", dateFormatter));
+            v2.setPurchaseDate(LocalDate.parse("02-05-2014", dateFormatter));
+            v2.setChassisNumber("MC236GRC0EA001727");
+            v2.setEngineNumber("3IK84132674");
             v2.setStatus("ACTIVE");
             v2.setTenant(defaultTenant);
-            vehicleRepository.save(v2);
+            v2 = vehicleRepository.save(v2);
 
-            // Vehicle 3
-            Vehicle v3 = new Vehicle();
-            v3.setVehicleNumber("MH14PQ7890");
-            v3.setModel("BharatBenz 714");
-            v3.setPurchaseDate(LocalDate.of(2022, 3, 20));
-            v3.setChassisNumber("MAT456789123");
-            v3.setEngineNumber("ENG456789123");
-            v3.setInsuranceCompany("Reliance General");
-            v3.setInsuranceExpiry(LocalDate.of(2026, 3, 19));
-            v3.setEmiAmount(new BigDecimal("30000"));
-            v3.setEmiBank("SBI");
-            v3.setEmiStartDate(LocalDate.of(2022, 4, 1));
-            v3.setEmiEndDate(LocalDate.of(2027, 3, 31));
-            v3.setStatus("ACTIVE");
-            v3.setTenant(defaultTenant);
-            vehicleRepository.save(v3);
+            // Driver 2: Rabin
+            Driver d2 = new Driver();
+            d2.setName("Rabin");
+            d2.setPhone("7249532760");
+            d2.setAddress("Bengaluru, Karnataka");
+            d2.setAadhaarNumber("732880818926");
+            d2.setDrivingLicense("MH02 20080179498");
+            d2.setLicenseExpiry(LocalDate.parse("14-07-2029", dateFormatter));
+            d2.setSalary(new BigDecimal("30000"));
+            d2.setJoiningDate(LocalDate.now());
+            d2.setStatus("ACTIVE");
+            d2.setAssignedVehicle(v2);
+            d2.setTenant(defaultTenant);
+            driverRepository.save(d2);
+
+            // Create sample clients
+            Client client1 = new Client();
+            client1.setPartyName("PRISM JOHNSON LIMITED");
+            client1.setGstNumber("27ASXPP6488L1ZD");
+            client1.setAddress("Mumbai, Maharashtra");
+            client1.setPhone("9876543210");
+            client1.setEmail("prismjohnson@example.com");
+            client1.setTenant(defaultTenant);
+            clientRepository.save(client1);
+
+            Client client2 = new Client();
+            client2.setPartyName("ULTRA TECH CEMENT");
+            client2.setGstNumber("27AABCT8719Q1ZO");
+            client2.setAddress("Mumbai, Maharashtra");
+            client2.setPhone("9876543211");
+            client2.setEmail("ultratech@example.com");
+            client2.setTenant(defaultTenant);
+            clientRepository.save(client2);
+
+            Client client3 = new Client();
+            client3.setPartyName("AMBUJA CEMENTS");
+            client3.setGstNumber("27AABCA7507Q1ZI");
+            client3.setAddress("Mumbai, Maharashtra");
+            client3.setPhone("9876543212");
+            client3.setEmail("ambuja@example.com");
+            client3.setTenant(defaultTenant);
+            clientRepository.save(client3);
         }
     }
 }
