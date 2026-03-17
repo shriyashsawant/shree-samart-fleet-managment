@@ -68,8 +68,8 @@ public class OcrService {
         }
         dto.setPartyName(partyName);
         
-        // Extract GST
-        String gst = extractPattern(rawText, "\\d{2}[A-Z]{5}\\d{4}[A-Z]{1}\\d[Z]{1}[A-Z\\d]{1}");
+        // Extract GST - Fixed with capturing group
+        String gst = extractPattern(rawText, "(\\d{2}[A-Z]{5}\\d{4}[A-Z]{1}\\d[Z]{1}[A-Z\\d]{1})");
         dto.setPartyGst(gst);
         
         // Extract HSN
