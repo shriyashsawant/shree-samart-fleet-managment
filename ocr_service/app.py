@@ -52,10 +52,9 @@ def clean_text(text):
     return text
 
 def parse_invoice_text(text):
-    """Parse extracted text to find invoice fields"""
-    # Clean the text first
+    """Parse extracted text to find invoice fields with improved regex for Indian invoices"""
+    # Create clean version for numeric extraction
     clean = clean_text(text)
-    lines = text.split('\n')
     
     result = {
         'bill_no': None,
@@ -73,127 +72,152 @@ def parse_invoice_text(text):
         'raw_text': text
     }
     
-    # Extract Bill No - look for patterns like "Bill 00-01" or "Bill No: 03"
+    # 1. Extract Date (DO NOT use simple numbers to avoid confusing with amounts)
+    date_patterns = [
+        r'(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})',
+    ]
+    for pattern in date_patterns:
+        match = re.search(pattern, text)
+        if match:
+            day, month, year = match.groups()
+            if len(year) == 2: year = "20" + year
+            result['date'] = f"{day}/{month}/{year}"
+            break
+            
+    # 2. Extract Bill No
     bill_patterns = [
-        r'Bill\s*[/\\-]?\s*(\d+)',
-        r'Bill\s*(?:No|#)[:\-\.]?\s*(\d+)',
-        r'Invoice\s*(?:No|#)[:\-\.]?\s*(\d+)',
+        r'(?:Bill|Invoice|Inv)\s*(?:No|#)?[:\-\s\.]+\s*([A-Z0-9\/\-]+)', # Prioritize Bill/Invoice keywords
+        r'(?<!Plot\s)No[:\-\s\.]+\s*(\d+)', # Avoid "Plot no"
     ]
     for pattern in bill_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            result['bill_no'] = match.group(1)
-            break
+            # Clean up the found bill no (remove trailing dots, etc)
+            val = match.group(1).strip().strip('.')
+            if len(val) > 1: # Avoid single digit noise unless labeled
+                result['bill_no'] = val
+                break
+
+    # 3. Extract GST Number (15 digits)
+    gst_match = re.search(r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})', text)
+    if gst_match:
+        result['party_gst'] = gst_match.group(1)
+
+    # 4. Extract HSN/SAC
+    hsn_match = re.search(r'(?:HSN|SAC|HSC)[:\-\s]*(\d{4,8})', text, re.IGNORECASE)
+    if hsn_match:
+        result['hsn_code'] = hsn_match.group(1)
+
+    # 5. Extract Amounts (Improved logic with Relationship Checking)
+    # Get all potential numeric values excluding dates and phone numbers
+    amount_text = text.replace(',', '').replace('/-', '')
+    all_numbers = re.findall(r'\b(\d+(?:\.\d{1,2})?)\b', amount_text)
     
-    # Extract Date - look for patterns like "Date: 21/06/2024" or "Date 21-03-2024"
-    date_patterns = [
-        r'Date[:\-\s]+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})',
-        r'(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})',
-    ]
-    for pattern in date_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            result['date'] = f"{match.group(1)}/{match.group(2)}/{match.group(3)}"
-            break
+    def is_money(val_str):
+        try:
+            val = float(val_str)
+            if val > 100000000: return False
+            if 7000000000 <= val <= 9999999999: return False
+            if result['date'] and val_str in re.findall(r'\d+', result['date']): return False
+            return val > 10
+        except: return False
+
+    candidates = sorted(list(set([float(n) for n in all_numbers if is_money(n)])), reverse=True)
     
-    # Extract Party Name (known parties)
-    known_parties = [
-        'PRISM JOHNSON', 'PRISM JOHNSON LIMITED',
-        'ULTRA TECH', 'AMBUJA', 'ACC', 'BIRLA',
-    ]
+    # Logic to find relationships: A (Basic) + B (CGST) + C (SGST) = D (Total)
+    # Most common: B = C = A * 0.09, D = A * 1.18
+    found_via_relationship = False
+    
+    for i, a in enumerate(candidates):
+        for b in candidates:
+            # Check if b is approx 9% of a (standard GST)
+            if 0.085 <= (b / a) <= 0.095:
+                result['basic_amount'] = a
+                result['cgst_amount'] = b
+                result['sgst_amount'] = b
+                # Check if we have a total that matches a + 2*b
+                total_calc = a + 2*b
+                # Look for this total in candidates
+                for c in candidates:
+                    if 0.99 <= (c / total_calc) <= 1.01:
+                        result['total_amount'] = c
+                        found_via_relationship = True
+                        break
+                
+                if not result['total_amount']:
+                    # Calculate total if not found
+                    result['total_amount'] = total_calc
+                
+                found_via_relationship = True
+                break
+        if found_via_relationship: break
+
+    # Fallback to keyword-based search if relationship logic didn't work
+    if not found_via_relationship:
+        lines = text.split('\n')
+        # Try finding Total first
+        for i, line in enumerate(lines):
+            line_l = line.lower()
+            if any(k in line_l for k in ['total', 'grand', 'payable']):
+                ctx = " ".join(lines[i:i+4]).replace(',', '').replace('/-', '')
+                matches = re.findall(r'\b(\d+(?:\.\d{1,2})?)\b', ctx)
+                valid = [float(m) for m in matches if is_money(m)]
+                if valid:
+                    result['total_amount'] = max(valid)
+                    break
+
+        # Try finding Basic
+        for i, line in enumerate(lines):
+            line_l = line.lower()
+            if any(k in line_l for k in ['basic', 'sub', 'net', 'amount']):
+                ctx = " ".join(lines[i:i+4]).replace(',', '').replace('/-', '')
+                matches = re.findall(r'\b(\d+(?:\.\d{1,2})?)\b', ctx)
+                valid = [float(m) for m in matches if is_money(m)]
+                if valid:
+                    val = max(valid)
+                    if not result['total_amount'] or val < result['total_amount']:
+                        result['basic_amount'] = val
+                        break
+
+    # Final calculations if missing components
+    if result['total_amount'] and not result['basic_amount']:
+        result['basic_amount'] = round(result['total_amount'] / 1.18, 0)
+    
+    if result['basic_amount'] and not result['cgst_amount']:
+        gst_total = (result['total_amount'] or (result['basic_amount'] * 1.18)) - result['basic_amount']
+        result['cgst_amount'] = round(gst_total / 2, 2)
+        result['sgst_amount'] = round(gst_total / 2, 2)
+        if not result['total_amount']:
+            result['total_amount'] = round(result['basic_amount'] + gst_total, 2)
+
+    # 6. Extract Party Name
+    known_parties = ['PRISM JOHNSON', 'ULTRA TECH', 'AMBUJA', 'ACC', 'BIRLA']
     for party in known_parties:
         if party.lower() in text.lower():
-            result['party_name'] = party.title().replace(' ', ' ')
-            if 'limited' in text.lower():
-                result['party_name'] = 'Prism Johnson Limited'
+            result['party_name'] = party.title()
+            if 'Limited' in text or 'LIMITED' in text:
+                result['party_name'] += " Limited"
             break
-    
-    if not result['party_name']:
-        # Try to find party from "GST No -" lines
-        match = re.search(r'GST\s*No\s*[-–]\s*([A-Z0-9]{15})', text, re.IGNORECASE)
-        if match:
-            # Look for company name near GST number
-            gst = match.group(1)
-            result['party_gst'] = gst
-    
-    # Extract Party GST (15 character format) - improved pattern
-    gst_patterns = [
-        r'GST\s*(?:NO|No|no|NO)?\s*[-–]?\s*([A-Z0-9]{15})',
-        r'GSTIN\s*[:]?\s*([A-Z0-9]{15})',
-    ]
-    for pattern in gst_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            result['party_gst'] = match.group(1)
-            break
-    
-    # Extract HSN Code
-    hsn_patterns = [
-        r'HS[N/C]/[SC]\s*(\d{4,8})',
-        r'HS[N/C][:\s]+(\d{4,8})',
-    ]
-    for pattern in hsn_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            result['hsn_code'] = match.group(1)
-            break
-    
-    if not result['hsn_code']:
-        # Try simpler pattern
-        match = re.search(r'(\d{4})\s*$', clean, re.MULTILINE)
-        if match:
-            result['hsn_code'] = match.group(1)
-    
-    # Extract Amounts - look for patterns with "Payable" or "Grand Total"
-    # First try to find total amount
-    total_patterns = [
-        r'(?:Grand\s*Total|Payable)[:\-\s]*[\u20b9Rs]*\s*([\d]+)',
-        r'Total\s*(?:Amount|Payable)[:\-\s]*([\d]+)',
-    ]
-    for pattern in total_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            try:
-                result['total_amount'] = int(match.group(1))
-            except:
-                pass
-            break
-    
-    # Try to find basic amount - look for amounts near "Sub" or "Basic"
-    if not result['basic_amount']:
-        # If we have total and CGST/SGST, we can calculate backwards
-        if result['total_amount']:
-            # Common case: total includes 18% GST, so basic = total / 1.18
-            result['basic_amount'] = int(result['total_amount'] / 1.18)
-            cgst = int(result['basic_amount'] * 0.09)
-            result['cgst_amount'] = cgst
-            result['sgst_amount'] = cgst
-    
-    # Extract Month and Year
-    month_year_patterns = [
-        r'(January|February|March|April|May|June|July|August|September|October|November|December)\s*[-]?\s*(\d{4})',
-        r'(?:Month of|For the month of)[:\s]+([A-Za-z]+)[-\s]+(\d{4})',
-    ]
-    for pattern in month_year_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            result['month'] = match.group(1).capitalize()
-            result['year'] = match.group(2)
-            break
-    
-    # Determine Bill Type
+
+    # 7. Bill Type and Month
     text_lower = text.lower()
-    if 'diesel' in text_lower or 'fuel' in text_lower or 'oil' in text_lower:
-        result['bill_type'] = 'Diseal'
-    elif 'rent' in text_lower or 'rental' in text_lower or 'transit' in text_lower:
+    if any(k in text_lower for k in ['rent', 'transit', 'mixer', 'rental']):
         result['bill_type'] = 'Rent'
+    elif any(k in text_lower for k in ['diesel', 'fuel']):
+        result['bill_type'] = 'Diseal'
     elif 'service' in text_lower:
         result['bill_type'] = 'Service'
-    elif 'maintenance' in text_lower or 'repair' in text_lower:
-        result['bill_type'] = 'Main'
     else:
-        result['bill_type'] = 'Other'
-    
+        result['bill_type'] = 'Main'
+
+    # Extract Month Name
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
+              'August', 'September', 'October', 'November', 'December']
+    for m in months:
+        if m.lower() in text_lower:
+            result['month'] = m
+            break
+            
     return result
 
 @app.route('/extract', methods=['POST'])

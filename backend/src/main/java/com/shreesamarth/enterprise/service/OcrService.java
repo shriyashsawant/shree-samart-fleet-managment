@@ -47,9 +47,9 @@ public class OcrService {
         dto.setRawText(rawText);
         
         // Extract Bill No
-        String billNo = extractPattern(rawText, "(?i)bill\\s*no[:\\-\\.]?\\s*(\\d+)");
+        String billNo = extractPattern(rawText, "(?i)(?:Bill|Invoice|Inv)\\s*(?:No|#)?[:\\-\\s\\.]+\\s*([A-Z0-9\\/\\-]+)");
         if (billNo == null) {
-            billNo = extractPattern(rawText, "(?i)invoice\\s*no[:\\-\\.]?\\s*(\\d+)");
+            billNo = extractPattern(rawText, "(?<!Plot\\s)No[:\\-\\s\\.]+\\s*(\\d+)");
         }
         dto.setBillNo(billNo);
         
@@ -73,7 +73,7 @@ public class OcrService {
         dto.setPartyGst(gst);
         
         // Extract HSN
-        String hsn = extractPattern(rawText, "(?i)hsn[:\\-\\.]?\\s*(\\d{4,8})");
+        String hsn = extractPattern(rawText, "(?i)(?:HSN|SAC|HSC)[:\\-\\s]*(\\d{4,8})");
         dto.setHsnCode(hsn);
         
         // Extract Amounts
