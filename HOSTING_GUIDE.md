@@ -43,8 +43,8 @@ shree-samarth-enterprise/
    - **Branch**: `main`
    - **Root Directory**: `backend` (IMPORTANT - this is where mvnw is located)
    - **Environment**: **Native** (NOT Docker - this is critical!)
-   - **Build Command**: `./mvnw clean package -DskipTests`
-   - **Start Command**: `java -jar target/shreesamarth-enterprise-1.0.0.jar`
+   - **Build Command**: (leave empty - JAR is pre-built)
+   - **Start Command**: `java -jar enterprise-1.0.0.jar`
 
 ### 2.2 Environment Variables (Optional - for production)
 In Render dashboard → your service → Environment, add if needed:

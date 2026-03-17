@@ -2,9 +2,9 @@
 node_modules/
 frontend/node_modules/
 
-# Build outputs
-frontend/dist/
+# Build outputs - but keep the JAR for deployment
 backend/target/
+!backend/target/*.jar
 
 # IDE
 .idea/
