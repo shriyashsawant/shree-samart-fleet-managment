@@ -4,6 +4,7 @@ import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleDocument;
 import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ public class VehicleController {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleDocumentRepository documentRepository;
+    private final FileUploadService fileUploadService;
 
     @GetMapping
     public ResponseEntity<List<Vehicle>> getAllVehicles() {
@@ -84,18 +86,14 @@ public class VehicleController {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
 
-        String uploadDir = "./uploads/documents/" + id;
-        Files.createDirectories(Paths.get(uploadDir));
-        
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadDir, fileName);
-        Files.write(filePath, file.getBytes());
+        // Upload to Firebase or local storage
+        String fileUrl = fileUploadService.uploadFile(file, "vehicle-documents/" + vehicle.getVehicleNumber());
 
         VehicleDocument document = new VehicleDocument();
         document.setVehicle(vehicle);
         document.setDocumentType(documentType);
         document.setDocumentName(file.getOriginalFilename());
-        document.setFilePath(filePath.toString());
+        document.setFilePath(fileUrl);
         document.setExpiryDate(expiryDate != null && !expiryDate.isEmpty() ? LocalDate.parse(expiryDate) : null);
 
         return ResponseEntity.ok(documentRepository.save(document));

@@ -4,6 +4,7 @@ import com.shreesamarth.enterprise.entity.Driver;
 import com.shreesamarth.enterprise.entity.DriverDocument;
 import com.shreesamarth.enterprise.repository.DriverDocumentRepository;
 import com.shreesamarth.enterprise.repository.DriverRepository;
+import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,7 @@ public class DriverDocumentController {
 
     private final DriverDocumentRepository documentRepository;
     private final DriverRepository driverRepository;
+    private final FileUploadService fileUploadService;
 
     @GetMapping("/driver/{driverId}")
     public ResponseEntity<List<DriverDocument>> getByDriver(@PathVariable Long driverId) {
@@ -50,12 +52,9 @@ public class DriverDocumentController {
         }
 
         if (file != null && !file.isEmpty()) {
-            String uploadDir = "./uploads/drivers/" + driverId;
-            Files.createDirectories(Paths.get(uploadDir));
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir, fileName);
-            Files.write(filePath, file.getBytes());
-            doc.setFilePath(filePath.toString());
+            // Upload to Firebase or local storage
+            String fileUrl = fileUploadService.uploadFile(file, "driver-documents");
+            doc.setFilePath(fileUrl);
             doc.setDocumentName(file.getOriginalFilename());
         }
 

@@ -6,6 +6,7 @@ import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.repository.MaintenanceRepository;
 import com.shreesamarth.enterprise.repository.ReminderRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ public class MaintenanceController {
     private final MaintenanceRepository maintenanceRepository;
     private final VehicleRepository vehicleRepository;
     private final ReminderRepository reminderRepository;
+    private final FileUploadService fileUploadService;
 
     @GetMapping
     public ResponseEntity<List<Maintenance>> getAllMaintenance(
@@ -106,14 +108,9 @@ public class MaintenanceController {
         Maintenance maintenance = maintenanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found"));
 
-        String uploadDir = "./uploads/maintenance/" + id;
-        Files.createDirectories(Paths.get(uploadDir));
-        
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadDir, fileName);
-        Files.write(filePath, file.getBytes());
-
-        maintenance.setBillFilePath(filePath.toString());
+        // Upload to Firebase or local storage
+        String fileUrl = fileUploadService.uploadFile(file, "maintenance-bills");
+        maintenance.setBillFilePath(fileUrl);
         return ResponseEntity.ok(maintenanceRepository.save(maintenance));
     }
 }

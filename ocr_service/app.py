@@ -17,7 +17,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # OCR.space API (free, no installation required)
 OCR_API_URL = 'https://api.ocr.space/parse/image'
-OCR_API_KEY = 'helloworld'  # Free demo key
+OCR_API_KEY = os.environ.get('OCR_API_KEY', 'helloworld')  # Set via environment variable
 
 def extract_text_from_api(image_path):
     """Extract text using OCR.space free API"""

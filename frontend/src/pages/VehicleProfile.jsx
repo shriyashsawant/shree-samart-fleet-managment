@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Activity, MapPin, Shield, FileText, TrendingDown, Wrench, TrendingUp, 
   Truck, Phone, Calendar, Info, Clock, ArrowUpRight, Plus, Disc, 
   Map as MapIcon, ChevronRight, Download, Eye, ExternalLink, Radius,
-  Users, Receipt, ChevronLeft, CreditCard, Hash, IndianRupee, ArrowDownRight, MoreVertical, Printer, Edit, Settings, Fuel, CheckCircle2, Navigation, FileSearch
+  Users, Receipt, ChevronLeft, CreditCard, Hash, IndianRupee, ArrowDownRight, MoreVertical, Printer, Edit, Settings, Fuel, CheckCircle2, Navigation, FileSearch, Upload, X, AlertCircle
 } from 'lucide-react'
 import { analyticsAPI, vehicleAPI, tripAPI, tyreAPI, complianceAPI, tyreLogAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
@@ -420,7 +420,34 @@ function ComplianceRow({ label, status, expiry, warning }) {
   )
 }
 
-function DocumentVault({ vehicleId, compliance }) {
+function DocumentVault({ vehicleId, compliance, onUpload }) {
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [docType, setDocType] = useState('RC')
+  const fileInputRef = useRef(null)
+
+  const handleUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('documentType', docType)
+      formData.append('expiryDate', new Date(Date.now() + 365*24*60*60*1000).toISOString().split('T')[0])
+      
+      await vehicleAPI.uploadDocument(vehicleId, formData)
+      setShowUploadModal(false)
+      if (onUpload) onUpload()
+    } catch (err) {
+      console.error('Upload failed:', err)
+      alert('Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   return (
      <div className="space-y-10">
         <div className="flex items-center justify-between">
@@ -430,7 +457,10 @@ function DocumentVault({ vehicleId, compliance }) {
                  <Shield className="w-3 h-3 text-primary-500" /> Stored High-Resolution Asset Cryptography
               </p>
            </div>
-           <button className="btn-primary py-2 px-6 text-[10px]">
+           <button 
+             className="btn-primary py-2 px-6 text-[10px]"
+             onClick={() => setShowUploadModal(true)}
+           >
               <Plus className="w-4 h-4" /> Deposit Asset
            </button>
         </div>
@@ -467,10 +497,12 @@ function DocumentVault({ vehicleId, compliance }) {
               <div className="col-span-full py-32 text-center bg-dark-50/20 border border-dashed border-dark-100 rounded-[2.5rem]">
                  <FileSearch className="w-16 h-16 text-dark-100 mx-auto mb-6 opacity-30" />
                  <p className="font-black text-[10px] text-dark-300 uppercase tracking-[0.3em]">No encrypted asset twins detected</p>
-                 <button className="mt-8 text-[9px] font-black text-primary-600 uppercase tracking-[0.2em] hover:underline">Connect Storage Node</button>
+                 <button className="mt-8 text-[9px] font-black text-primary-600 uppercase tracking-[0.2em] hover:underline"onClick={() => setShowUploadModal(true)}>Connect Storage Node</button>
               </div>
            )}
         </div>
      </div>
   )
 }
+
+

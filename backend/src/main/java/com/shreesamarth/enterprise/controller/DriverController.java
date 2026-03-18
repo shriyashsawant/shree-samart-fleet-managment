@@ -6,6 +6,7 @@ import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.repository.DriverRepository;
 import com.shreesamarth.enterprise.repository.ReminderRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ public class DriverController {
     private final DriverRepository driverRepository;
     private final VehicleRepository vehicleRepository;
     private final ReminderRepository reminderRepository;
+    private final FileUploadService fileUploadService;
 
     @GetMapping
     public ResponseEntity<List<Driver>> getAllDrivers() {
@@ -106,14 +108,9 @@ public class DriverController {
         Driver driver = driverRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
-        String uploadDir = "./uploads/drivers/" + id;
-        Files.createDirectories(Paths.get(uploadDir));
-        
-        String fileName = "license_" + UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadDir, fileName);
-        Files.write(filePath, file.getBytes());
-
-        driver.setLicenseFilePath(filePath.toString());
+        // Upload to Firebase or local storage
+        String fileUrl = fileUploadService.uploadFile(file, "driver-documents/license");
+        driver.setLicenseFilePath(fileUrl);
         return ResponseEntity.ok(driverRepository.save(driver));
     }
 
@@ -125,14 +122,9 @@ public class DriverController {
         Driver driver = driverRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
-        String uploadDir = "./uploads/drivers/" + id;
-        Files.createDirectories(Paths.get(uploadDir));
-        
-        String fileName = "aadhaar_" + UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadDir, fileName);
-        Files.write(filePath, file.getBytes());
-
-        driver.setAadhaarFilePath(filePath.toString());
+        // Upload to Firebase or local storage
+        String fileUrl = fileUploadService.uploadFile(file, "driver-documents/aadhaar");
+        driver.setAadhaarFilePath(fileUrl);
         return ResponseEntity.ok(driverRepository.save(driver));
     }
 }

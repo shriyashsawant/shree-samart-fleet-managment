@@ -16,3 +16,12 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Firebase credentials
+firebase-service-account.json
+*firebase*.json
+shree-samarth*.json
+
+# Environment variables
+.env
+.env.local

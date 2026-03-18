@@ -4,6 +4,7 @@ import com.shreesamarth.enterprise.entity.Expense;
 import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.repository.ExpenseRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,7 @@ public class ExpenseController {
 
     private final ExpenseRepository expenseRepository;
     private final VehicleRepository vehicleRepository;
+    private final FileUploadService fileUploadService;
 
     @GetMapping
     public ResponseEntity<List<Expense>> getAllExpenses(
@@ -90,14 +92,9 @@ public class ExpenseController {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
 
-        String uploadDir = "./uploads/expenses/" + id;
-        Files.createDirectories(Paths.get(uploadDir));
-        
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadDir, fileName);
-        Files.write(filePath, file.getBytes());
-
-        expense.setBillFilePath(filePath.toString());
+        // Upload to Firebase or local storage
+        String fileUrl = fileUploadService.uploadFile(file, "expense-bills");
+        expense.setBillFilePath(fileUrl);
         return ResponseEntity.ok(expenseRepository.save(expense));
     }
 }

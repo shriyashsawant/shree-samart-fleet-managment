@@ -4,6 +4,7 @@ import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleCompliance;
 import com.shreesamarth.enterprise.repository.VehicleComplianceRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,7 @@ public class VehicleComplianceController {
 
     private final VehicleComplianceRepository complianceRepository;
     private final VehicleRepository vehicleRepository;
+    private final FileUploadService fileUploadService;
 
     @GetMapping
     public ResponseEntity<List<VehicleCompliance>> getAllCompliance() {
@@ -58,12 +60,9 @@ public class VehicleComplianceController {
         compliance.setRemarks(remarks);
 
         if (file != null && !file.isEmpty()) {
-            String uploadDir = "./uploads/compliance/" + vehicleId;
-            Files.createDirectories(Paths.get(uploadDir));
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir, fileName);
-            Files.write(filePath, file.getBytes());
-            compliance.setDocumentPath(filePath.toString());
+            // Upload to Firebase or local storage
+            String fileUrl = fileUploadService.uploadFile(file, "compliance-documents");
+            compliance.setDocumentPath(fileUrl);
         }
 
         return ResponseEntity.ok(complianceRepository.save(compliance));
