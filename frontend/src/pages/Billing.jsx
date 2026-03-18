@@ -303,6 +303,7 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
   const [preview, setPreview] = useState(null)
   const [processing, setProcessing] = useState(false)
   const [extracted, setExtracted] = useState(null)
+  const [editedData, setEditedData] = useState(null)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
 
@@ -325,6 +326,7 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
     try {
       const response = await ocrAPI.extractInvoice(file)
       setExtracted(response.data)
+      setEditedData(response.data) // Initialize editable data
     } catch (e) {
       console.error(e)
       setError('Failed to extract data. Please try again or enter manually.')
@@ -334,9 +336,13 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
   }
 
   const handleConfirm = () => {
-    if (extracted) {
-      onExtract(extracted)
+    if (editedData) {
+      onExtract(editedData)
     }
+  }
+
+  const handleEditChange = (field, value) => {
+    setEditedData({ ...editedData, [field]: value })
   }
 
   return (
@@ -407,29 +413,71 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
                     Data extracted successfully!
                   </div>
                   
-                  <div className="bg-dark-50 rounded-xl p-4 space-y-3">
-                    <h3 className="font-semibold text-dark-700">Extracted Data:</h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div><span className="text-dark-500">Bill No:</span> <span className="font-medium">{extracted.billNo || 'N/A'}</span></div>
-                      <div><span className="text-dark-500">Date:</span> <span className="font-medium">{extracted.date || 'N/A'}</span></div>
-                      <div><span className="text-dark-500">Party:</span> <span className="font-medium">{extracted.partyName || 'N/A'}</span></div>
-                      <div><span className="text-dark-500">GST:</span> <span className="font-medium">{extracted.partyGst || 'N/A'}</span></div>
-                      <div><span className="text-dark-500">Basic:</span> <span className="font-medium">₹{extracted.basicAmount || 0}</span></div>
-                      <div><span className="text-dark-500">Total:</span> <span className="font-medium">₹{extracted.totalAmount || 0}</span></div>
-                      <div><span className="text-dark-500">HSN:</span> <span className="font-medium">{extracted.hsnCode || 'N/A'}</span></div>
-                      <div><span className="text-dark-500">Type:</span> <span className="font-medium">{extracted.billType || 'N/A'}</span></div>
+                  <div className="bg-dark-50 rounded-xl p-5 space-y-4 border border-dark-100">
+                    <div className="flex justify-between items-center pb-2 border-b border-dark-100">
+                      <h3 className="text-sm font-black text-dark-900 uppercase tracking-widest">Extracted Intelligence</h3>
+                      <span className="text-[10px] font-bold text-dark-400">EDITABLE FIELDS</span>
                     </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Bill Number</label>
+                        <input 
+                          type="text" 
+                          value={editedData?.billNo || ''} 
+                          onChange={(e) => handleEditChange('billNo', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-primary-600 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Transaction Date</label>
+                        <input 
+                          type="text" 
+                          value={editedData?.date || ''} 
+                          onChange={(e) => handleEditChange('date', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700"
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Counterparty Identification</label>
+                        <input 
+                          type="text" 
+                          value={editedData?.partyName || ''} 
+                          onChange={(e) => handleEditChange('partyName', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">GST Validation ID</label>
+                        <input 
+                          type="text" 
+                          value={editedData?.partyGst || ''} 
+                          onChange={(e) => handleEditChange('partyGst', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700 uppercase"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Total Yield (₹)</label>
+                        <input 
+                          type="number" 
+                          value={editedData?.totalAmount || ''} 
+                          onChange={(e) => handleEditChange('totalAmount', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-emerald-600"
+                        />
+                      </div>
+                    </div>
+
                     {extracted.confidence && (
-                      <div className="pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <span className="text-dark-500 text-sm">Confidence:</span>
-                          <div className="flex-1 h-2 bg-dark-200 rounded-full overflow-hidden">
+                      <div className="pt-3 border-t border-dark-100">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Engine Confidence</span>
+                          <div className="flex-1 h-1.5 bg-dark-100 rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-green-500" 
+                              className="h-full bg-gradient-to-r from-primary-500 to-emerald-500" 
                               style={{ width: `${(extracted.confidence || 0) * 100}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium">{Math.round((extracted.confidence || 0) * 100)}%</span>
+                          <span className="text-[10px] font-black text-dark-900 tracking-tighter">{Math.round((extracted.confidence || 0) * 100)}%</span>
                         </div>
                       </div>
                     )}

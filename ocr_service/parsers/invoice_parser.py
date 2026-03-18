@@ -137,7 +137,10 @@ def extract_with_anchor(text, field, context_chars=80):
         
         match = re.search(pattern, text, re.IGNORECASE)
         if match and match.groups():
-            return match.group(1).strip()
+            val = match.group(1).strip()
+            # Clean up leading/trailing symbols like - or /
+            val = re.sub(r'^[\-\/s#]+|[\-\/s#]+$', '', val)
+            return val
     
     return None
 
