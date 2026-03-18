@@ -197,16 +197,43 @@ def parse_invoice_text(text):
                 result['year'] = yr_match.group(1)
             break
 
-    # 9. Amounts - Robust Multi-pass Detection
+    # 9. Amounts - First try to find explicit "Total" or "Grand Total" keywords
     amount_text = text.replace(',', '').replace('/-', '')
+    
+    # Look for explicit Total keywords first
+    total_match = re.search(r'(?:Grand Total|Net Amount|Total Amount|Bill Amount|TOTAL)[:\s]*[Rs\.\₹]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    if total_match:
+        total_str = total_match.group(1).replace(',', '')
+        result['total_amount'] = float(total_str)
+    
+    # Also try to find basic amount from common patterns
+    basic_match = re.search(r'(?:Sub Total|Subtotal|Basic Amount)[:\s]*[Rs\.\₹]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    if basic_match:
+        basic_str = basic_match.group(1).replace(',', '')
+        result['basic_amount'] = float(basic_str)
+    
+    # Find CGST and SGST
+    cgst_match = re.search(r'(?:CGST|CGST @)[:\s]*[0-9%]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    if cgst_match:
+        result['cgst_amount'] = float(cgst_match.group(1).replace(',', ''))
+    
+    sgst_match = re.search(r'(?:SGST|SGST @)[:\s]*[0-9%]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    if sgst_match:
+        result['sgst_amount'] = float(sgst_match.group(1).replace(',', ''))
+    
+    # If we have basic + cgst + sgst, calculate total if not already found
+    if result.get('basic_amount') and result.get('cgst_amount') and not result.get('total_amount'):
+        result['total_amount'] = result['basic_amount'] + result.get('cgst_amount', 0) + result.get('sgst_amount', 0)
+    
+    # Fallback: If total still not found, use heuristic but be more careful
     all_numbers = re.findall(r'\b(\d+(?:\.\d{1,2})?)\b', amount_text)
     
-    # Filter out phone numbers (10 digits starting with 6-9) and other non-amount numbers
+    # Filter out phone numbers and very large numbers
     candidates = []
     for n in all_numbers:
         try:
             val = float(n)
-            if val > 10:
+            if val > 100:
                 # Skip 10-digit numbers that look like phone numbers
                 if len(n) == 10 and n[0] in '6789':
                     continue
@@ -218,6 +245,29 @@ def parse_invoice_text(text):
             pass
     
     candidates = sorted(list(set(candidates)), reverse=True)
+    
+    # Only use heuristic if we haven't found total yet
+    if not result.get('total_amount'):
+        # Heuristic for Indian Tax Invoices: Total = Basic + CGST + SGST (where CGST=SGST)
+        found_financials = False
+        for total in candidates:
+            if found_financials: break
+            for basic in candidates:
+                if basic >= total: continue
+                if found_financials: break
+                
+                remaining = total - basic
+                # Check for CGST/SGST split (usually half of remaining)
+                tax_comp = remaining / 2.0
+                
+                for tax_val in candidates:
+                    if 0.98 <= (tax_val / tax_comp) <= 1.02:
+                        result['basic_amount'] = basic
+                        result['cgst_amount'] = tax_val
+                        result['sgst_amount'] = tax_val
+                        result['total_amount'] = total
+                        found_financials = True
+                        break
     
     # Heuristic for Indian Tax Invoices: Total = Basic + CGST + SGST (where CGST=SGST)
     found_financials = False
