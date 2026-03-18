@@ -105,16 +105,25 @@ def extract_with_ocr_space(image_path):
 def extract_text(image_path):
     """
     Extract text from image using available OCR engine
-    Priority: PaddleOCR (local) > OCR.space (cloud)
+    Priority on Cloud: OCR.space (to save RAM) -> PaddleOCR
+    Priority Local: PaddleOCR (unlimited) -> OCR.space
     """
-    # Try PaddleOCR first (unlimited, faster)
-    if PADDLE_AVAILABLE:
-        text = extract_with_paddle(image_path)
-        if text:
-            return text
+    # Detect if we are on Render (Cloud)
+    on_render = os.environ.get('RENDER') == 'true'
     
-    # Fallback to OCR.space
-    return extract_with_ocr_space(image_path)
+    if on_render:
+        print("Running on Render: Prioritizing Cloud OCR...")
+        # Try Cloud first to avoid OOM
+        text = extract_with_ocr_space(image_path)
+        if text: return text
+        
+        # Fallback to local (might crash if bill is complex/image is large)
+        return extract_with_paddle(image_path)
+    else:
+        # Running locally: Use PaddleOCR (much faster/unlimited)
+        text = extract_with_paddle(image_path)
+        if text: return text
+        return extract_with_ocr_space(image_path)
 
 
 # Test function
