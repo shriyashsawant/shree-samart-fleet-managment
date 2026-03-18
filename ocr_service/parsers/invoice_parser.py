@@ -178,6 +178,19 @@ def parse_invoice(text):
     result['sgst_amount'] = amount_results.get('sgst_amount')
     result['total_amount'] = amount_results.get('total_amount')
     
+    # Sanity Checks
+    # 1. Back-calculate basic amount if it's 0 but total is present
+    if (not result.get('basic_amount') or result['basic_amount'] == 0) and result.get('total_amount'):
+        # Assumed default 18% if not found
+        gst_perc = 18.0
+        result['basic_amount'] = round(result['total_amount'] / (1 + (gst_perc / 100)), 2)
+        result['cgst_amount'] = round((result['total_amount'] - result['basic_amount']) / 2, 2)
+        result['sgst_amount'] = result['cgst_amount']
+    
+    # Ensure totals match (Final Sanity Check)
+    if result.get('basic_amount') and result.get('total_amount') == 0:
+        result['total_amount'] = result['basic_amount'] + result.get('cgst_amount', 0) + result.get('sgst_amount', 0) + result.get('igst_amount', 0)
+        
     # Bill No
     bill_match = re.search(r'(?:Bill\.?\s*No\.?|Invoice\s*No)[\s:\.]*(\d+[/\\A-Za-z\-]+)', text, re.IGNORECASE)
     if bill_match:

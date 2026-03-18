@@ -5,19 +5,26 @@ Using specific keyword associations for better extraction accuracy
 
 # Invoice Patterns - organized by field with keyword associations
 INVOICE_PATTERNS = {
-    'bill_no': [
-        r'(?:Invoice|Bill|Receipt|Chalan|BillNo)[\s#:\-]*No\.?[:\s]*([\w/\-]+)',
-        r'(?:Inv|Bill|Rec)[\s#:]*No\.?[:\s]*([\w/\-]+)',
-        r'(?:No|BillNo)[:\s]*([\w/\-]+)',
-    ],
     'date': [
         r'(?:Date|Dt|Dated|Month)[:\s]*([A-Za-z]+\-\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
         r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[- ]\d{4})',
         r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        r'(\d{1,2}[./]\d{1,2}[./]\d{2,4})',
+    ],
+    'bill_no': [
+        r'(?:Invoice|Bill|Receipt|Chalan|BillNo|BiNo)[\s#:\-]*No\.?[:\s]*([\w/\-]+)',
+        r'(?:Inv|Bill|Rec|Bi)[\s#:]*No\.?[:\s]*([\w/\-]+)',
+        r'(?:No|BillNo|BiNo)[:\s]*([\w/\-]+)',
+    ],
+    'gstin': [
+        r'(?:GST(?:IN|NO)?|Gst\s*Reg\s*No)[\s:\-]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z0O]{1}[0-9A-Z]{1})',
+        r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z0O]{1}[0-9A-Z]{1})',
+        r'GST\s*Reg\s*No\s*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})',
     ],
     'basic_amount': [
-        r'(?:SubTotal|Sub\s*Total|Subtotal)[:.=\-\s]*([\d,]+\.?\d*)',
-        r'(?:Basic|Net\s*Amount|Basic\s*Amount)[:.=\s₹]*\s*([\d,]+\.?\d*)',
+        r'(?:SubTotal|Sub\s*Total|Subtotal)[\s:.=\-\n]*([\d,]+\.?\d*)',
+        r'(?:Basic|Taxable|Net)[\s*Amount]*[\s:.=\-\n]*([\d,]+\.?\d*)',
+        r'Amount[\s:.=\-\n]*([\d,]+\.?\d*)',
         r'(?:Rs\.?|₹)\s*([\d,]+\.?\d*)',
     ],
     'cgst_amount': [
