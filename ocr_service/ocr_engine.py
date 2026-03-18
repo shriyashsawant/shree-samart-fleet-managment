@@ -6,6 +6,12 @@ Use PaddleOCR for unlimited calls, OCR.space as fallback
 import requests
 import os
 
+# Disable bugged/new PaddlePaddle 3.3 executor features for stability
+os.environ['FLAGS_use_mkldnn'] = '0'
+os.environ['FLAGS_enable_pir_api'] = '0'
+os.environ['FLAGS_enable_pir_in_executor'] = '0'
+os.environ['PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK'] = 'True'
+
 # Try to import PaddleOCR (for production)
 try:
     from paddleocr import PaddleOCR
@@ -24,18 +30,18 @@ def extract_with_paddle(image_path):
         return None
     
     try:
-        # Initialize PaddleOCR (use_angle_cls=True for better accuracy)
+        # Initialize PaddleOCR (v2 stable uses use_angle_cls and show_log)
         ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
         
-        # Run OCR
+        # Run OCR (v2 returns a list of results)
         result = ocr.ocr(image_path, cls=True)
         
         if result and result[0]:
-            # Combine all text lines
+            # Combine all text lines in the v2 format: [bbox, (text, score)]
             text_lines = []
             for line in result[0]:
-                text = line[1][0]  # Text content
-                text_lines.append(text)
+                if isinstance(line, list) and len(line) > 1 and isinstance(line[1], (list, tuple)):
+                    text_lines.append(line[1][0])
             
             return '\n'.join(text_lines)
         

@@ -6,34 +6,35 @@ Using specific keyword associations for better extraction accuracy
 # Invoice Patterns - organized by field with keyword associations
 INVOICE_PATTERNS = {
     'bill_no': [
-        r'(?:Invoice|Bill|Receipt|Chalan)[\s#:]*No\.?[:\s]*(\w+)',
-        r'(?:Inv|Bill|Rec)[\s#:]*No\.?[:\s]*(\w+)',
-        r'No[:\s]*(\d+)',
+        r'(?:Invoice|Bill|Receipt|Chalan|BillNo)[\s#:\-]*No\.?[:\s]*([\w/\-]+)',
+        r'(?:Inv|Bill|Rec)[\s#:]*No\.?[:\s]*([\w/\-]+)',
+        r'(?:No|BillNo)[:\s]*([\w/\-]+)',
     ],
     'date': [
-        r'(?:Date|Dt|Dated)[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        r'(?:Date|Dt|Dated|Month)[:\s]*([A-Za-z]+\-\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[- ]\d{4})',
         r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
     ],
     'basic_amount': [
-        r'(?:Basic|Sub\s*Total|Subtotal|Amount|Basic\s*Amount)[:\s₹]*\s*([\d,]+\.?\d*)',
-        r'(?:Rs\.?|₹)\s*([\d,]+\.?\d*)\s*(?:Basic|Sub\s*Total)',
+        r'(?:SubTotal|Sub\s*Total|Subtotal)[:.=\-\s]*([\d,]+\.?\d*)',
+        r'(?:Basic|Net\s*Amount|Basic\s*Amount)[:.=\s₹]*\s*([\d,]+\.?\d*)',
+        r'(?:Rs\.?|₹)\s*([\d,]+\.?\d*)',
     ],
     'cgst_amount': [
-        r'(?:CGST|CGS3)[\s@]*[\d\s%]*[:\s₹]*\s*([\d,]+\.?\d*)',
-        r'(?:Central|CGST)[\s]*Tax[:\s₹]*\s*([\d,]+\.?\d*)',
+        r'(?:CGST|CGS3)[@\s]*\d+[%]*[:.\-\s]*([\d,]+\.?\d*)',
+        r'(?:Central|CGST)[\s]*Tax[@\s]*\d+[%]*[:.\s₹]*\s*([\d,]+\.?\d*)',
     ],
     'sgst_amount': [
-        r'(?:SGST|SGS1)[\s@]*[\d\s%]*[:\s₹]*\s*([\d,]+\.?\d*)',
-        r'(?:State|SGST)[\s]*Tax[:\s₹]*\s*([\d,]+\.?\d*)',
+        r'(?:SGST|SGS1)[@\s]*\d+[%]*[:.\-\s]*([\d,]+\.?\d*)',
+        r'(?:State|SGST)[\s]*Tax[@\s]*\d+[%]*[:.\s₹]*\s*([\d,]+\.?\d*)',
     ],
     'igst_amount': [
         r'(?:IGST)[\s@]*[\d\s%]*[:\s₹]*\s*([\d,]+\.?\d*)',
         r'(?:Integrated|IGST)[\s]*Tax[:\s₹]*\s*([\d,]+\.?\d*)',
     ],
     'total_amount': [
-        r'(?:Grand\s*Total|Net\s*Total|Total\s*Amount|Payable|Amount\s*Payable)[:\s₹]*\s*([\d,]+\.?\d*)',
-        r'(?:Total)[:\s₹]*\s*([\d,]+\.?\d*)',
-        r'(?:Rs\.?|₹)\s*([\d,]+\.?\d*)',
+        r'(?:Grand\s*Total|Net\s*Total|Total\s*Amount|Payable|Amount\s*Payable)[:.\-\s₹]*([\d,]+\.?\d*)',
+        r'(?:Total)[:.\-\s₹]*\s*([\d,]+\.?\d*)',
     ],
     'hsn_code': [
         r'(?:HSN|SAC)[\sCode:]*(\d{4,8})',

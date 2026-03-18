@@ -1,8 +1,15 @@
+# STABLE OCR STACK (v2 ecosystem)
+paddlepaddle==2.6.2
+paddleocr==2.7.3
+# Required for Paddle 2.7.3 compatibility
+numpy==1.26.4
+opencv-python==4.6.0.66
+# Misc dependencies
+pillow
 flask
 flask-cors
 requests
-pillow
-opencv-python
-numpy
-paddlepaddle
-paddleocr
+urllib3<2
+charset-normalizer
+pandas
+openpyxl
