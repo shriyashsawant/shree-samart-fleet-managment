@@ -43,13 +43,22 @@ def extract_text_from_api(image_path):
         return ''
 
 def clean_text(text):
-    """Clean OCR text to improve extraction"""
-    # Replace common OCR mistakes
-    text = text.replace('l', '1').replace('O', '0')
+    """Clean OCR text - only replace inside numbers/GST patterns, not entire text"""
+    # Only replace in specific patterns, not globally
+    # Fix GST-like patterns: 27ASXPPP6488LlZO -> 27ASXPP6488L1ZD
+    text = re.sub(r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z])([A-Z]{1}[0-9]{1}[A-Z])', 
+                  lambda m: m.group(1).replace('I', '1').replace('l', '1') + m.group(2).replace('I', '1').replace('l', '1').replace('0', 'O'), 
+                  text.upper())
+    # Fix dashes
     text = text.replace('—', '-').replace('–', '-')
+    # Remove currency symbols
     text = text.replace('₹', '').replace('Rs', '').replace('Rs.', '')
-    text = text.replace(',', '')  # Remove commas for number extraction
     return text
+
+def normalize_number(text):
+    """Only replace O->0 inside numbers"""
+    # Find numbers and replace O with 0 only in number context
+    return re.sub(r'\d+', lambda m: m.group(0).replace('O', '0'), text)
 
 def parse_invoice_text(text):
     """Parse extracted text to find invoice fields with highly granular extraction for Indian invoices"""
@@ -151,10 +160,13 @@ def parse_invoice_text(text):
 
     # 7. Extract Company and Party Names (improved for OCR errors)
     party_found = False
+    party_keywords = ['TO,', 'TO :', 'M/S', 'BILL TO', 'PARTY NAME', 'CONSIGNEE', 'CLIENT', 
+                      'BUYER', 'CUSTOMER', 'SHIP TO', 'DELIVER TO']
+    
     for i, line in enumerate(lines):
         line_up = line.upper()
-        # Look for party section - to, bill to, m/s
-        if any(k in line_up for k in ['TO,', 'TO :', 'M/S', 'BILL TO', 'PARTY NAME', 'CONSIGNEE', 'CLIENT']):
+        # Look for party section
+        if any(k in line_up for k in party_keywords):
             # Try next few lines for party name
             for j in range(i+1, min(i+5, len(lines))):
                 next_line = lines[j].strip()
@@ -189,13 +201,15 @@ def parse_invoice_text(text):
             result['party_name'] = line_clean
             break
 
-    # Extract Company Details (Header logic)
+    # Extract Company Details - use top lines of document
+    if lines:
+        result['company_name'] = lines[0].strip()
+    
+    # Check for known company names and set defaults
     if 'SHRI SAMARTH' in text.upper():
         result['company_name'] = 'SHRI SAMARTH ENTERPRISES'
-        result['company_mobile'] = result.get('company_mobile') or '8624077666'
-        result['company_address'] = 'Rajopadhya Nagar, Kolhapur'
-    elif not result['company_name'] and len(lines) > 0:
-        result['company_name'] = lines[0].strip()
+        if not result.get('company_mobile'):
+            result['company_mobile'] = '8624077666'
 
     # 8. Service Description & HSN
     if any(k in text.upper() for k in ['MIXER', 'RENTAL', 'RENT', 'CHARGES']):
@@ -250,26 +264,38 @@ def parse_invoice_text(text):
     if result.get('basic_amount') and result.get('cgst_amount') and not result.get('total_amount'):
         result['total_amount'] = result['basic_amount'] + result.get('cgst_amount', 0) + result.get('sgst_amount', 0)
     
-    # Fallback: If total still not found, use heuristic but be more careful
-    all_numbers = re.findall(r'\b(\d+(?:\.\d{1,2})?)\b', amount_text)
+    # Fallback: If total still not found, use better heuristics
+    # Only look for numbers that appear near amount-related keywords
+    amount_keywords = ['amount', 'total', 'grand', 'payable', 'net', 'rs', '₹']
+    amount_candidates = []
     
-    # Filter out phone numbers and very large numbers
-    candidates = []
-    for n in all_numbers:
-        try:
-            val = float(n)
-            if val > 100:
-                # Skip 10-digit numbers that look like phone numbers
-                if len(n) == 10 and n[0] in '6789':
-                    continue
-                # Skip very large numbers that are likely not amounts
-                if val > 10000000:
-                    continue
-                candidates.append(val)
-        except:
-            pass
+    for line in lines:
+        line_lower = line.lower()
+        if any(kw in line_lower for kw in amount_keywords):
+            # Extract numbers from this line
+            numbers = re.findall(r'([0-9,]+(?:\.\d{1,2})?)', line)
+            for n in numbers:
+                try:
+                    val = float(n.replace(',', ''))
+                    if val > 100:  # Only amounts
+                        amount_candidates.append(val)
+                except:
+                    pass
     
-    candidates = sorted(list(set(candidates)), reverse=True)
+    if amount_candidates:
+        candidates = sorted(set(amount_candidates), reverse=True)
+    else:
+        # Last resort: use all large numbers but filter phone/GST
+        all_nums = re.findall(r'\b(\d+(?:\.\d{1,2})?)\b', amount_text)
+        candidates = []
+        for n in all_nums:
+            try:
+                val = float(n)
+                if val > 1000 and val < 10000000:  # Reasonable amount range
+                    candidates.append(val)
+            except:
+                pass
+        candidates = sorted(set(candidates), reverse=True)
     
     # Only use heuristic if we haven't found total yet
     if not result.get('total_amount'):
