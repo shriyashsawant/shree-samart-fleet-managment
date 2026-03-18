@@ -27,7 +27,12 @@ public class TenantController {
         return userRepository.findByUsername(authentication.getName())
                 .map(user -> {
                     Tenant tenant = user.getTenant();
-                    if (tenant == null) return ResponseEntity.notFound().build();
+                    if (tenant == null) {
+                        // Return an empty template instead of 404 to help the frontend
+                        Tenant template = new Tenant();
+                        template.setCompanyName("New Entity");
+                        return ResponseEntity.ok(template);
+                    }
                     return ResponseEntity.ok(tenant);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -40,7 +45,13 @@ public class TenantController {
         return userRepository.findByUsername(authentication.getName())
                 .map(user -> {
                     Tenant tenant = user.getTenant();
-                    if (tenant == null) return ResponseEntity.notFound().build();
+                    if (tenant == null) {
+                        // Auto-initialize if it doesn't exist
+                        tenant = new Tenant();
+                        tenant.setCreatedAt(java.time.LocalDateTime.now());
+                        tenant.setCompanyCode("SM-" + String.format("%04d", user.getId()));
+                        user.setTenant(tenant);
+                    }
 
                     tenant.setCompanyName(updatedTenant.getCompanyName());
                     tenant.setEmail(updatedTenant.getEmail());
@@ -52,9 +63,8 @@ public class TenantController {
                     tenant.setAccountNumber(updatedTenant.getAccountNumber());
                     tenant.setIfscCode(updatedTenant.getIfscCode());
                     
-                    // logoPath is handled separately by a file upload endpoint
-                    
                     tenantRepository.save(tenant);
+                    userRepository.save(user); // Link the new tenant to the user
                     return ResponseEntity.ok(tenant);
                 })
                 .orElse(ResponseEntity.notFound().build());
