@@ -142,18 +142,32 @@ def parse_invoice_text(text):
     for i, line in enumerate(lines):
         line_up = line.upper()
         if any(k in line_up for k in ['TO,', 'TO :', 'M/S', 'BILL TO', 'PARTY NAME', 'CONSIGNEE', 'CLIENT']):
-            context = " ".join(lines[i:i+3]).upper()
+            context = " ".join(lines[i:i+5]).upper()
+            
+            # Check for known companies
             if 'PRISM JOHNSON' in context:
                 result['party_name'] = 'PRISM JOHNSON LIMITED'
                 result['party_address'] = 'Windsor, CTS Road, Mumbai'
                 party_found = True
             elif 'M/S' in line_up:
-                result['party_name'] = line_up.replace('M/S', '').strip(': ').strip()
-                party_found = True
-            
-            if not party_found and i + 1 < len(lines):
-                result['party_name'] = lines[i+1].strip()
-                party_found = True
+                # Try to get the party name from next line
+                for j in range(i+1, min(i+4, len(lines))):
+                    next_line = lines[j].strip()
+                    if next_line and len(next_line) > 2:
+                        # Skip lines that look like addresses or other info
+                        if not any(x in next_line.upper() for x in ['GST:', 'PAN:', 'MOBILE:', 'PHONE:', 'ADDRESS:', 'VAT']):
+                            result['party_name'] = next_line
+                            party_found = True
+                            break
+            else:
+                # Try to find party name in next lines
+                for j in range(i+1, min(i+4, len(lines))):
+                    next_line = lines[j].strip()
+                    if next_line and len(next_line) > 2:
+                        if not any(x in next_line.upper() for x in ['GST:', 'PAN:', 'MOBILE:', 'PHONE:', 'ADDRESS:', 'VAT']):
+                            result['party_name'] = next_line
+                            party_found = True
+                            break
             break
 
     # Extract Company Details (Header logic)
@@ -187,7 +201,23 @@ def parse_invoice_text(text):
     amount_text = text.replace(',', '').replace('/-', '')
     all_numbers = re.findall(r'\b(\d+(?:\.\d{1,2})?)\b', amount_text)
     
-    candidates = sorted(list(set([float(n) for n in all_numbers if float(n) > 10])), reverse=True)
+    # Filter out phone numbers (10 digits starting with 6-9) and other non-amount numbers
+    candidates = []
+    for n in all_numbers:
+        try:
+            val = float(n)
+            if val > 10:
+                # Skip 10-digit numbers that look like phone numbers
+                if len(n) == 10 and n[0] in '6789':
+                    continue
+                # Skip very large numbers that are likely not amounts
+                if val > 10000000:
+                    continue
+                candidates.append(val)
+        except:
+            pass
+    
+    candidates = sorted(list(set(candidates)), reverse=True)
     
     # Heuristic for Indian Tax Invoices: Total = Basic + CGST + SGST (where CGST=SGST)
     found_financials = False
