@@ -24,6 +24,13 @@ app = Flask(__name__)
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
+# Pre-load models on startup in the background
+try:
+    from ocr_engine import get_ocr_instance
+    import threading
+    threading.Thread(target=get_ocr_instance).start()
+except: pass
+
 
 def detect_document_type(text):
     """Detect document type from OCR text"""

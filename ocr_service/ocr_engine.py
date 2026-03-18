@@ -25,15 +25,33 @@ OCR_SPACE_API_KEY = os.environ.get('OCR_SPACE_API_KEY', 'helloworld')
 OCR_SPACE_URL = 'https://api.ocr.space/parse/image'
 
 
+# Initialize OCR models GLOBALLY at startup to avoid downloads during requests
+_ocr_instance = None
+
+def get_ocr_instance():
+    global _ocr_instance
+    if _ocr_instance is None:
+        try:
+            print("Initializing PaddleOCR models...")
+            # Use stable settings for cloud environment
+            _ocr_instance = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+            print("PaddleOCR models loaded successfully.")
+        except Exception as e:
+            print(f"CRITICAL: Failed to load PaddleOCR models: {e}")
+            return None
+    return _ocr_instance
+
 def extract_with_paddle(image_path):
-    """Extract text using PaddleOCR (local, unlimited)"""
+    """Extract text from image using local PaddleOCR"""
     if not PADDLE_AVAILABLE:
+        print("PaddleOCR is not available.")
         return None
-    
-    try:
-        # Initialize PaddleOCR (v2 stable uses use_angle_cls and show_log)
-        ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
         
+    try:
+        ocr = get_ocr_instance()
+        if not ocr:
+            return None
+            
         # Run OCR (v2 returns a list of results)
         result = ocr.ocr(image_path, cls=True)
         
