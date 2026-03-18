@@ -1,37 +1,8 @@
 import sys
 sys.path.insert(0, r'c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\ocr_service')
 
-# Read the function directly from the file
-import re
-import os
-
-# Copy the parsing logic from app.py for testing
-def extract_invoice_data(text):
-    result = {
-        'bill_no': None,
-        'date': None,
-        'party_name': None,
-        'party_gst': None,
-        'party_pan': None,
-        'basic_amount': None,
-        'cgst_amount': None,
-        'sgst_amount': None,
-        'igst_amount': None,
-        'total_amount': None,
-        'hsn_code': None,
-        'bill_type': None,
-        'company_name': None,
-        'company_gst': None,
-        'company_mobile': None,
-        'company_address': None,
-        'bank_name': None,
-        'bank_account_no': None,
-        'bank_ifsc': None,
-    }
-    
-    lines = text.split('\n')
-    
-    # ... (rest of the parsing logic)
+from ocr_service.parsers.invoice_parser import parse_invoice
+from ocr_service.utils.learning_memory import learn_correction, get_corrections
 
 # The raw OCR text from the image
 raw_text = """SHRI SAMARTH ENTERPRISES
@@ -84,9 +55,16 @@ Authorized Signatory"""
 
 print("Testing OCR parsing with raw text...")
 print("=" * 50)
-result = extract_invoice_data(raw_text)
+result = parse_invoice(raw_text)
 print("\n=== EXTRACTED DATA ===")
 for key, value in result.items():
     if value:
         print(f"{key}: {value}")
+print("=" * 50)
+
+# Test learning memory
+print("\n=== LEARNING MEMORY TEST ===")
+learn_correction('PRSM JOHNSON', 'PRISM JOHNSON', 'party_name')
+corrections = get_corrections()
+print(f"Learned: {corrections}")
 print("=" * 50)

@@ -1,144 +1,91 @@
 package com.shreesamarth.enterprise.service;
 
-import com.shreesamarth.enterprise.dto.InvoiceExtractDTO;
-import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class OcrService {
 
+    @Value("${ocr.service.url:https://shree-samarth-ocr.onrender.com}")
+    private String ocrServiceUrl;
+
     private final RestTemplate restTemplate;
-    private static final String OCR_API_URL = "https://api.ocr.space/parse/image";
-    private static final String OCR_API_KEY = "helloworld"; // Free demo key
 
-    public OcrService() {
-        this.restTemplate = new RestTemplate();
+    @Autowired
+    public OcrService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-    public InvoiceExtractDTO extractFromImage(byte[] imageData, String filename) {
-        // For now, we'll use a simple approach - call OCR.space API
-        // In production, you'd want to handle this differently
-        
-        InvoiceExtractDTO dto = new InvoiceExtractDTO();
-        
-        // Return a placeholder - actual OCR would be done via the Python service
-        // This allows the backend to work standalone
-        dto.setBillNo(null);
-        dto.setDate(null);
-        dto.setPartyName(null);
-        dto.setPartyGst(null);
-        dto.setHsnCode("9973");
-        dto.setBasicAmount(0.0);
-        dto.setCgstAmount(0.0);
-        dto.setSgstAmount(0.0);
-        dto.setTotalAmount(0.0);
-        dto.setBillType("Other");
-        dto.setConfidence(0.0);
-        
-        return dto;
+    public Map<String, Object> extractDocument(MultipartFile file) throws IOException {
+        String url = ocrServiceUrl + "/api/ocr/extract";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", file.getResource());
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                Map.class
+        );
+
+        return response.getBody() != null ? response.getBody() : new HashMap<>();
     }
 
-    public InvoiceExtractDTO parseExtractedText(String rawText) {
-        InvoiceExtractDTO dto = new InvoiceExtractDTO();
-        dto.setRawText(rawText);
-        
-        // Extract Bill No
-        String billNo = extractPattern(rawText, "(?i)(?:Bill|Invoice|Inv)\\s*(?:No|#)?[:\\-\\s\\.]+\\s*([A-Z0-9\\/\\-]+)");
-        if (billNo == null) {
-            billNo = extractPattern(rawText, "(?<!Plot\\s)No[:\\-\\s\\.]+\\s*(\\d+)");
+    public Map<String, Object> learnCorrection(String wrong, String correct, String fieldType) {
+        String url = ocrServiceUrl + "/api/ocr/learn";
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("wrong", wrong);
+        requestBody.put("correct", correct);
+        if (fieldType != null) {
+            requestBody.put("field_type", fieldType);
         }
-        dto.setBillNo(billNo);
-        
-        // Extract Date
-        String date = extractPattern(rawText, "(\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4})");
-        dto.setDate(date);
-        
-        // Extract Party Name (known parties)
-        String[] knownParties = {"PRISM JOHNSON", "ULTRA TECH", "AMBUJA", "ACC", "BIRLA"};
-        String partyName = null;
-        for (String party : knownParties) {
-            if (rawText.toUpperCase().contains(party)) {
-                partyName = party;
-                break;
-            }
-        }
-        dto.setPartyName(partyName);
-        
-        // Extract GST - Fixed with capturing group
-        String gst = extractPattern(rawText, "(\\d{2}[A-Z]{5}\\d{4}[A-Z]{1}\\d[Z]{1}[A-Z\\d]{1})");
-        dto.setPartyGst(gst);
-        
-        // Extract HSN
-        String hsn = extractPattern(rawText, "(?i)(?:HSN|SAC|HSC)[:\\-\\s]*(\\d{4,8})");
-        dto.setHsnCode(hsn);
-        
-        // Extract Amounts
-        Double basicAmount = extractAmount(rawText, "(?i)basic\\s*amount[:\\-\\.]?\\s*[₹Rs]?\\s*([\\d,]+)");
-        if (basicAmount == null) {
-            basicAmount = extractAmount(rawText, "(?i)sub\\s*total[:\\-\\.]?\\s*[₹Rs]?\\s*([\\d,]+)");
-        }
-        dto.setBasicAmount(basicAmount);
-        
-        // CGST
-        Double cgst = extractAmount(rawText, "(?i)cgst\\s*\\(?\\d*%?\\)?[:\\-\\.]?\\s*[₹Rs]?\\s*([\\d,]+)");
-        dto.setCgstAmount(cgst);
-        
-        // SGST
-        Double sgst = extractAmount(rawText, "(?i)sgst\\s*\\(?\\d*%?\\)?[:\\-\\.]?\\s*[₹Rs]?\\s*([\\d,]+)");
-        dto.setSgstAmount(sgst);
-        
-        // Total
-        Double total = extractAmount(rawText, "(?i)(?:grand\\s*)?total[:\\-\\.]?\\s*[₹Rs]?\\s*([\\d,]+)");
-        dto.setTotalAmount(total);
-        
-        // Bill Type
-        String textLower = rawText.toLowerCase();
-        if (textLower.contains("diesel") || textLower.contains("fuel") || textLower.contains("oil")) {
-            dto.setBillType("Diseal");
-        } else if (textLower.contains("rent") || textLower.contains("rental") || textLower.contains("transit")) {
-            dto.setBillType("Rent");
-        } else if (textLower.contains("service")) {
-            dto.setBillType("Service");
-        } else if (textLower.contains("maintenance") || textLower.contains("repair")) {
-            dto.setBillType("Main");
-        } else {
-            dto.setBillType("Other");
-        }
-        
-        // Calculate confidence
-        int fields = 0;
-        if (dto.getBillNo() != null) fields++;
-        if (dto.getDate() != null) fields++;
-        if (dto.getPartyName() != null || dto.getPartyGst() != null) fields++;
-        if (dto.getBasicAmount() != null) fields++;
-        if (dto.getTotalAmount() != null) fields++;
-        dto.setConfidence(fields / 5.0);
-        
-        return dto;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+        return response.getBody() != null ? response.getBody() : new HashMap<>();
     }
 
-    private String extractPattern(String text, String regex) {
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1);
+    public Map<String, Object> getSuggestions(String fieldType, String prefix) {
+        String url = ocrServiceUrl + "/api/ocr/suggestions?field_type=" + fieldType;
+        if (prefix != null && !prefix.isEmpty()) {
+            url += "&prefix=" + prefix;
         }
-        return null;
+
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<?> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
+        return response.getBody() != null ? response.getBody() : new HashMap<>();
     }
 
-    private Double extractAmount(String text, String regex) {
-        String amount = extractPattern(text, regex);
-        if (amount != null) {
-            try {
-                return Double.parseDouble(amount.replace(",", ""));
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-        return null;
+    public Map<String, Object> getCorrections() {
+        String url = ocrServiceUrl + "/api/ocr/corrections";
+
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<?> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
+        return response.getBody() != null ? response.getBody() : new HashMap<>();
     }
 }
