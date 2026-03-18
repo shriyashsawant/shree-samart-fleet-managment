@@ -35,23 +35,16 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring()
-                .requestMatchers("/api/auth/**")
-                .requestMatchers("/api/ocr/**")
-                .requestMatchers("/api/health/**");
-    }
+    /* WebSecurityCustomizer can sometimes bypass CORS filters. Using HttpSecurity instead. */
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**", "/api/ocr/**", "/api/health/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/**").permitAll() // TEMPORARY DEBUG: permit all to confirm fix
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -78,9 +71,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:5173", 
-            "http://localhost:3000", 
-            "http://127.0.0.1:5173",
+            "http://localhost:[*]", 
+            "http://127.0.0.1:[*]",
             "https://shree-samart-fleet-managment-eta.vercel.app",
             "https://shree-samart-fleet-managment.onrender.com",
             "https://shreesamarth-backend.onrender.com",
