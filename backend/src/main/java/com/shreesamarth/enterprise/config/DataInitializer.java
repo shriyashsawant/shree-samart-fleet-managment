@@ -52,6 +52,16 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(admin);
         }
 
+        // Create ShreeSamarth user if not exists
+        if (!userRepository.existsByUsername("ShreeSamarth")) {
+            User user = new User();
+            user.setUsername("ShreeSamarth");
+            user.setPassword(passwordEncoder.encode("Aarti@2005"));
+            user.setRole("ADMIN"); // Giving admin role by default to the new core user
+            user.setTenant(defaultTenant);
+            userRepository.save(user);
+        }
+
         // Create vehicles with real data
         if (vehicleRepository.count() == 0) {
             // Vehicle 1: MH09CU1605
