@@ -1,6 +1,8 @@
-# OCR Service Requirements (Minimal - uses free OCR API)
+# OCR Service Requirements
 flask>=2.0.0
 requests>=2.28.0
 werkzeug>=2.0.0
 flask-cors>=4.0.0
 gunicorn>=20.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
