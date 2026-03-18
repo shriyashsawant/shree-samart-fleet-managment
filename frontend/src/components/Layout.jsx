@@ -42,6 +42,7 @@ const navItems = [
   { icon: Wallet, label: 'Driver Advances', path: '/advances' },
   { icon: Building2, label: 'Clients', path: '/clients' },
   { icon: Bell, label: 'Reminders', path: '/reminders' },
+  { icon: Users, label: 'Users', path: '/users' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
   { icon: SettingsIcon, label: 'Settings', path: '/settings' },
 ]

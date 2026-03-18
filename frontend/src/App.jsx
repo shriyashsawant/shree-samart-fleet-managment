@@ -18,6 +18,7 @@ import Inventory from './pages/Inventory'
 import DriverAdvances from './pages/DriverAdvances'
 import VehicleProfile from './pages/VehicleProfile'
 import Settings from './pages/Settings'
+import UserManagement from './pages/UserManagement'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -52,6 +53,7 @@ function App() {
           <Route path="clients" element={<Clients />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="compliance" element={<Compliance />} />
+          <Route path="users" element={<UserManagement />} />
         </Route>
       </Routes>
     </BrowserRouter>

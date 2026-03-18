@@ -215,6 +215,12 @@ export const tenantAPI = {
   updateLogo: (logoPath) => api.post('/api/tenant/me/logo', { logoPath }),
 }
 
+export const userAPI = {
+  getAll: () => api.get('/api/users'),
+  create: (data) => api.post('/api/users', data),
+  delete: (id) => api.delete(`/api/users/${id}`),
+}
+
 export default api
 
 export const driverDocumentAPI = {
