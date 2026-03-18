@@ -232,7 +232,7 @@ export const driverDocumentAPI = {
 }
 
 export const tyreLogAPI = {
-  getByTyre: (id) => api.get(`/api/ tyre-logs/ tyre/${id}`),
-  create: (data) => api.post('/api/ tyre-logs', data),
-  delete: (id) => api.delete(`/api/ tyre-logs/${id}`)
+  getByTyre: (id) => api.get(`/api/tyre-logs/tyre/${id}`),
+  create: (data) => api.post('/api/tyre-logs', data),
+  delete: (id) => api.delete(`/api/tyre-logs/${id}`)
 }

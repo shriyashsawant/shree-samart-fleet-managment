@@ -61,6 +61,9 @@ public class Bill {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(length = 20)
+    private String status; // PENDING, PAID, PARTIAL
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

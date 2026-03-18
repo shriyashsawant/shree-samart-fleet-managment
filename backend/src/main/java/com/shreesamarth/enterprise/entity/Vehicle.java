@@ -44,6 +44,9 @@ public class Vehicle {
     @Column(length = 50)
     private String engineNumber;
 
+    @Column(name = "owner_name", length = 100)
+    private String ownerName;
+
     @Column(name = "insurance_company", length = 100)
     private String insuranceCompany;
 
