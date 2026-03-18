@@ -13,3 +13,5 @@ urllib3<2
 charset-normalizer
 pandas
 openpyxl
+gunicorn
+
