@@ -63,8 +63,8 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // Create vehicles with real data
-        if (vehicleRepository.count() == 0) {
-            // Vehicle 1: MH09CU1605
+        // Vehicle 1: MH09CU1605
+        if (!vehicleRepository.existsByVehicleNumber("MH09CU1605")) {
             Vehicle v1 = new Vehicle();
             v1.setVehicleNumber("MH09CU1605");
             v1.setModel("TATA LPK 2518TC BSIII");
@@ -91,8 +91,10 @@ public class DataInitializer implements CommandLineRunner {
             d1.setAssignedVehicle(v1);
             d1.setTenant(defaultTenant);
             driverRepository.save(d1);
+        }
 
-            // Vehicle 2: MH43Y2651
+        // Vehicle 2: MH43Y2651
+        if (!vehicleRepository.existsByVehicleNumber("MH43Y2651")) {
             Vehicle v2 = new Vehicle();
             v2.setVehicleNumber("MH43Y2651");
             v2.setModel("EICHER");
@@ -119,8 +121,10 @@ public class DataInitializer implements CommandLineRunner {
             d2.setAssignedVehicle(v2);
             d2.setTenant(defaultTenant);
             driverRepository.save(d2);
+        }
 
-            // Create sample clients
+        // Create sample clients
+        if (clientRepository.count() < 3) {
             Client client1 = new Client();
             client1.setPartyName("PRISM JOHNSON LIMITED");
             client1.setGstNumber("27ASXPP6488L1ZD");
