@@ -457,6 +457,15 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
                         />
                       </div>
                       <div className="space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Basic Amount (₹)</label>
+                        <input 
+                          type="number" 
+                          value={editedData?.basicAmount || ''} 
+                          onChange={(e) => handleEditChange('basicAmount', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-primary-600"
+                        />
+                      </div>
+                      <div className="space-y-1">
                         <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Total Yield (₹)</label>
                         <input 
                           type="number" 
