@@ -123,51 +123,70 @@ def parse_invoice_text(text):
     if mobile_match:
         result['company_mobile'] = mobile_match.group(1)
 
-    # 5. Extract GST Numbers (distinguishing Company vs Party)
-    gst_list = re.findall(r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})', text.upper())
+    # 5. Extract GST Numbers (with OCR error handling)
+    # First try standard pattern
+    gst_list = re.findall(r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1})', text.upper())
+    if not gst_list:
+        # Try with OCR errors: I->1, l->1, 0->O
+        gst_list = re.findall(r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1})', text)
+    
     if gst_list:
+        # Clean up GST numbers (fix common OCR errors)
+        cleaned_gsts = []
+        for gst in gst_list:
+            # Replace common OCR mistakes
+            cleaned = gst.replace('I', '1').replace('l', '1').replace('0', 'O')
+            cleaned_gsts.append(cleaned)
+        
         # Usually the first GST belongs to the Sender (Company)
-        result['company_gst'] = gst_list[0]
-        if len(gst_list) > 1:
+        result['company_gst'] = cleaned_gsts[0]
+        if len(cleaned_gsts) > 1:
             # Usually subsequent ones belong to the Party
-            result['party_gst'] = gst_list[1]
+            result['party_gst'] = cleaned_gsts[1]
         
     # 6. Extract PAN (derived from GST or direct)
     pan_match = re.search(r'([A-Z]{5}[0-9]{4}[A-Z]{1})', text.upper())
     if pan_match:
         result['party_pan'] = pan_match.group(1)
 
-    # 7. Extract Company and Party Names
+    # 7. Extract Company and Party Names (improved for OCR errors)
     party_found = False
     for i, line in enumerate(lines):
         line_up = line.upper()
+        # Look for party section - to, bill to, m/s
         if any(k in line_up for k in ['TO,', 'TO :', 'M/S', 'BILL TO', 'PARTY NAME', 'CONSIGNEE', 'CLIENT']):
-            context = " ".join(lines[i:i+5]).upper()
-            
-            # Check for known companies
-            if 'PRISM JOHNSON' in context:
-                result['party_name'] = 'PRISM JOHNSON LIMITED'
-                result['party_address'] = 'Windsor, CTS Road, Mumbai'
+            # Try next few lines for party name
+            for j in range(i+1, min(i+5, len(lines))):
+                next_line = lines[j].strip()
+                if next_line and len(next_line) > 2:
+                    # Skip lines with only numbers or common keywords
+                    if not any(x in next_line.upper() for x in ['GST:', 'PAN:', 'MOBILE:', 'PHONE:', 'ADDRESS:', 'VAT', 'NOTE:']):
+                        result['party_name'] = next_line
+                        party_found = True
+                        break
+            break
+    
+    # Also search for known party names directly in text (handles OCR errors like PRSM -> PRISM)
+    if not party_found:
+        # Look for patterns like "JOHNSON" which is a known party
+        if 'JOHNSON' in text.upper():
+            match = re.search(r'([A-Z][A-Za-z\s]+(?:LIMITED|LTD|JOHNSON))', text.upper())
+            if match:
+                result['party_name'] = match.group(1).strip()
                 party_found = True
-            elif 'M/S' in line_up:
-                # Try to get the party name from next line
-                for j in range(i+1, min(i+4, len(lines))):
-                    next_line = lines[j].strip()
-                    if next_line and len(next_line) > 2:
-                        # Skip lines that look like addresses or other info
-                        if not any(x in next_line.upper() for x in ['GST:', 'PAN:', 'MOBILE:', 'PHONE:', 'ADDRESS:', 'VAT']):
-                            result['party_name'] = next_line
-                            party_found = True
-                            break
-            else:
-                # Try to find party name in next lines
-                for j in range(i+1, min(i+4, len(lines))):
-                    next_line = lines[j].strip()
-                    if next_line and len(next_line) > 2:
-                        if not any(x in next_line.upper() for x in ['GST:', 'PAN:', 'MOBILE:', 'PHONE:', 'ADDRESS:', 'VAT']):
-                            result['party_name'] = next_line
-                            party_found = True
-                            break
+    
+    # If still not found, try the first prominent company name after our company
+    if not party_found:
+        lines_after_company = lines[1:8]  # Look in first few lines after company name
+        for line in lines_after_company:
+            line_clean = line.strip()
+            # Skip if it's our company, empty, or too short
+            if 'SHRI SAMARTH' in line_clean.upper() or len(line_clean) < 3:
+                continue
+            # Skip if it looks like address or other info
+            if any(x in line_clean.upper() for x in ['GST', 'PAN', 'MOBILE', 'PHONE', 'MAHARASHTRA', 'KOLHAPUR']):
+                continue
+            result['party_name'] = line_clean
             break
 
     # Extract Company Details (Header logic)
@@ -197,27 +216,33 @@ def parse_invoice_text(text):
                 result['year'] = yr_match.group(1)
             break
 
-    # 9. Amounts - First try to find explicit "Total" or "Grand Total" keywords
+    # 9. Amounts - First try to find explicit patterns
     amount_text = text.replace(',', '').replace('/-', '')
     
     # Look for explicit Total keywords first
-    total_match = re.search(r'(?:Grand Total|Net Amount|Total Amount|Bill Amount|TOTAL)[:\s]*[Rs\.\₹]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    total_match = re.search(r'(?:Grand Total|Net Amount|Total Amount|Bill Amount|TOTAL)[:\s]*[Rs\.\₹]*\s*([0-9,]+(?:\.\d{1,2})?)', amount_text, re.IGNORECASE)
     if total_match:
         total_str = total_match.group(1).replace(',', '')
         result['total_amount'] = float(total_str)
     
+    # Also look for "Amount Payable" which often contains the final amount in words
+    payable_match = re.search(r'Amount Payable[:\s]*[Rs\.\₹]*\s*([0-9,]+)', amount_text, re.IGNORECASE)
+    if payable_match and not result.get('total_amount'):
+        result['total_amount'] = float(payable_match.group(1).replace(',', ''))
+    
     # Also try to find basic amount from common patterns
-    basic_match = re.search(r'(?:Sub Total|Subtotal|Basic Amount)[:\s]*[Rs\.\₹]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    basic_match = re.search(r'(?:Sub Total|Subtotal|Basic Amount|Amount)[:\s]*[Rs\.\₹]*\s*([0-9,]+)', amount_text, re.IGNORECASE)
     if basic_match:
         basic_str = basic_match.group(1).replace(',', '')
         result['basic_amount'] = float(basic_str)
     
-    # Find CGST and SGST
-    cgst_match = re.search(r'(?:CGST|CGST @)[:\s]*[0-9%]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    # Find CGST - look for "CGS3" OCR error or "CGST"
+    cgst_match = re.search(r'(?:CGS[3T]|CGST)[:\s]*[0-9%]*\s*([0-9,]+(?:\.\d{1,2})?)', amount_text, re.IGNORECASE)
     if cgst_match:
         result['cgst_amount'] = float(cgst_match.group(1).replace(',', ''))
     
-    sgst_match = re.search(r'(?:SGST|SGST @)[:\s]*[0-9%]*\s*([0-9,]+(?:\.\d{1,2})?)', text, re.IGNORECASE)
+    # Find SGST - look for "SGS1" OCR error or "SGST"
+    sgst_match = re.search(r'(?:SGS[1T]|SGST)[:\s]*[0-9%]*\s*([0-9,]+(?:\.\d{1,2})?)', amount_text, re.IGNORECASE)
     if sgst_match:
         result['sgst_amount'] = float(sgst_match.group(1).replace(',', ''))
     
@@ -301,16 +326,31 @@ def parse_invoice_text(text):
                         break
 
     # 10. Bank Details
-    if 'KOTAK' in text.upper(): result['bank_name'] = 'Kotak Bank'
-    elif 'HDFC' in text.upper(): result['bank_name'] = 'HDFC Bank'
-    elif 'ICICI' in text.upper(): result['bank_name'] = 'ICICI Bank'
-    elif 'SBI' in text.upper(): result['bank_name'] = 'State Bank of India'
+    # Look for bank name
+    if 'KOTAK' in text.upper():
+        result['bank_name'] = 'Kotak Bank'
+    elif 'HDFC' in text.upper(): 
+        result['bank_name'] = 'HDFC Bank'
+    elif 'ICICI' in text.upper():
+        result['bank_name'] = 'ICICI Bank'
+    elif 'SBI' in text.upper():
+        result['bank_name'] = 'State Bank of India'
     
-    acc_match = re.search(r'(?:A/c|Account|Acc|SB)\s*(?:No|Number)?[:\-\s\.]*(\d{8,18})', text, re.IGNORECASE)
-    if acc_match: result['bank_account_no'] = acc_match.group(1)
+    # Look for account number - more flexible pattern
+    acc_match = re.search(r'(?:A/c|Account|Acc|SB)[:\s]*(?:No|Number)?[:\-\s\.]*(\d{8,18})', text, re.IGNORECASE)
+    if acc_match:
+        result['bank_account_no'] = acc_match.group(1)
     
-    ifsc_match = re.search(r'IFSC\s*(?:Code)?[:\-\s\.]*([A-Z]{4}0[A-Z0-9]{6})', text, re.IGNORECASE)
-    if ifsc_match: result['bank_ifsc'] = ifsc_match.group(1)
+    # Also try to find any 9-18 digit number near bank keywords
+    if not result.get('bank_account_no'):
+        bank_context = re.search(r'Bank[:\s]+(\d{9,18})', text, re.IGNORECASE)
+        if bank_context:
+            result['bank_account_no'] = bank_context.group(1)
+    
+    # Look for IFSC code
+    ifsc_match = re.search(r'IFSC[:\s]*(?:Code)?[:\-\s\.]*([A-Z]{4}0[A-Z0-9]{6})', text, re.IGNORECASE)
+    if ifsc_match:
+        result['bank_ifsc'] = ifsc_match.group(1).upper()
 
     return result
 
