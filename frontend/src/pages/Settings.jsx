@@ -18,6 +18,21 @@ export default function Settings() {
       setTenant(res.data)
     } catch (error) {
       console.error('Failed to load enterprise profile:', error)
+      // Initialize with default state if not found
+      setTenant({
+        companyName: 'New Protocol Identity',
+        email: '',
+        phone: '',
+        address: '',
+        gstNumber: '',
+        panNumber: '',
+        bankName: '',
+        accountNumber: '',
+        ifscCode: '',
+        logoPath: null,
+        createdAt: new Date().toISOString(),
+        companyCode: 'SAMARTH-NEW'
+      })
     } finally {
       setLoading(false)
     }
@@ -68,7 +83,7 @@ export default function Settings() {
            <div className="bg-white rounded-[2.5rem] border border-dark-100 p-10 premium-shadow bg-mesh flex flex-col items-center text-center">
               <div className="relative group">
                  <div className="w-32 h-32 bg-dark-900 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl overflow-hidden ring-4 ring-dark-50 transition-all group-hover:ring-primary-100">
-                    {tenant.logoPath ? (
+                    {tenant?.logoPath ? (
                       <img src={tenant.logoPath} alt="Enterprise Logo" className="w-full h-full object-cover" />
                     ) : (
                       <Building className="w-12 h-12 opacity-50" />
@@ -78,12 +93,12 @@ export default function Settings() {
                     <Upload className="w-4 h-4" />
                  </button>
               </div>
-              <h3 className="mt-8 text-2xl font-black text-dark-900 tracking-tight leading-none">{tenant.companyName}</h3>
-              <p className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] mt-2 italic shadow-sm bg-primary-50 px-3 py-1 rounded-full">EST. {new Date(tenant.createdAt).getFullYear()}</p>
+              <h3 className="mt-8 text-2xl font-black text-dark-900 tracking-tight leading-none">{tenant?.companyName || 'Unknown Entity'}</h3>
+              <p className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] mt-2 italic shadow-sm bg-primary-50 px-3 py-1 rounded-full">EST. {new Date(tenant?.createdAt || new Date()).getFullYear()}</p>
               
               <div className="w-full mt-10 pt-10 border-t border-dark-50 space-y-4">
-                 <SidebarStat icon={Globe} label="Enterprise ID" value={tenant.companyCode || 'SAMARTH-01'} />
-                 <SidebarStat icon={ShieldCheck} label="Fiscal Node" value={tenant.gstNumber || 'NO_GST_FOUND'} />
+                 <SidebarStat icon={Globe} label="Enterprise ID" value={tenant?.companyCode || 'SAMARTH-01'} />
+                 <SidebarStat icon={ShieldCheck} label="Fiscal Node" value={tenant?.gstNumber || 'NO_GST_FOUND'} />
               </div>
            </div>
 
