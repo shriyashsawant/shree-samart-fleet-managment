@@ -6,10 +6,11 @@ Use PaddleOCR for unlimited calls, OCR.space as fallback
 import requests
 import os
 
-# Disable bugged/new PaddlePaddle 3.3 executor features for stability
+# Set Paddle flags for memory efficiency on restricted cloud environments (Render)
 os.environ['FLAGS_use_mkldnn'] = '0'
-os.environ['FLAGS_enable_pir_api'] = '0'
-os.environ['FLAGS_enable_pir_in_executor'] = '0'
+os.environ['FLAGS_cpu_num_threads'] = '1'
+os.environ['FLAGS_eager_delete_tensor_gb'] = '0.0'
+os.environ['FLAGS_fraction_of_gpu_memory_to_use'] = '0.0'
 os.environ['PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK'] = 'True'
 
 # Try to import PaddleOCR (for production)
