@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, UserPlus, Shield, Mail, Trash2, Key, CheckCircle2, AlertCircle, X, ShieldAlert, Monitor, UserCheck } from 'lucide-react'
+import { Users, UserPlus, Shield, Mail, Trash2, Key, CheckCircle2, AlertCircle, X, ShieldAlert, Monitor, UserCheck, ShieldCheck } from 'lucide-react'
 import { userAPI } from '../lib/api'
 import { cn } from '../lib/utils'
 

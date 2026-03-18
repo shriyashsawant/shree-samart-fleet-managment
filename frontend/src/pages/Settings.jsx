@@ -107,7 +107,7 @@ export default function Settings() {
                  <h4 className="text-xl font-black tracking-tight mb-2">Automated Billing Protocol</h4>
                  <p className="text-[10px] font-bold text-dark-300 uppercase tracking-widest leading-relaxed">System-generated invoices will utilize the organizational details defined in this terminal.</p>
               </div>
-              <ランドマーク className="absolute -right-8 -bottom-8 w-32 h-32 text-dark-800 rotate-12 group-hover:scale-110 transition-transform duration-700" />
+              <Landmark className="absolute -right-8 -bottom-8 w-32 h-32 text-dark-800 rotate-12 group-hover:scale-110 transition-transform duration-700" />
            </div>
         </div>
 
