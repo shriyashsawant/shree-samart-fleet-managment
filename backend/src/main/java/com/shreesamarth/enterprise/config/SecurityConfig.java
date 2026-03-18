@@ -73,14 +73,12 @@ public class SecurityConfig {
             "http://localhost:5173", 
             "http://localhost:3000", 
             "http://127.0.0.1:5173",
-            "https://shree-samart-fleet-managment.onrender.com",
             "https://shree-samart-fleet-managment-eta.vercel.app",
             "https://shree-samart-fleet-managment.onrender.com",
             "https://shreesamarth-backend.onrender.com",
             "https://shreesamarth-ocr.onrender.com",
             "https://*.onrender.com",
-            "https://*.vercel.app",
-            "*"
+            "https://*.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
