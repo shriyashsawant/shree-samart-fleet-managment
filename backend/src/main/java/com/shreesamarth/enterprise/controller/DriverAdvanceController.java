@@ -24,7 +24,7 @@ public class DriverAdvanceController {
     private Tenant getCurrentTenant(Authentication auth) {
         if (auth == null) return null;
         String username = auth.getName();
-        User user = userRepository.findByUsername(username).orElse(null);
+        User user = userRepository.findByUsernameWithTenant(username).orElse(null);
         if (user == null) return null;
         return user.getTenant();
     }

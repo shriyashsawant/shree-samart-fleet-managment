@@ -108,7 +108,7 @@ public class AnalyticsController {
 
     private Long getTenantId(UserDetails userDetails) {
         if (userDetails == null) return null;
-        return userRepository.findByUsername(userDetails.getUsername())
+        return userRepository.findByUsernameWithTenant(userDetails.getUsername())
                 .map(User::getTenant)
                 .map(Tenant::getId)
                 .orElse(null);
