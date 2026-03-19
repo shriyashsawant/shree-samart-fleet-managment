@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,7 +32,7 @@ public class DriverAdvance {
     private LocalDate advanceDate;
 
     @Column(name = "purpose", length = 100)
-    private String purpose; // Toll, Fuel, Maintenance, Personal, etc.
+    private String purpose;
 
     @Column(name = "is_settled")
     private Boolean isSettled = false;
@@ -45,4 +46,9 @@ public class DriverAdvance {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Tenant tenant;
 }

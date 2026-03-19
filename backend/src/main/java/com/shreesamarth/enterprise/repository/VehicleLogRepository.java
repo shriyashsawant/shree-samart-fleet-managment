@@ -10,4 +10,5 @@ import java.util.List;
 public interface VehicleLogRepository extends JpaRepository<VehicleLog, Long> {
     List<VehicleLog> findByVehicleIdOrderByLogDateDesc(Long vehicleId);
     List<VehicleLog> findByVehicleIdAndLogTypeOrderByLogDateDesc(Long vehicleId, String logType);
+    List<VehicleLog> findByTenantId(Long tenantId);
 }

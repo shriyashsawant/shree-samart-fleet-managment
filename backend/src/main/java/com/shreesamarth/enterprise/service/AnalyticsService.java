@@ -30,16 +30,35 @@ public class AnalyticsService {
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("MMM");
 
-    // Vehicle P&L Report - Revenue - Expenses = Profit per mixer
+    private List<Bill> billsByTenant(Long tenantId) {
+        return billRepository.findByTenantId(tenantId);
+    }
+
+    private List<Expense> expensesByTenant(Long tenantId) {
+        return expenseRepository.findByTenantId(tenantId);
+    }
+
+    private List<Maintenance> maintenanceByTenant(Long tenantId) {
+        return maintenanceRepository.findByTenantId(tenantId);
+    }
+
+    private List<Payment> paymentsByTenant(Long tenantId) {
+        return paymentRepository.findByTenantId(tenantId);
+    }
+
+    private List<Driver> driversByTenant(Long tenantId) {
+        return driverRepository.findByTenantId(tenantId);
+    }
+
     public List<VehicleProfitDTO> getVehicleProfitReport(Long tenantId) {
         List<Vehicle> vehicles = vehicleRepository.findByTenantId(tenantId);
         List<VehicleProfitDTO> profits = new ArrayList<>();
 
         for (Vehicle vehicle : vehicles) {
-            BigDecimal totalRevenue = getVehicleRevenue(vehicle.getId());
-            BigDecimal totalExpenses = getVehicleExpenses(vehicle.getId());
+            BigDecimal totalRevenue = getVehicleRevenue(tenantId, vehicle.getId());
+            BigDecimal totalExpenses = getVehicleExpenses(tenantId, vehicle.getId());
             BigDecimal profit = totalRevenue.subtract(totalExpenses);
-            
+
             BigDecimal profitMargin = BigDecimal.ZERO;
             if (totalRevenue.compareTo(BigDecimal.ZERO) > 0) {
                 profitMargin = profit.divide(totalRevenue, 4, RoundingMode.HALF_UP)
@@ -59,89 +78,95 @@ public class AnalyticsService {
             profits.add(dto);
         }
 
-        // Sort by profit descending
         profits.sort((a, b) -> b.getProfit().compareTo(a.getProfit()));
         return profits;
     }
 
-    // Get total revenue for a vehicle (from bills)
-    private BigDecimal getVehicleRevenue(Long vehicleId) {
-        List<Bill> bills = billRepository.findAll().stream()
+    private BigDecimal getVehicleRevenue(Long tenantId, Long vehicleId) {
+        return billsByTenant(tenantId).stream()
                 .filter(b -> b.getVehicle() != null && b.getVehicle().getId().equals(vehicleId))
-                .collect(Collectors.toList());
-        
-        return bills.stream()
                 .map(Bill::getTotalAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    // Get total expenses for a vehicle (expenses + maintenance + payments)
-    private BigDecimal getVehicleExpenses(Long vehicleId) {
-        BigDecimal expenses = expenseRepository.findAll().stream()
+    private BigDecimal getVehicleExpenses(Long tenantId, Long vehicleId) {
+        BigDecimal expenses = expensesByTenant(tenantId).stream()
                 .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
                 .map(Expense::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal maintenance = maintenanceRepository.findAll().stream()
+        BigDecimal maintenance = maintenanceByTenant(tenantId).stream()
                 .filter(m -> m.getVehicle() != null && m.getVehicle().getId().equals(vehicleId))
                 .map(Maintenance::getCost)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Also include driver salary payments
-        BigDecimal salaries = paymentRepository.findAll().stream()
+        List<Driver> drivers = driversByTenant(tenantId);
+        BigDecimal salaries = paymentsByTenant(tenantId).stream()
                 .filter(p -> "SALARY".equals(p.getPaymentType()))
                 .filter(p -> p.getDriver() != null && p.getDriver().getAssignedVehicle() != null)
                 .filter(p -> p.getDriver().getAssignedVehicle().getId().equals(vehicleId))
                 .map(Payment::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return expenses.add(maintenance).add(salaries);
     }
 
-    // Monthly Profit Trend
     public List<MonthlyProfitDTO> getMonthlyProfitTrend(Long tenantId, int months) {
         LocalDate now = LocalDate.now();
         List<MonthlyProfitDTO> trends = new ArrayList<>();
+
+        List<Bill> allBills = billsByTenant(tenantId);
+        List<Expense> allExpenses = expensesByTenant(tenantId);
+        List<Maintenance> allMaintenance = maintenanceByTenant(tenantId);
+        List<Payment> allPayments = paymentsByTenant(tenantId);
 
         for (int i = months - 1; i >= 0; i--) {
             LocalDate monthStart = now.minusMonths(i).withDayOfMonth(1);
             LocalDate monthEnd = monthStart.plusMonths(1).minusDays(1);
 
-            BigDecimal revenue = billRepository.findAll().stream()
+            BigDecimal revenue = allBills.stream()
                     .filter(b -> {
                         LocalDate billDate = b.getBillDate();
                         return billDate != null && !billDate.isBefore(monthStart) && !billDate.isAfter(monthEnd);
                     })
                     .map(Bill::getTotalAmount)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal expenses = expenseRepository.findAll().stream()
+            BigDecimal expenses = allExpenses.stream()
                     .filter(e -> {
                         LocalDate expDate = e.getDate();
                         return expDate != null && !expDate.isBefore(monthStart) && !expDate.isAfter(monthEnd);
                     })
                     .map(Expense::getAmount)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal maintenance = maintenanceRepository.findAll().stream()
+            BigDecimal maintenance = allMaintenance.stream()
                     .filter(m -> {
                         LocalDate mDate = m.getDate();
                         return mDate != null && !mDate.isBefore(monthStart) && !mDate.isAfter(monthEnd);
                     })
                     .map(Maintenance::getCost)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal salary = paymentRepository.findAll().stream()
+            BigDecimal salary = allPayments.stream()
                     .filter(p -> "SALARY".equals(p.getPaymentType()))
                     .filter(p -> p.getPaymentDate() != null)
                     .filter(p -> !p.getPaymentDate().isBefore(monthStart) && !p.getPaymentDate().isAfter(monthEnd))
                     .map(Payment::getAmount)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             BigDecimal totalExpenses = expenses.add(maintenance).add(salary);
             BigDecimal profit = revenue.subtract(totalExpenses);
 
-            Long billCount = billRepository.findAll().stream()
+            Long billCount = allBills.stream()
                     .filter(b -> {
                         LocalDate billDate = b.getBillDate();
                         return billDate != null && !billDate.isBefore(monthStart) && !billDate.isAfter(monthEnd);
@@ -163,46 +188,49 @@ public class AnalyticsService {
         return trends;
     }
 
-    // Expense Breakdown - Diesel vs Salary vs Maintenance
     public List<ExpenseBreakdownDTO> getExpenseBreakdown(Long tenantId) {
         BigDecimal totalExpenses = BigDecimal.ZERO;
         Map<String, BigDecimal> categoryTotals = new LinkedHashMap<>();
 
-        // Diesel expenses
-        BigDecimal diesel = expenseRepository.findAll().stream()
+        List<Expense> allExpenses = expensesByTenant(tenantId);
+        List<Maintenance> allMaintenance = maintenanceByTenant(tenantId);
+        List<Payment> allPayments = paymentsByTenant(tenantId);
+
+        BigDecimal diesel = allExpenses.stream()
                 .filter(e -> "DIESEL".equalsIgnoreCase(e.getExpenseType()))
                 .map(Expense::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         categoryTotals.put("Diesel", diesel);
         totalExpenses = totalExpenses.add(diesel);
 
-        // Other daily expenses (Air, Puncture, Washing, Food)
-        BigDecimal dailyExp = expenseRepository.findAll().stream()
+        BigDecimal dailyExp = allExpenses.stream()
                 .filter(e -> !"DIESEL".equalsIgnoreCase(e.getExpenseType()))
                 .map(Expense::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         categoryTotals.put("Daily Expenses", dailyExp);
         totalExpenses = totalExpenses.add(dailyExp);
 
-        // Maintenance
-        BigDecimal maintenance = maintenanceRepository.findAll().stream()
+        BigDecimal maintenance = allMaintenance.stream()
                 .map(Maintenance::getCost)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         categoryTotals.put("Maintenance", maintenance);
         totalExpenses = totalExpenses.add(maintenance);
 
-        // Driver Salary
-        BigDecimal salary = paymentRepository.findAll().stream()
+        BigDecimal salary = allPayments.stream()
                 .filter(p -> "SALARY".equals(p.getPaymentType()))
                 .map(Payment::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         categoryTotals.put("Driver Salary", salary);
         totalExpenses = totalExpenses.add(salary);
 
-        // EMI Payments
-        BigDecimal emi = paymentRepository.findAll().stream()
+        BigDecimal emi = allPayments.stream()
                 .filter(p -> "EMI".equals(p.getPaymentType()))
                 .map(Payment::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         categoryTotals.put("Vehicle EMI", emi);
         totalExpenses = totalExpenses.add(emi);
@@ -223,21 +251,21 @@ public class AnalyticsService {
             ));
         }
 
-        // Sort by amount descending
         breakdown.sort((a, b) -> b.getAmount().compareTo(a.getAmount()));
         return breakdown;
     }
 
-    // GST Summary Report - Monthly CGST/SGST totals
     public List<GstSummaryDTO> getGstSummary(Long tenantId, int months) {
         LocalDate now = LocalDate.now();
         List<GstSummaryDTO> summaries = new ArrayList<>();
+
+        List<Bill> allBills = billsByTenant(tenantId);
 
         for (int i = months - 1; i >= 0; i--) {
             LocalDate monthStart = now.minusMonths(i).withDayOfMonth(1);
             LocalDate monthEnd = monthStart.plusMonths(1).minusDays(1);
 
-            List<Bill> monthBills = billRepository.findAll().stream()
+            List<Bill> monthBills = allBills.stream()
                     .filter(b -> {
                         LocalDate billDate = b.getBillDate();
                         return billDate != null && !billDate.isBefore(monthStart) && !billDate.isAfter(monthEnd);
@@ -281,23 +309,26 @@ public class AnalyticsService {
         return summaries;
     }
 
-    // Party Wise Revenue - Which client gives most business
     public List<PartyRevenueDTO> getPartyWiseRevenue(Long tenantId) {
         List<Client> clients = clientRepository.findByTenantId(tenantId);
         List<PartyRevenueDTO> revenues = new ArrayList<>();
 
-        BigDecimal totalRevenue = billRepository.findAll().stream()
+        List<Bill> allBills = billsByTenant(tenantId);
+
+        BigDecimal totalRevenue = allBills.stream()
                 .map(Bill::getTotalAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         for (Client client : clients) {
-            BigDecimal clientRevenue = billRepository.findAll().stream()
+            BigDecimal clientRevenue = allBills.stream()
                     .filter(b -> b.getClient() != null && b.getClient().getId().equals(client.getId()))
                     .map(Bill::getTotalAmount)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             if (clientRevenue.compareTo(BigDecimal.ZERO) > 0) {
-                Long billCount = billRepository.findAll().stream()
+                Long billCount = allBills.stream()
                         .filter(b -> b.getClient() != null && b.getClient().getId().equals(client.getId()))
                         .count();
 
@@ -320,27 +351,22 @@ public class AnalyticsService {
             }
         }
 
-        // Sort by revenue descending
         revenues.sort((a, b) -> b.getTotalRevenue().compareTo(a.getTotalRevenue()));
         return revenues;
     }
 
-    // Idle Cost Alert - Flag vehicles with high expense, low revenue
     public List<IdleVehicleAlertDTO> getIdleVehicleAlerts(Long tenantId) {
         List<Vehicle> vehicles = vehicleRepository.findByTenantId(tenantId);
         List<IdleVehicleAlertDTO> alerts = new ArrayList<>();
 
-        LocalDate thirtyDaysAgo = LocalDate.now().minusDays(30);
-
         for (Vehicle vehicle : vehicles) {
-            BigDecimal totalExpenses = getVehicleExpenses(vehicle.getId());
-            BigDecimal totalRevenue = getVehicleRevenue(vehicle.getId());
+            BigDecimal totalExpenses = getVehicleExpenses(tenantId, vehicle.getId());
+            BigDecimal totalRevenue = getVehicleRevenue(tenantId, vehicle.getId());
             BigDecimal profitLoss = totalRevenue.subtract(totalExpenses);
 
-            // Check if vehicle has low revenue compared to expenses
-            // If expenses > 70% of revenue, flag as potential idle
-            boolean hasLowRevenue = totalRevenue.compareTo(BigDecimal.ZERO) == 0 || 
-                    totalExpenses.divide(totalRevenue, 2, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.7)) > 0;
+            boolean hasLowRevenue = totalRevenue.compareTo(BigDecimal.ZERO) == 0 ||
+                    (totalExpenses.compareTo(BigDecimal.ZERO) > 0 &&
+                     totalRevenue.divide(totalExpenses, 2, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.7)) < 0);
 
             String alertReason = null;
             String severity = null;
@@ -368,7 +394,6 @@ public class AnalyticsService {
             }
         }
 
-        // Sort by severity
         alerts.sort((a, b) -> {
             int severityOrder = compareSeverity(a.getSeverity(), b.getSeverity());
             if (severityOrder != 0) return severityOrder;
@@ -378,8 +403,7 @@ public class AnalyticsService {
         return alerts;
     }
 
-    // Get vehicle P&L for a specific month: /vehicles/{id}/profit?month=2025-03
-    public VehicleProfitDTO getVehicleProfitByMonth(Long vehicleId, String month) {
+    public VehicleProfitDTO getVehicleProfitByMonth(Long tenantId, Long vehicleId, String month) {
         YearMonth yearMonth = YearMonth.parse(month);
         LocalDate monthStart = yearMonth.atDay(1);
         LocalDate monthEnd = yearMonth.atEndOfMonth();
@@ -387,18 +411,23 @@ public class AnalyticsService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
 
-        // Revenue - from bills linked to this vehicle for the month
-        BigDecimal revenue = billRepository.findAll().stream()
+        List<Bill> allBills = billsByTenant(tenantId);
+        List<Expense> allExpenses = expensesByTenant(tenantId);
+        List<Maintenance> allMaintenance = maintenanceByTenant(tenantId);
+        List<Payment> allPayments = paymentsByTenant(tenantId);
+        List<Driver> allDrivers = driversByTenant(tenantId);
+
+        BigDecimal revenue = allBills.stream()
                 .filter(b -> b.getVehicle() != null && b.getVehicle().getId().equals(vehicleId))
                 .filter(b -> {
                     LocalDate billDate = b.getBillDate();
                     return billDate != null && !billDate.isBefore(monthStart) && !billDate.isAfter(monthEnd);
                 })
                 .map(Bill::getTotalAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Diesel expenses for the month
-        BigDecimal dieselExpenses = expenseRepository.findAll().stream()
+        BigDecimal dieselExpenses = allExpenses.stream()
                 .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
                 .filter(e -> "DIESEL".equalsIgnoreCase(e.getExpenseType()))
                 .filter(e -> {
@@ -406,41 +435,38 @@ public class AnalyticsService {
                     return expDate != null && !expDate.isBefore(monthStart) && !expDate.isAfter(monthEnd);
                 })
                 .map(Expense::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Salary expenses for the month
-        BigDecimal salaryExpenses = paymentRepository.findAll().stream()
+        BigDecimal salaryExpenses = allPayments.stream()
                 .filter(p -> "SALARY".equals(p.getPaymentType()))
                 .filter(p -> p.getDriver() != null && p.getDriver().getAssignedVehicle() != null)
                 .filter(p -> p.getDriver().getAssignedVehicle().getId().equals(vehicleId))
                 .filter(p -> p.getPaymentDate() != null)
                 .filter(p -> !p.getPaymentDate().isBefore(monthStart) && !p.getPaymentDate().isAfter(monthEnd))
                 .map(Payment::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Maintenance expenses for the month
-        BigDecimal maintenanceExpenses = maintenanceRepository.findAll().stream()
+        BigDecimal maintenanceExpenses = allMaintenance.stream()
                 .filter(m -> m.getVehicle() != null && m.getVehicle().getId().equals(vehicleId))
                 .filter(m -> m.getDate() != null)
                 .filter(m -> !m.getDate().isBefore(monthStart) && !m.getDate().isAfter(monthEnd))
                 .map(Maintenance::getCost)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // EMI expenses for the month
-        BigDecimal emiExpenses = paymentRepository.findAll().stream()
+        BigDecimal emiExpenses = allPayments.stream()
                 .filter(p -> "EMI".equals(p.getPaymentType()))
                 .filter(p -> p.getPaymentDate() != null)
                 .filter(p -> !p.getPaymentDate().isBefore(monthStart) && !p.getPaymentDate().isAfter(monthEnd))
                 .map(Payment::getAmount)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Total expenses
         BigDecimal totalExpenses = dieselExpenses.add(salaryExpenses).add(maintenanceExpenses).add(emiExpenses);
-
-        // Profit
         BigDecimal profit = revenue.subtract(totalExpenses);
 
-        // Profit margin
         BigDecimal profitMargin = BigDecimal.ZERO;
         if (revenue.compareTo(BigDecimal.ZERO) > 0) {
             profitMargin = profit.divide(revenue, 4, RoundingMode.HALF_UP)
@@ -459,7 +485,6 @@ public class AnalyticsService {
         );
     }
 
-    // Document Health Score (0-100) per vehicle
     public DocumentHealthDTO getDocumentHealth(Long vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
@@ -474,7 +499,7 @@ public class AnalyticsService {
 
         for (VehicleDocument doc : documents) {
             if (doc.getExpiryDate() == null) {
-                validCount++; // No expiry date = valid
+                validCount++;
             } else if (doc.getExpiryDate().isBefore(today)) {
                 expiredCount++;
             } else if (doc.getExpiryDate().isBefore(thirtyDaysFromNow)) {
@@ -486,10 +511,9 @@ public class AnalyticsService {
 
         int totalDocs = documents.size();
         if (totalDocs == 0) {
-            totalDocs = 1; // Avoid division by zero
+            totalDocs = 1;
         }
 
-        // Calculate score: valid = 100, expiring = 70, expired = 30
         int score = (validCount * 100 + expiringCount * 70 + expiredCount * 30) / totalDocs;
 
         String grade;
@@ -518,13 +542,13 @@ public class AnalyticsService {
 
     public List<VehicleSummaryDTO> getVehicleSummaries(Long tenantId) {
         List<Vehicle> vehicles = vehicleRepository.findByTenantId(tenantId);
-        List<Driver> drivers = driverRepository.findAll();
+        List<Driver> allDrivers = driversByTenant(tenantId);
 
         return vehicles.stream().map(v -> {
-            BigDecimal revenue = getVehicleRevenue(v.getId());
-            BigDecimal expenses = getVehicleExpenses(v.getId());
-            
-            String driverName = drivers.stream()
+            BigDecimal revenue = getVehicleRevenue(tenantId, v.getId());
+            BigDecimal expenses = getVehicleExpenses(tenantId, v.getId());
+
+            String driverName = allDrivers.stream()
                     .filter(d -> d.getAssignedVehicle() != null && d.getAssignedVehicle().getId().equals(v.getId()))
                     .map(Driver::getName)
                     .findFirst()
@@ -553,38 +577,36 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public VehicleProfileDTO getVehicleProfile(Long vehicleId) {
-        System.out.println("📊 [ANALYTICS] Getting profile for vehicle ID: " + vehicleId);
-        
+    public VehicleProfileDTO getVehicleProfile(Long tenantId, Long vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .orElseThrow(() -> {
-                    System.err.println("❌ [ANALYTICS] Vehicle not found: " + vehicleId);
-                    return new RuntimeException("Vehicle not found with ID: " + vehicleId);
-                });
-        
-        System.out.println("📊 [ANALYTICS] Found vehicle: " + vehicle.getVehicleNumber());
-        
-        Driver driver = driverRepository.findAll().stream()
+                .orElseThrow(() -> new RuntimeException("Vehicle not found with ID: " + vehicleId));
+
+        List<Driver> allDrivers = driversByTenant(tenantId);
+        Driver driver = allDrivers.stream()
                 .filter(d -> d.getAssignedVehicle() != null && d.getAssignedVehicle().getId().equals(vehicleId))
                 .findFirst()
                 .orElse(null);
 
-        BigDecimal revenue = getVehicleRevenue(vehicleId);
-        BigDecimal expenses = getVehicleExpenses(vehicleId);
-        
-        List<Expense> latestExpenses = expenseRepository.findAll().stream()
+        BigDecimal revenue = getVehicleRevenue(tenantId, vehicleId);
+        BigDecimal expenses = getVehicleExpenses(tenantId, vehicleId);
+
+        List<Expense> allExpenses = expensesByTenant(tenantId);
+        List<Maintenance> allMaintenance = maintenanceByTenant(tenantId);
+        List<Bill> allBills = billsByTenant(tenantId);
+
+        List<Expense> latestExpenses = allExpenses.stream()
                 .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
                 .sorted((a, b) -> b.getDate().compareTo(a.getDate()))
                 .limit(10)
                 .collect(Collectors.toList());
 
-        List<Maintenance> latestMaintenance = maintenanceRepository.findAll().stream()
+        List<Maintenance> latestMaintenance = allMaintenance.stream()
                 .filter(m -> m.getVehicle() != null && m.getVehicle().getId().equals(vehicleId))
                 .sorted((a, b) -> b.getDate().compareTo(a.getDate()))
                 .limit(10)
                 .collect(Collectors.toList());
 
-        List<Bill> latestBills = billRepository.findAll().stream()
+        List<Bill> latestBills = allBills.stream()
                 .filter(b -> b.getVehicle() != null && b.getVehicle().getId().equals(vehicleId))
                 .sorted((a, b) -> b.getBillDate().compareTo(a.getBillDate()))
                 .limit(10)
@@ -592,7 +614,6 @@ public class AnalyticsService {
 
         List<VehicleDocument> documents = vehicleDocumentRepository.findByVehicleId(vehicleId);
 
-        // Find Milestones
         LocalDate lastOilChange = latestMaintenance.stream()
                 .filter(m -> m.getMaintenanceType() != null && m.getMaintenanceType().toUpperCase().contains("OIL"))
                 .map(Maintenance::getDate)
@@ -605,27 +626,25 @@ public class AnalyticsService {
                 .findFirst()
                 .orElse(null);
 
-        Expense lastFuel = expenseRepository.findAll().stream()
+        Expense lastFuel = allExpenses.stream()
                 .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
                 .filter(e -> "DIESEL".equalsIgnoreCase(e.getExpenseType()))
                 .sorted((a, b) -> b.getDate().compareTo(a.getDate()))
                 .findFirst()
                 .orElse(null);
 
-        // Map to DTOs
         List<VehicleProfileDTO.ExpenseSummary> expenseSummaries = latestExpenses.stream()
             .map(e -> new VehicleProfileDTO.ExpenseSummary(e.getId(), e.getExpenseType(), e.getAmount(), e.getDate()))
             .collect(Collectors.toList());
-            
+
         List<VehicleProfileDTO.MaintenanceSummary> maintenanceSummaries = latestMaintenance.stream()
             .map(m -> new VehicleProfileDTO.MaintenanceSummary(m.getId(), m.getMaintenanceType(), m.getCost(), m.getDate()))
             .collect(Collectors.toList());
-            
+
         List<VehicleProfileDTO.BillSummary> billSummaries = latestBills.stream()
             .map(b -> new VehicleProfileDTO.BillSummary(b.getId(), b.getBillNo(), b.getTotalAmount(), b.getBillDate()))
             .collect(Collectors.toList());
-        
-        // Create nested VehicleInfo
+
         VehicleProfileDTO.VehicleInfo vehicleInfo = new VehicleProfileDTO.VehicleInfo(
             vehicle.getId(),
             vehicle.getVehicleNumber(),
@@ -635,14 +654,13 @@ public class AnalyticsService {
             vehicle.getEngineNumber(),
             vehicle.getOwnerName(),
             vehicle.getStatus(),
-            "DIESEL", // Default fuel type
-            "Internal", // Default financier
+            "DIESEL",
+            "Internal",
             vehicle.getRegistrationDate(),
             vehicle.getEmiAmount(),
             vehicle.getEmiBank()
         );
-        
-        // Create nested DriverInfo
+
         VehicleProfileDTO.DriverInfo driverInfo = null;
         if (driver != null) {
             driverInfo = new VehicleProfileDTO.DriverInfo(
@@ -652,7 +670,7 @@ public class AnalyticsService {
                 driver.getDrivingLicense()
             );
         }
-        
+
         return new VehicleProfileDTO(
             vehicleInfo,
             driverInfo,

@@ -29,4 +29,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.category = :category AND e.date BETWEEN :start AND :end")
     BigDecimal sumByCategoryAndDateBetween(@Param("category") String category, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    List<Expense> findByTenantId(Long tenantId);
 }

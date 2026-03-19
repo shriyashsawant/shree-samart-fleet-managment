@@ -76,8 +76,10 @@ public class AnalyticsController {
     @GetMapping("/vehicles/{id}/profit")
     public ResponseEntity<VehicleProfitDTO> getVehicleProfitByMonth(
             @PathVariable("id") Long vehicleId,
-            @RequestParam String month) {
-        return ResponseEntity.ok(analyticsService.getVehicleProfitByMonth(vehicleId, month));
+            @RequestParam String month,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(analyticsService.getVehicleProfitByMonth(tenantId, vehicleId, month));
     }
 
     // Get Document Health Score: /api/analytics/vehicles/{id}/document-health
@@ -97,8 +99,11 @@ public class AnalyticsController {
     // Get Detailed Vehicle Profile: /api/analytics/vehicles/{id}/profile
     @GetMapping("/vehicles/{id}/profile")
     @Transactional(readOnly = true)
-    public ResponseEntity<VehicleProfileDTO> getVehicleProfile(@PathVariable("id") Long vehicleId) {
-        return ResponseEntity.ok(analyticsService.getVehicleProfile(vehicleId));
+    public ResponseEntity<VehicleProfileDTO> getVehicleProfile(
+            @PathVariable("id") Long vehicleId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(analyticsService.getVehicleProfile(tenantId, vehicleId));
     }
 
     private Long getTenantId(UserDetails userDetails) {

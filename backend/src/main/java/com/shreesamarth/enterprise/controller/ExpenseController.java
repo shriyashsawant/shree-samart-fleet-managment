@@ -50,25 +50,32 @@ public class ExpenseController {
             @RequestParam(required = false) LocalDate endDate,
             Authentication auth) {
 
-        List<Expense> expenses;
+        Tenant tenant = getCurrentTenant(auth);
+        List<Expense> allTenantExpenses = tenant != null
+            ? expenseRepository.findByTenantId(tenant.getId())
+            : expenseRepository.findAll();
+
         if (category != null) {
-            if (startDate != null && endDate != null) {
-                expenses = expenseRepository.findByCategoryAndDateBetween(category, startDate, endDate);
-            } else {
-                expenses = expenseRepository.findByCategory(category);
-            }
+            allTenantExpenses = allTenantExpenses.stream()
+                .filter(e -> category.equals(e.getCategory()))
+                .collect(java.util.stream.Collectors.toList());
         } else if (vehicleId != null) {
-            if (startDate != null && endDate != null) {
-                expenses = expenseRepository.findByVehicleIdAndDateBetween(vehicleId, startDate, endDate);
-            } else {
-                expenses = expenseRepository.findByVehicleId(vehicleId);
-            }
+            allTenantExpenses = allTenantExpenses.stream()
+                .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
+                .collect(java.util.stream.Collectors.toList());
         } else if (expenseType != null) {
-            expenses = expenseRepository.findByExpenseType(expenseType);
-        } else {
-            expenses = expenseRepository.findAll();
+            allTenantExpenses = allTenantExpenses.stream()
+                .filter(e -> expenseType.equals(e.getExpenseType()))
+                .collect(java.util.stream.Collectors.toList());
         }
-        return ResponseEntity.ok(expenses);
+
+        if (startDate != null && endDate != null) {
+            allTenantExpenses = allTenantExpenses.stream()
+                .filter(e -> e.getDate() != null && !e.getDate().isBefore(startDate) && !e.getDate().isAfter(endDate))
+                .collect(java.util.stream.Collectors.toList());
+        }
+
+        return ResponseEntity.ok(allTenantExpenses);
     }
 
     @GetMapping("/{id}")

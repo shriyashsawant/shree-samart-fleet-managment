@@ -10,4 +10,5 @@ import java.util.List;
 public interface TyreRepository extends JpaRepository<Tyre, Long> {
     List<Tyre> findByVehicleId(Long vehicleId);
     List<Tyre> findByStatus(String status);
+    List<Tyre> findByTenantId(Long tenantId);
 }

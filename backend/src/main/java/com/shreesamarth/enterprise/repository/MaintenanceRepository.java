@@ -24,4 +24,6 @@ public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> 
 
     @Query("SELECT SUM(m.cost) FROM Maintenance m WHERE m.vehicle.id = :vehicleId AND m.date BETWEEN :start AND :end")
     BigDecimal sumByVehicleAndDateBetween(@Param("vehicleId") Long vehicleId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    List<Maintenance> findByTenantId(Long tenantId);
 }

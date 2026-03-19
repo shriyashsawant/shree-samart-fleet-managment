@@ -1,7 +1,10 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.entity.Tenant;
+import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleCompliance;
+import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleComplianceRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
@@ -13,12 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/compliance")
@@ -27,12 +27,25 @@ public class VehicleComplianceController {
 
     private final VehicleComplianceRepository complianceRepository;
     private final VehicleRepository vehicleRepository;
+    private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+
+    private Tenant getCurrentTenant(Authentication auth) {
+        if (auth == null) return null;
+        String username = auth.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) return null;
+        return user.getTenant();
+    }
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<List<VehicleCompliance>> getAllCompliance() {
-        return ResponseEntity.ok(complianceRepository.findAll());
+    public ResponseEntity<List<VehicleCompliance>> getAllCompliance(Authentication auth) {
+        Tenant tenant = getCurrentTenant(auth);
+        List<VehicleCompliance> all = tenant != null
+            ? complianceRepository.findByTenantId(tenant.getId())
+            : complianceRepository.findAll();
+        return ResponseEntity.ok(all);
     }
 
     @GetMapping("/vehicle/{vehicleId}")
@@ -42,6 +55,7 @@ public class VehicleComplianceController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<VehicleCompliance> createCompliance(
             @RequestParam("vehicleId") Long vehicleId,
             @RequestParam("type") String type,
@@ -49,8 +63,10 @@ public class VehicleComplianceController {
             @RequestParam("expiryDate") String expiryDate,
             @RequestParam("amount") BigDecimal amount,
             @RequestParam(value = "remarks", required = false) String remarks,
-            @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
-        
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            Authentication auth) throws IOException {
+
+        Tenant tenant = getCurrentTenant(auth);
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
 
@@ -61,9 +77,9 @@ public class VehicleComplianceController {
         compliance.setExpiryDate(LocalDate.parse(expiryDate));
         compliance.setAmount(amount);
         compliance.setRemarks(remarks);
+        if (tenant != null) compliance.setTenant(tenant);
 
         if (file != null && !file.isEmpty()) {
-            // Upload to Firebase or local storage
             String fileUrl = fileUploadService.uploadFile(file, "compliance-documents");
             compliance.setDocumentPath(fileUrl);
         }
@@ -72,17 +88,20 @@ public class VehicleComplianceController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<VehicleCompliance> updateCompliance(@PathVariable Long id, @RequestBody VehicleCompliance compliance) {
         return complianceRepository.findById(id)
                 .map(existing -> {
                     compliance.setId(id);
                     compliance.setCreatedAt(existing.getCreatedAt());
+                    compliance.setTenant(existing.getTenant());
                     return ResponseEntity.ok(complianceRepository.save(compliance));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deleteCompliance(@PathVariable Long id) {
         complianceRepository.deleteById(id);
         return ResponseEntity.ok().build();

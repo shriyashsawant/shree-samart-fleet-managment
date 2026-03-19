@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDate;
 
@@ -26,7 +27,7 @@ public class VehicleLog {
     private LocalDate logDate;
 
     @Column(nullable = false)
-    private String logType; // REPAIR, ACCIDENT, INSPECTION, BREAKDOWN, OTHER
+    private String logType;
 
     private String description;
 
@@ -42,4 +43,9 @@ public class VehicleLog {
 
     @Column(length = 1000)
     private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Tenant tenant;
 }

@@ -32,4 +32,6 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     
     @Query("SELECT b FROM Bill b WHERE b.client.id = :clientId AND b.basicAmount = :amount AND YEAR(b.billDate) = :year AND MONTH(b.billDate) = :month")
     List<Bill> findPotentialDuplicates(@Param("clientId") Long clientId, @Param("amount") BigDecimal amount, @Param("year") int year, @Param("month") int month);
+
+    List<Bill> findByTenantId(Long tenantId);
 }

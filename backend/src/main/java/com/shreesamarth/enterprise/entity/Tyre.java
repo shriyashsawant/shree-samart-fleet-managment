@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ public class Tyre {
     private String brand;
 
     @Column(name = "position")
-    private String position; // e.g., Front Left, Rear Right Outer, etc.
+    private String position;
 
     @Column(name = "installation_date")
     private LocalDate installationDate;
@@ -39,7 +40,7 @@ public class Tyre {
     private Long installationOdometer;
 
     @Column(name = "status")
-    private String status; // ACTIVE, RETREADED, SCRAPPED
+    private String status;
 
     @Column(name = "retread_count")
     private Integer retreadCount = 0;
@@ -47,4 +48,9 @@ public class Tyre {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Tenant tenant;
 }

@@ -1,8 +1,11 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.entity.Tenant;
+import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleDocument;
 import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
+import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import com.shreesamarth.enterprise.dto.VehicleDTO;
@@ -19,6 +22,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/vehicles")
@@ -27,12 +31,26 @@ public class VehicleController {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleDocumentRepository documentRepository;
+    private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+
+    private Tenant getCurrentTenant(Authentication auth) {
+        if (auth == null) return null;
+        String username = auth.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) return null;
+        return user.getTenant();
+    }
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<List<VehicleDTO>> getAllVehicles() {
-        List<VehicleDTO> vehicles = vehicleRepository.findAll().stream()
+    public ResponseEntity<List<VehicleDTO>> getAllVehicles(Authentication auth) {
+        Tenant tenant = getCurrentTenant(auth);
+        List<Vehicle> vehicles = tenant != null
+            ? vehicleRepository.findByTenantId(tenant.getId())
+            : vehicleRepository.findAll();
+
+        List<VehicleDTO> dtos = vehicles.stream()
             .map(v -> new VehicleDTO(
                 v.getId(),
                 v.getVehicleNumber(),
@@ -53,9 +71,7 @@ public class VehicleController {
                 v.getCreatedAt()
             ))
             .collect(java.util.stream.Collectors.toList());
-        System.out.println("🚗 [VEHICLE] Found " + vehicles.size() + " vehicles");
-        vehicles.forEach(v -> System.out.println("  - ID: " + v.getId() + ", Number: " + v.getVehicleNumber()));
-        return ResponseEntity.ok(vehicles);
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/{id}")
@@ -67,7 +83,10 @@ public class VehicleController {
     }
 
     @PostMapping
-    public ResponseEntity<Vehicle> createVehicle(@RequestBody Vehicle vehicle) {
+    @Transactional
+    public ResponseEntity<Vehicle> createVehicle(@RequestBody Vehicle vehicle, Authentication auth) {
+        Tenant tenant = getCurrentTenant(auth);
+        if (tenant != null) vehicle.setTenant(tenant);
         if (vehicleRepository.existsByVehicleNumber(vehicle.getVehicleNumber())) {
             return ResponseEntity.badRequest().build();
         }
@@ -75,25 +94,25 @@ public class VehicleController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<Vehicle> updateVehicle(@PathVariable Long id, @RequestBody Vehicle vehicle) {
         return vehicleRepository.findById(id)
                 .map(existing -> {
                     vehicle.setId(id);
                     vehicle.setCreatedAt(existing.getCreatedAt());
+                    vehicle.setTenant(existing.getTenant());
                     return ResponseEntity.ok(vehicleRepository.save(vehicle));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
-        System.out.println("🗑️ [VEHICLE] Delete request for ID: " + id);
         if (vehicleRepository.existsById(id)) {
             vehicleRepository.deleteById(id);
-            System.out.println("🗑️ [VEHICLE] Deleted successfully: " + id);
             return ResponseEntity.ok().build();
         }
-        System.out.println("🗑️ [VEHICLE] Not found: " + id);
         return ResponseEntity.notFound().build();
     }
 
@@ -103,6 +122,7 @@ public class VehicleController {
     }
 
     @PostMapping("/{id}/documents")
+    @Transactional
     public ResponseEntity<VehicleDocument> uploadDocument(
             @PathVariable Long id,
             @RequestParam("documentType") String documentType,
@@ -125,14 +145,18 @@ public class VehicleController {
     }
 
     @DeleteMapping("/documents/{docId}")
+    @Transactional
     public ResponseEntity<Void> deleteDocument(@PathVariable Long docId) {
         documentRepository.deleteById(docId);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getVehicleStats() {
-        List<Vehicle> allVehicles = vehicleRepository.findAll();
+    public ResponseEntity<Map<String, Object>> getVehicleStats(Authentication auth) {
+        Tenant tenant = getCurrentTenant(auth);
+        List<Vehicle> allVehicles = tenant != null
+            ? vehicleRepository.findByTenantId(tenant.getId())
+            : vehicleRepository.findAll();
 
         int totalVehicles = allVehicles.size();
         int activeVehicles = (int) allVehicles.stream()

@@ -10,4 +10,5 @@ import java.util.List;
 public interface DriverAdvanceRepository extends JpaRepository<DriverAdvance, Long> {
     List<DriverAdvance> findByDriverId(Long driverId);
     List<DriverAdvance> findByIsSettled(Boolean isSettled);
+    List<DriverAdvance> findByTenantId(Long tenantId);
 }

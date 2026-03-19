@@ -2,9 +2,12 @@ package com.shreesamarth.enterprise.controller;
 
 import com.shreesamarth.enterprise.entity.Bill;
 import com.shreesamarth.enterprise.entity.Client;
+import com.shreesamarth.enterprise.entity.Tenant;
+import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.repository.BillRepository;
 import com.shreesamarth.enterprise.repository.ClientRepository;
+import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.dto.BillDTO;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/bills")
@@ -28,6 +32,15 @@ public class BillController {
     private final BillRepository billRepository;
     private final ClientRepository clientRepository;
     private final VehicleRepository vehicleRepository;
+    private final UserRepository userRepository;
+
+    private Tenant getCurrentTenant(Authentication auth) {
+        if (auth == null) return null;
+        String username = auth.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) return null;
+        return user.getTenant();
+    }
 
     @GetMapping
     @Transactional(readOnly = true)
@@ -35,17 +48,25 @@ public class BillController {
             @RequestParam(required = false) Long clientId,
             @RequestParam(required = false) Long vehicleId,
             @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate) {
-        
+            @RequestParam(required = false) LocalDate endDate,
+            Authentication auth) {
+
+        Tenant tenant = getCurrentTenant(auth);
+        List<Bill> allTenant = tenant != null
+            ? billRepository.findByTenantId(tenant.getId())
+            : billRepository.findAll();
+
         List<Bill> bills;
         if (clientId != null) {
-            bills = billRepository.findByClientId(clientId);
+            bills = allTenant.stream().filter(b -> b.getClient() != null && b.getClient().getId().equals(clientId)).collect(Collectors.toList());
         } else if (vehicleId != null) {
-            bills = billRepository.findByVehicleId(vehicleId);
+            bills = allTenant.stream().filter(b -> b.getVehicle() != null && b.getVehicle().getId().equals(vehicleId)).collect(Collectors.toList());
         } else if (startDate != null && endDate != null) {
-            bills = billRepository.findByBillDateBetween(startDate, endDate);
+            bills = allTenant.stream()
+                .filter(b -> b.getBillDate() != null && !b.getBillDate().isBefore(startDate) && !b.getBillDate().isAfter(endDate))
+                .collect(Collectors.toList());
         } else {
-            bills = billRepository.findAll();
+            bills = allTenant;
         }
         
         List<BillDTO> billDTOs = bills.stream()
@@ -81,21 +102,22 @@ public class BillController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBill(@RequestBody Bill bill) {
-        // Set client if provided
+    @Transactional
+    public ResponseEntity<?> createBill(@RequestBody Bill bill, Authentication auth) {
+        Tenant tenant = getCurrentTenant(auth);
+        if (tenant != null) bill.setTenant(tenant);
+
         if (bill.getClient() != null && bill.getClient().getId() != null) {
             Client client = clientRepository.findById(bill.getClient().getId())
                     .orElseThrow(() -> new RuntimeException("Client not found"));
             bill.setClient(client);
-            
-            // Check for potential duplicates
+
             if (bill.getBasicAmount() != null && bill.getBillDate() != null) {
                 int year = bill.getBillDate().getYear();
                 int month = bill.getBillDate().getMonthValue();
                 List<Bill> duplicates = billRepository.findPotentialDuplicates(
                         client.getId(), bill.getBasicAmount(), year, month);
                 if (!duplicates.isEmpty()) {
-                    // Return warning but allow saving
                     Bill saved = billRepository.save(bill);
                     return ResponseEntity.ok().body(java.util.Map.of(
                             "bill", saved,
@@ -104,15 +126,13 @@ public class BillController {
                 }
             }
         }
-        
-        // Set vehicle if provided
+
         if (bill.getVehicle() != null && bill.getVehicle().getId() != null) {
             Vehicle vehicle = vehicleRepository.findById(bill.getVehicle().getId())
                     .orElseThrow(() -> new RuntimeException("Vehicle not found"));
             bill.setVehicle(vehicle);
         }
-        
-        // Auto-generate bill number
+
         if (bill.getBillNo() == null || bill.getBillNo().isEmpty()) {
             String lastBillNo = billRepository.findTopByOrderByBillNoDesc()
                     .map(Bill::getBillNo)
@@ -124,8 +144,7 @@ public class BillController {
                 bill.setBillNo("1");
             }
         }
-        
-        // Check for exact duplicate bill number for same client
+
         if (bill.getClient() != null && bill.getBillNo() != null) {
             Optional<Bill> existingBill = billRepository.findByBillNoAndClientId(
                     bill.getBillNo(), bill.getClient().getId());
@@ -135,49 +154,49 @@ public class BillController {
                 ));
             }
         }
-        
-        // Auto-calculate GST
+
         if (bill.getBasicAmount() != null && bill.getGstPercentage() != null) {
             BigDecimal gstHalf = bill.getGstPercentage().divide(BigDecimal.valueOf(2));
             bill.setCgstAmount(bill.getBasicAmount().multiply(gstHalf).divide(BigDecimal.valueOf(100)));
             bill.setSgstAmount(bill.getBasicAmount().multiply(gstHalf).divide(BigDecimal.valueOf(100)));
-            
+
             BigDecimal total = bill.getBasicAmount()
                     .add(bill.getCgstAmount())
                     .add(bill.getSgstAmount());
-            
+
             if (bill.getPfAmount() != null) {
                 total = total.add(bill.getPfAmount());
             }
             bill.setTotalAmount(total);
         }
-        
+
         return ResponseEntity.ok(billRepository.save(bill));
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<Bill> updateBill(@PathVariable Long id, @RequestBody Bill bill) {
         return billRepository.findById(id)
                 .map(existing -> {
                     bill.setId(id);
                     bill.setCreatedAt(existing.getCreatedAt());
-                    
-                    // Recalculate GST
+                    bill.setTenant(existing.getTenant());
+
                     if (bill.getBasicAmount() != null && bill.getGstPercentage() != null) {
                         BigDecimal gstHalf = bill.getGstPercentage().divide(BigDecimal.valueOf(2));
                         bill.setCgstAmount(bill.getBasicAmount().multiply(gstHalf).divide(BigDecimal.valueOf(100)));
                         bill.setSgstAmount(bill.getBasicAmount().multiply(gstHalf).divide(BigDecimal.valueOf(100)));
-                        
+
                         BigDecimal total = bill.getBasicAmount()
                                 .add(bill.getCgstAmount())
                                 .add(bill.getSgstAmount());
-                        
+
                         if (bill.getPfAmount() != null) {
                             total = total.add(bill.getPfAmount());
                         }
                         bill.setTotalAmount(total);
                     }
-                    
+
                     return ResponseEntity.ok(billRepository.save(bill));
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -192,17 +211,21 @@ public class BillController {
         return ResponseEntity.notFound().build();
     }
 
-    // GST Monthly Export - CSV format grouped by party and HSN
     @GetMapping("/reports/gst-monthly")
     public ResponseEntity<byte[]> exportGstMonthly(
-            @RequestParam String month) { // Format: 2025-03
-        
+            @RequestParam String month,
+            Authentication auth) {
+
+        Tenant tenant = getCurrentTenant(auth);
+        List<Bill> allTenant = tenant != null
+            ? billRepository.findByTenantId(tenant.getId())
+            : billRepository.findAll();
+
         YearMonth yearMonth = YearMonth.parse(month);
         LocalDate monthStart = yearMonth.atDay(1);
         LocalDate monthEnd = yearMonth.atEndOfMonth();
-        
-        // Get bills for the month
-        List<Bill> bills = billRepository.findAll().stream()
+
+        List<Bill> bills = allTenant.stream()
                 .filter(b -> b.getBillDate() != null)
                 .filter(b -> !b.getBillDate().isBefore(monthStart) && !b.getBillDate().isAfter(monthEnd))
                 .collect(Collectors.toList());

@@ -34,4 +34,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.tenant.id = :tenantId AND p.paymentType = 'EMI' AND p.paymentDate BETWEEN :start AND :end")
     BigDecimal sumEmiByTenantIdAndDateBetween(@Param("tenantId") Long tenantId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    List<Payment> findByTenantId(Long tenantId);
 }
