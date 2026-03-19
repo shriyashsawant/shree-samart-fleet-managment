@@ -7,6 +7,7 @@ import com.shreesamarth.enterprise.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.hibernate.Hibernate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,21 +27,29 @@ public class TenantController {
     public ResponseEntity<?> getMyTenant(Authentication authentication) {
         if (authentication == null) return ResponseEntity.status(401).build();
         
-        return userRepository.findByUsername(authentication.getName())
-                .map(user -> {
-                    Tenant tenant = user.getTenant();
-                    if (tenant == null) {
-                        // Return an empty template instead of 404 to help the frontend
-                        Tenant template = new Tenant();
-                        template.setCompanyName("New Entity");
-                        return ResponseEntity.ok(template);
-                    }
-                    return ResponseEntity.ok(tenant);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            return userRepository.findByUsername(authentication.getName())
+                    .map(user -> {
+                        Hibernate.initialize(user);
+                        Tenant tenant = user.getTenant();
+                        if (tenant == null) {
+                            Tenant template = new Tenant();
+                            template.setCompanyName("New Entity");
+                            return ResponseEntity.ok(template);
+                        }
+                        return ResponseEntity.ok(tenant);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "error", e.getClass().getSimpleName(),
+                "message", e.getMessage()
+            ));
+        }
     }
 
     @PutMapping("/me")
+    @Transactional
     public ResponseEntity<?> updateMyTenant(Authentication authentication, @RequestBody Tenant updatedTenant) {
         if (authentication == null) return ResponseEntity.status(401).build();
 
