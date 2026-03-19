@@ -542,8 +542,15 @@ public class AnalyticsService {
     }
 
     public VehicleProfileDTO getVehicleProfile(Long vehicleId) {
+        System.out.println("📊 [ANALYTICS] Getting profile for vehicle ID: " + vehicleId);
+        
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+                .orElseThrow(() -> {
+                    System.err.println("❌ [ANALYTICS] Vehicle not found: " + vehicleId);
+                    return new RuntimeException("Vehicle not found with ID: " + vehicleId);
+                });
+        
+        System.out.println("📊 [ANALYTICS] Found vehicle: " + vehicle.getVehicleNumber());
         
         Driver driver = driverRepository.findAll().stream()
                 .filter(d -> d.getAssignedVehicle() != null && d.getAssignedVehicle().getId().equals(vehicleId))

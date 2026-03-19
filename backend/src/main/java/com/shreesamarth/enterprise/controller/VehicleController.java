@@ -60,10 +60,13 @@ public class VehicleController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id) {
+        System.out.println("🗑️ [VEHICLE] Delete request for ID: " + id);
         if (vehicleRepository.existsById(id)) {
             vehicleRepository.deleteById(id);
+            System.out.println("🗑️ [VEHICLE] Deleted successfully: " + id);
             return ResponseEntity.ok().build();
         }
+        System.out.println("🗑️ [VEHICLE] Not found: " + id);
         return ResponseEntity.notFound().build();
     }
 
