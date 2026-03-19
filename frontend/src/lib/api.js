@@ -1,7 +1,9 @@
 import axios from 'axios'
 
+// For Vercel deployment, use the full backend URL
+// The env variable should be the full URL like https://shreesamarth-backend.onrender.com
 const rawApiUrl = import.meta.env.VITE_API_URL || '/api'
-const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl
+const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : (rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl)
 
 const api = axios.create({
   baseURL: API_URL,
