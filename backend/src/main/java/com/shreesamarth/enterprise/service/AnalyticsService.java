@@ -5,6 +5,7 @@ import com.shreesamarth.enterprise.entity.*;
 import com.shreesamarth.enterprise.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -541,6 +542,7 @@ public class AnalyticsService {
         }).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public VehicleProfileDTO getVehicleProfile(Long vehicleId) {
         System.out.println("📊 [ANALYTICS] Getting profile for vehicle ID: " + vehicleId);
         
@@ -600,16 +602,38 @@ public class AnalyticsService {
                 .findFirst()
                 .orElse(null);
 
+        // Map to DTOs
+        List<VehicleProfileDTO.ExpenseSummary> expenseSummaries = latestExpenses.stream()
+            .map(e -> new VehicleProfileDTO.ExpenseSummary(e.getId(), e.getExpenseType(), e.getAmount(), e.getDate()))
+            .collect(Collectors.toList());
+            
+        List<VehicleProfileDTO.MaintenanceSummary> maintenanceSummaries = latestMaintenance.stream()
+            .map(m -> new VehicleProfileDTO.MaintenanceSummary(m.getId(), m.getMaintenanceType(), m.getCost(), m.getDate()))
+            .collect(Collectors.toList());
+            
+        List<VehicleProfileDTO.BillSummary> billSummaries = latestBills.stream()
+            .map(b -> new VehicleProfileDTO.BillSummary(b.getId(), b.getBillNo(), b.getTotalAmount(), b.getBillDate()))
+            .collect(Collectors.toList());
+            
         return new VehicleProfileDTO(
-            vehicle,
-            driver,
+            vehicle.getId(),
+            vehicle.getVehicleNumber(),
+            vehicle.getModel(),
+            vehicle.getManufacturer(),
+            vehicle.getChassisNumber(),
+            vehicle.getEngineNumber(),
+            vehicle.getOwnerName(),
+            vehicle.getStatus(),
+            driver != null ? driver.getId() : null,
+            driver != null ? driver.getName() : null,
+            driver != null ? driver.getPhone() : null,
+            driver != null ? driver.getDrivingLicense() : null,
             revenue,
             expenses,
             revenue.subtract(expenses),
-            latestExpenses,
-            latestMaintenance,
-            latestBills,
-            documents,
+            expenseSummaries,
+            maintenanceSummaries,
+            billSummaries,
             lastOilChange,
             lastTyreChange,
             lastFuel != null ? lastFuel.getDate() : null,
