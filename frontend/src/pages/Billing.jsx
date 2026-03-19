@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, FileText, Download, Printer, Edit, Trash2, Upload, Camera, Check, AlertCircle, X, Search } from 'lucide-react'
-import { billAPI, clientAPI, vehicleAPI, ocrAPI } from '../lib/api'
+import { billAPI, clientAPI, vehicleAPI, ocrAPI, tenantAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
 export default function Billing() {
@@ -305,7 +305,12 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
   const [extracted, setExtracted] = useState(null)
   const [editedData, setEditedData] = useState(null)
   const [error, setError] = useState(null)
+  const [companyGst, setCompanyGst] = useState(null)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    tenantAPI.getMe().then(r => setCompanyGst(r.data?.gstNumber || null)).catch(() => setCompanyGst(null))
+  }, [])
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -324,7 +329,7 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
     setError(null)
     
     try {
-      const response = await ocrAPI.extractInvoice(file)
+      const response = await ocrAPI.extractInvoice(file, companyGst)
       const raw = response.data
       
       const normalized = {
@@ -751,12 +756,17 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
 }
 
 function BillPrintModal({ bill, onClose }) {
+  const [companyGst, setCompanyGst] = useState(null)
   const client = bill.client || {}
   const basic = parseFloat(bill.basicAmount) || 0
   const cgst = parseFloat(bill.cgstAmount) || 0
   const sgst = parseFloat(bill.sgstAmount) || 0
   const pf = parseFloat(bill.pfAmount) || 0
   const total = parseFloat(bill.totalAmount) || 0
+
+  useEffect(() => {
+    tenantAPI.getMe().then(r => setCompanyGst(r.data?.gstNumber || 'N/A')).catch(() => setCompanyGst('N/A'))
+  }, [])
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -775,7 +785,7 @@ function BillPrintModal({ bill, onClose }) {
                 <p>Date: {formatDate(bill.billDate)}</p>
               </div>
               <div className="text-right">
-                <p className="font-bold">GSTIN: 27ASXPP6488L1ZD</p>
+                <p className="font-bold">GSTIN: {companyGst || '...'}</p>
               </div>
             </div>
           </div>

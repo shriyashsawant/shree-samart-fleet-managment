@@ -156,8 +156,58 @@ def get_keywords(field):
     return keywords.get(field, [])
 
 
-def parse_invoice(text):
-    """Parse invoice using keyword anchors for better accuracy"""
+def extract_all_gsts(text, company_gst=None):
+    """Extract all valid 15-char GSTINs from OCR text. Handles merged blobs.
+    Returns (company_gst, party_gst)."""
+    GST_STRICT = r'[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z][0-9A-Z]{2}'
+
+    normalized = text.upper()
+    found = re.findall(GST_STRICT, normalized)
+
+    for blob in re.findall(r'[0-9]{2}[A-Z0-9]{28,32}', normalized):
+        for split_at in range(13, 18):
+            p1, p2 = blob[:split_at], blob[split_at:]
+            for f1 in [fix_gst_errors(p1), fix_gst_errors(p1[:15])]:
+                if re.fullmatch(GST_STRICT, f1):
+                    for f2 in [fix_gst_errors(p2), fix_gst_errors(p2[:15])]:
+                        if re.fullmatch(GST_STRICT, f2):
+                            found.extend([f1, f2])
+                            blob_split = True
+                            break
+                    break
+            else:
+                continue
+            break
+
+    seen, unique = set(), []
+    for g in found:
+        fg = fix_gst_errors(g)
+        if fg not in seen:
+            seen.add(fg)
+            unique.append(fg)
+
+    if not unique:
+        return None, None
+
+    company_gst_upper = company_gst.strip().upper() if company_gst else None
+    if company_gst_upper:
+        matched_idx = next((i for i, g in enumerate(unique) if g.upper() == company_gst_upper), None)
+        if matched_idx is not None:
+            return unique[matched_idx], (unique[matched_idx + 1] if len(unique) > matched_idx + 1 else unique[0])
+        return unique[0], (unique[1] if len(unique) > 1 else unique[0])
+    return unique[0], (unique[1] if len(unique) > 1 else None)
+
+
+def parse_invoice(text, company_gst=None):
+    """Parse invoice using keyword anchors for better accuracy.
+    
+    Args:
+        text: Raw OCR text from the invoice image
+        company_gst: The tenant's own GST number (from settings). Used to distinguish
+                     company GST from party GST in the OCR text. If provided, the parser
+                     will match GSTs in the text against this value to identify which is
+                     which.
+    """
     lines = text.split('\n')
     lines = [l.strip() for l in lines if l.strip()]
     
@@ -181,7 +231,6 @@ def parse_invoice(text):
     # Sanity Checks
     # 1. Back-calculate basic amount if it's 0 but total is present
     if (not result.get('basic_amount') or result['basic_amount'] == 0) and result.get('total_amount'):
-        # Assumed default 18% if not found
         gst_perc = 18.0
         result['basic_amount'] = round(result['total_amount'] / (1 + (gst_perc / 100)), 2)
         result['cgst_amount'] = round((result['total_amount'] - result['basic_amount']) / 2, 2)
@@ -192,44 +241,50 @@ def parse_invoice(text):
         result['total_amount'] = result['basic_amount'] + result.get('cgst_amount', 0) + result.get('sgst_amount', 0) + result.get('igst_amount', 0)
         
     # Bill No
-    bill_match = re.search(r'(?:Bill\.?\s*No\.?|Invoice\s*No)[\s:\.]*(\d+[/\\A-Za-z\-]+)', text, re.IGNORECASE)
+    bill_match = re.search(r'(?:Bill\.?\s*No\.?|Invoice\s*No)[\s:\-]*(\d+[\w\-]*)', text, re.IGNORECASE)
     if bill_match:
-        result['bill_no'] = bill_match.group(1).strip()
+        result['bill_no'] = bill_match.group(1).strip().lstrip('-')
     else:
         result['bill_no'] = extract_with_anchor(text, 'bill_no')
     
-    # Date
-    for line in lines:
-        month_match = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[- ]*(\d{4})', line, re.IGNORECASE)
-        if month_match:
-            result['date'] = f"{month_match.group(1).title()}-{month_match.group(2)}"
+    # Date - look for "Date" or "Dt" followed by actual date value (DD/MM/YYYY)
+    date_found = False
+    for i, line in enumerate(lines):
+        date_match = re.search(r'\b(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})\b', line)
+        if date_match and i > 3:
+            result['date'] = date_match.group(1)
+            date_found = True
             break
     
-    if not result['date']:
-        date_match = re.search(r'(?:Date|Month)[:\s]*([A-Za-z]+\s*[-/]?\s*\d{4})', text, re.IGNORECASE)
-        if date_match:
-            result['date'] = date_match.group(1).strip().replace(' ', '-')
+    # Fallback: look for month + year pattern only if no DD/MM/YYYY found
+    if not date_found:
+        for line in lines:
+            month_match = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[- ]*(\d{4})', line, re.IGNORECASE)
+            if month_match:
+                result['date'] = f"{month_match.group(1).title()}-{month_match.group(2)}"
+                break
     
     # HSN Code
     result['hsn_code'] = extract_with_anchor(text, 'hsn_code')
     
-    # Bank Account
-    account = extract_with_anchor(text, 'bank_account')
-    if account:
-        result['bank_account_no'] = account
+    # Bank Account - look for Kotak Bank:- followed by number, or Kotak followed by number
+    account_match = re.search(r'Kotak\s*(?:Bank)?[:\-\s]*(\d{9,18})', text, re.IGNORECASE)
+    if account_match:
+        result['bank_account_no'] = account_match.group(1)
+    else:
+        account_match = re.search(r'(?:A/C|Account|Account\s*No)[:\s]*(\d{9,18})', text, re.IGNORECASE)
+        if account_match:
+            result['bank_account_no'] = account_match.group(1)
+        else:
+            account_match = re.search(r'(?:IFSC\s*Code|Kotak|IFSC)[:\s]*([A-Z]{4}\d{7})', text, re.IGNORECASE)
     
-    # IFSC
-    ifsc = extract_with_anchor(text, 'ifsc_code')
-    if ifsc:
-        result['bank_ifsc'] = ifsc.upper()
-    
-    # Extract GST numbers
-    gst_list = re.findall(r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[0-9A-Z]{1})', 
-                         normalize_gst(text))
-    if gst_list:
-        result['company_gst'] = gst_list[0]
-        if len(gst_list) > 1:
-            result['party_gst'] = gst_list[1]
+    # IFSC - look for IFSC code in text
+    ifsc_match = re.search(r'(?:IFSC\s*Code|IFSC|IFS\s*Code)[:\s]*([A-Z]{4}\d{7})', text, re.IGNORECASE)
+    if not ifsc_match:
+        ifsc_match = re.search(r'([A-Z]{4}0\d{6})', text.upper())
+    if ifsc_match:
+        result['bank_ifsc'] = ifsc_match.group(1).upper()
+    result['company_gst'], result['party_gst'] = extract_all_gsts(text, company_gst)
     
     # PAN
     pan_match = re.search(r'(?:PAN|PAN\s*NO)[:\-\s]*([A-Z]{5}[0-9]{4}[A-Z]{1})', text, re.IGNORECASE)
@@ -240,8 +295,10 @@ def parse_invoice(text):
         if pan_match:
             result['party_pan'] = pan_match.group(1)
     
-    # Mobile
-    mobile_match = re.search(r'(?:Mob|Mobile|Phone)[:\-\s]*([6-9]\d{9})', text, re.IGNORECASE)
+    # Mobile - look for any 10-digit number starting with 6-9, anywhere in text
+    mobile_match = re.search(r'(?:Mob|Mobile|Phone)[@\s:]*[-:_\s]*\s*([6-9]\d{9})', text, re.IGNORECASE)
+    if not mobile_match:
+        mobile_match = re.search(r'\b([6-9]\d{9})\b', text)
     if mobile_match:
         result['company_mobile'] = mobile_match.group(1)
     
@@ -262,7 +319,12 @@ def parse_invoice(text):
         line_up = line.upper()
         if any(k in line_up for k in party_keywords):
             if len(line) > 3 and 'GST' not in line.upper() and 'PAN' not in line.upper():
-                result['party_name'] = line.strip()
+                party_name = line.strip()
+                # Clean address garbage after company name (numbers, state codes, pin codes, special chars)
+                party_name = re.sub(r'\s*[\d\*,#]+\s*(?:E|Mumbai|Maharashtra|India|Pune|Kolhapur|Tamil|Country|Post|400\d+|411\d+|416\d+).*$', '', party_name, flags=re.IGNORECASE).strip()
+                # Remove trailing punctuation and numbers
+                party_name = re.sub(r'\s+[A-Z0-9]{2,}$', '', party_name).strip()
+                result['party_name'] = party_name
                 break
     
     # Bill Type
@@ -280,11 +342,34 @@ def parse_invoice(text):
     return result
 
 
+def fix_gst_errors(gst):
+    """Fix common OCR errors in GST: handles 16-char PPP->PP (extra P in letter segment), I->1, l->1, 0->O"""
+    if not gst:
+        return gst
+    if len(gst) > 15:
+        working = list(gst)
+        if len(working) >= 11 and working[10] not in '0123456789':
+            del working[10]
+        elif len(working) >= 8 and working[7] not in '0123456789':
+            del working[7]
+        gst = ''.join(working[:15])
+    if len(gst) < 14:
+        return gst
+    fixed = list(gst)
+    for i in range(10, len(fixed)):
+        if fixed[i] in ('I', 'l'):
+            fixed[i] = '1'
+        elif fixed[i] == '0' and i > 12:
+            fixed[i] = 'O'
+    return ''.join(fixed)
+
 def normalize_gst(text):
-    """Fix common OCR errors in GST"""
-    return re.sub(
+    """Fix common OCR errors in GST for extraction"""
+    fixed = text.upper()
+    fixed = re.sub(
         r'([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z])([A-Z]{1}[0-9]{1}[A-Z])',
-        lambda m: m.group(1).replace('I', '1').replace('l', '1') + 
+        lambda m: m.group(1).replace('I', '1').replace('l', '1') +
                    m.group(2).replace('I', '1').replace('l', '1').replace('0', 'O'),
-        text.upper()
+        fixed
     )
+    return fixed

@@ -202,9 +202,12 @@ export const tripAPI = {
 
 // OCR APIs
 export const ocrAPI = {
-  extractInvoice: (file) => {
+  extractInvoice: (file, companyGst) => {
     const formData = new FormData()
     formData.append('file', file)
+    if (companyGst) {
+      formData.append('company_gst', companyGst)
+    }
     return api.post('/api/ocr/extract', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })

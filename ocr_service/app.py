@@ -130,22 +130,18 @@ def extract_document():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     
+    company_gst = request.form.get('company_gst', '').strip() or None
+    
     temp_filename = f"{uuid.uuid4()}.jpg"
     temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
     file.save(temp_path)
     
     try:
-        # Step 1: Preprocess image
         processed_path = preprocess_image(temp_path)
-        
-        # Step 2: Use Cloud OCR for Render (saves RAM)
-        # Use OCR.space on cloud to avoid OOM 512MB limit
         from ocr_engine import extract_with_ocr_space, extract_with_paddle
         
-        # Priority: OCR.space (Cloud) -> Paddle (Local/Cloud fallback)
         text = extract_with_ocr_space(processed_path)
         
-        # If OCR.space fails or no key, try local (might hit memory limit)
         if not text:
             print("OCR.space failed, trying local Paddle...")
             text = extract_with_paddle(processed_path)
@@ -153,11 +149,10 @@ def extract_document():
         if not text:
             return jsonify({'error': 'Failed to extract text after multiple attempts'}), 400
         
-        # Step 3: Parse and Classify
         doc_type = detect_document_type(text)
         
         if doc_type == 'invoice':
-            result = parse_invoice(text)
+            result = parse_invoice(text, company_gst=company_gst)
         elif doc_type == 'vehicle_rc':
             result = parse_vehicle_document(text, 'rc')
         elif doc_type == 'driving_license':
