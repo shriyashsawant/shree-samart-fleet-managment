@@ -67,6 +67,7 @@ public class DriverController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<DriverDTO>> getAllDrivers(Authentication auth) {
         Tenant tenant = getCurrentTenant(auth);
         List<DriverDTO> drivers;
@@ -81,6 +82,7 @@ public class DriverController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<DriverDTO> getDriverById(@PathVariable Long id) {
         return driverRepository.findById(id)
                 .map(d -> ResponseEntity.ok(toDTO(d)))
@@ -88,6 +90,7 @@ public class DriverController {
     }
 
     @GetMapping("/vehicle/{vehicleId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Driver>> getDriversByVehicle(@PathVariable Long vehicleId) {
         return ResponseEntity.ok(driverRepository.findByAssignedVehicle_Id(vehicleId));
     }

@@ -3,7 +3,6 @@ com\shreesamarth\enterprise\entity\DriverAdvance.class
 com\shreesamarth\enterprise\controller\DashboardController.class
 com\shreesamarth\enterprise\dto\VehicleProfileDTO$ExpenseSummary.class
 com\shreesamarth\enterprise\service\AnalyticsService.class
-com\shreesamarth\enterprise\controller\VehicleLogDTO.class
 com\shreesamarth\enterprise\repository\InventoryRepository.class
 com\shreesamarth\enterprise\dto\DashboardDTO.class
 com\shreesamarth\enterprise\dto\DocumentHealthDTO.class
@@ -23,6 +22,7 @@ com\shreesamarth\enterprise\service\OcrService.class
 com\shreesamarth\enterprise\dto\VehicleProfileDTO$DriverInfo.class
 com\shreesamarth\enterprise\controller\DriverAdvanceController.class
 com\shreesamarth\enterprise\entity\Expense.class
+com\shreesamarth\enterprise\dto\VehicleLogDTO.class
 com\shreesamarth\enterprise\config\SendGridConfig.class
 com\shreesamarth\enterprise\repository\TyreRepository.class
 com\shreesamarth\enterprise\dto\GstSummaryDTO.class

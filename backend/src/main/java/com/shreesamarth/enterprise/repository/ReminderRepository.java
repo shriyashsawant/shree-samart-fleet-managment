@@ -14,4 +14,6 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     List<Reminder> findByReminderType(String reminderType);
     List<Reminder> findByReferenceTypeAndReferenceId(String referenceType, Long referenceId);
     List<Reminder> findByTenantId(Long tenantId);
+    
+    List<Reminder> findByTenantIdAndExpiryDateBeforeAndStatus(Long tenantId, LocalDate date, String status);
 }

@@ -38,6 +38,7 @@ public class PaymentController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Payment>> getAllPayments(
             @RequestParam(required = false) Long vehicleId,
             @RequestParam(required = false) Long driverId,
@@ -75,6 +76,7 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Payment> getPaymentById(@PathVariable Long id) {
         return paymentRepository.findById(id)
                 .map(ResponseEntity::ok)

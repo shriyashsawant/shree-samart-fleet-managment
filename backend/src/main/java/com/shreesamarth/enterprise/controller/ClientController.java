@@ -5,6 +5,7 @@ import com.shreesamarth.enterprise.entity.Client;
 import com.shreesamarth.enterprise.repository.ClientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class ClientController {
     private final ClientRepository clientRepository;
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<ClientDTO>> getAllClients() {
         List<Client> clients = clientRepository.findAll();
         List<ClientDTO> dtos = clients.stream().map(this::toDTO).toList();
@@ -24,6 +26,7 @@ public class ClientController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<ClientDTO> getClientById(@PathVariable Long id) {
         return clientRepository.findById(id)
                 .map(client -> ResponseEntity.ok(toDTO(client)))

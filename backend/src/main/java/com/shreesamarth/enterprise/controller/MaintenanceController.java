@@ -42,6 +42,7 @@ public class MaintenanceController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Maintenance>> getAllMaintenance(
             @RequestParam(required = false) Long vehicleId,
             @RequestParam(required = false) LocalDate startDate,
@@ -72,6 +73,7 @@ public class MaintenanceController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Maintenance> getMaintenanceById(@PathVariable Long id) {
         return maintenanceRepository.findById(id)
                 .map(ResponseEntity::ok)

@@ -8,6 +8,7 @@ import com.shreesamarth.enterprise.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +41,7 @@ public class DashboardController {
     }
 
     @GetMapping("/stats")
+    @Transactional(readOnly = true)
     public ResponseEntity<DashboardDTO> getDashboardStats(Authentication auth) {
         Tenant tenant = getCurrentTenant(auth);
         System.out.println("📊 [DASHBOARD] Fetching dashboard stats...");
@@ -85,11 +87,16 @@ public class DashboardController {
 
         LocalDate today = LocalDate.now();
         LocalDate next30Days = today.plusDays(30);
-        List<Reminder> upcomingReminders = reminderRepository.findByExpiryDateBeforeAndStatus(next30Days, "PENDING");
+        List<Reminder> upcomingReminders;
+        
+        if (tenant != null) {
+            upcomingReminders = reminderRepository.findByTenantIdAndExpiryDateBeforeAndStatus(tenant.getId(), next30Days, "PENDING");
+        } else {
+            upcomingReminders = reminderRepository.findByExpiryDateBeforeAndStatus(next30Days, "PENDING");
+        }
 
         List<Map<String, Object>> remindersList = new ArrayList<>();
         for (Reminder r : upcomingReminders) {
-            if (tenant != null && (r.getTenant() == null || !r.getTenant().getId().equals(tenant.getId()))) continue;
             Map<String, Object> reminder = new HashMap<>();
             reminder.put("id", r.getId());
             reminder.put("title", r.getTitle());

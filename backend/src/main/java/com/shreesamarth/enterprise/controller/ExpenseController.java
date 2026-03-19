@@ -42,6 +42,7 @@ public class ExpenseController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Expense>> getAllExpenses(
             @RequestParam(required = false) Long vehicleId,
             @RequestParam(required = false) String expenseType,
@@ -79,6 +80,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Expense> getExpenseById(@PathVariable Long id) {
         return expenseRepository.findById(id)
                 .map(ResponseEntity::ok)
