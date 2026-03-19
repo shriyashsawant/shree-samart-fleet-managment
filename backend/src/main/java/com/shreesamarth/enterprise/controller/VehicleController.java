@@ -4,30 +4,19 @@ import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleDocument;
 import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
-import com.shreesamarth.enterprise.service.AnalyticsService;
 import com.shreesamarth.enterprise.service.FileUploadService;
-import com.shreesamarth.enterprise.dto.VehicleSummaryDTO;
-import com.shreesamarth.enterprise.dto.VehicleProfileDTO;
-import com.shreesamarth.enterprise.dto.DocumentHealthDTO;
-import com.shreesamarth.enterprise.dto.VehicleProfitDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/vehicles")
@@ -37,7 +26,6 @@ public class VehicleController {
     private final VehicleRepository vehicleRepository;
     private final VehicleDocumentRepository documentRepository;
     private final FileUploadService fileUploadService;
-    private final AnalyticsService analyticsService;
 
     @GetMapping
     public ResponseEntity<List<Vehicle>> getAllVehicles() {
@@ -90,11 +78,10 @@ public class VehicleController {
             @RequestParam("documentType") String documentType,
             @RequestParam("expiryDate") String expiryDate,
             @RequestParam("file") MultipartFile file) throws IOException {
-        
+
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
 
-        // Upload to Firebase or local storage
         String fileUrl = fileUploadService.uploadFile(file, "vehicle-documents/" + vehicle.getVehicleNumber());
 
         VehicleDocument document = new VehicleDocument();
@@ -113,11 +100,10 @@ public class VehicleController {
         return ResponseEntity.ok().build();
     }
 
-    // Vehicle Statistics Endpoint
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getVehicleStats() {
         List<Vehicle> allVehicles = vehicleRepository.findAll();
-        
+
         int totalVehicles = allVehicles.size();
         int activeVehicles = (int) allVehicles.stream()
                 .filter(v -> "ACTIVE".equals(v.getStatus()))
@@ -125,17 +111,16 @@ public class VehicleController {
         int underMaintenance = (int) allVehicles.stream()
                 .filter(v -> "UNDER_MAINTENANCE".equals(v.getStatus()))
                 .count();
-        
-        // Calculate average fuel economy
+
         BigDecimal avgFuelEconomy = allVehicles.stream()
                 .filter(v -> v.getFuelEconomy() != null)
                 .map(Vehicle::getFuelEconomy)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+
         if (totalVehicles > 0) {
             avgFuelEconomy = avgFuelEconomy.divide(
-                    new BigDecimal(totalVehicles), 
-                    2, 
+                    new BigDecimal(totalVehicles),
+                    2,
                     RoundingMode.HALF_UP
             );
         }
@@ -145,36 +130,7 @@ public class VehicleController {
         stats.put("activeVehicles", activeVehicles);
         stats.put("underMaintenance", underMaintenance);
         stats.put("avgFuelEconomy", avgFuelEconomy);
-        
+
         return ResponseEntity.ok(stats);
-    }
-
-    @GetMapping("/summary")
-    public ResponseEntity<List<VehicleSummaryDTO>> getVehicleSummaries(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Long tenantId = getTenantId(userDetails);
-        return ResponseEntity.ok(analyticsService.getVehicleSummaries(tenantId));
-    }
-
-    @GetMapping("/{id}/profile")
-    public ResponseEntity<VehicleProfileDTO> getVehicleProfile(@PathVariable("id") Long vehicleId) {
-        return ResponseEntity.ok(analyticsService.getVehicleProfile(vehicleId));
-    }
-
-    @GetMapping("/{id}/document-health")
-    public ResponseEntity<DocumentHealthDTO> getDocumentHealth(@PathVariable("id") Long vehicleId) {
-        return ResponseEntity.ok(analyticsService.getDocumentHealth(vehicleId));
-    }
-
-    @GetMapping("/{id}/profit")
-    public ResponseEntity<VehicleProfitDTO> getVehicleProfitByMonth(
-            @PathVariable("id") Long vehicleId,
-            @RequestParam String month) {
-        return ResponseEntity.ok(analyticsService.getVehicleProfitByMonth(vehicleId, month));
-    }
-
-    private Long getTenantId(UserDetails userDetails) {
-        // For now, return a default tenant ID
-        return 1L;
     }
 }
