@@ -635,9 +635,9 @@ public class AnalyticsService {
             vehicle.getEngineNumber(),
             vehicle.getOwnerName(),
             vehicle.getStatus(),
-            vehicle.getFuelType(),
-            vehicle.getFinancer(),
-            vehicle.getPurchaseDate(),
+            "DIESEL", // Default fuel type
+            "Internal", // Default financier
+            vehicle.getRegistrationDate(),
             vehicle.getEmiAmount(),
             vehicle.getEmiBank()
         );

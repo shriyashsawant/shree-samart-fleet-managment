@@ -46,8 +46,8 @@ public class VehicleProfileDTO {
         private String engineNumber;
         private String ownerName;
         private String status;
-        private String fuelType;
-        private String financier;
+        private String fuelType = "DIESEL"; // Default to DIESEL since not in entity
+        private String financier = "Internal"; // Default since not in entity
         private LocalDate registrationDate;
         private BigDecimal emiAmount;
         private String emiBank;
