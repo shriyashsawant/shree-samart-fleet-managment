@@ -65,6 +65,7 @@ public class ClientController {
             client.getAddress(),
             client.getPhone(),
             client.getEmail(),
+            client.getDieselProvidedByClient(),
             client.getCreatedAt()
         );
     }

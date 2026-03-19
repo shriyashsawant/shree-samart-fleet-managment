@@ -33,6 +33,9 @@ public class User implements UserDetails {
     @Column(length = 20)
     private String role;
 
+    @Column(length = 100)
+    private String email;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

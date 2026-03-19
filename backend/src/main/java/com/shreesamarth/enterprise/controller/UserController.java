@@ -40,7 +40,7 @@ public class UserController {
                         users = userRepository.findByTenantId(tenant.getId());
                     }
                     List<UserDTO> dtos = users.stream()
-                        .map(u -> new UserDTO(u.getId(), u.getUsername(), u.getRole(), u.getCreatedAt()))
+                        .map(u -> new UserDTO(u.getId(), u.getUsername(), u.getRole(), u.getEmail(), u.getTenant() != null ? u.getTenant().getCompanyName() : "N/A", u.getCreatedAt()))
                         .collect(Collectors.toList());
                     return ResponseEntity.ok(dtos);
                 })
@@ -64,7 +64,8 @@ public class UserController {
                     newUser.setUsername(username);
                     newUser.setPassword(passwordEncoder.encode(password));
                     newUser.setRole(role);
-                    newUser.setTenant(currentUser.getTenant()); // Link to same tenant
+                    newUser.setEmail(email);
+                    newUser.setTenant(currentUser.getTenant());
 
                     userRepository.save(newUser);
                     

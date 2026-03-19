@@ -34,6 +34,9 @@ public class Client {
     @Column(length = 100)
     private String email;
 
+    @Column(name = "diesel_provided_by_client")
+    private Boolean dieselProvidedByClient = false;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
