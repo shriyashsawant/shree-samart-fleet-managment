@@ -3,7 +3,8 @@ package com.shreesamarth.enterprise.config;
 import com.shreesamarth.enterprise.entity.*;
 import com.shreesamarth.enterprise.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +15,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class DataInitializer implements CommandLineRunner {
+public class DataInitializer {
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
@@ -26,14 +27,16 @@ public class DataInitializer implements CommandLineRunner {
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d-M-yyyy");
 
-    @Override
-    public void run(String... args) {
-
+    @EventListener(ApplicationReadyEvent.class)
+    public void init() {
+        System.out.println("🚀 [DATA_INIT] >>> PULSE DETECTED: DataInitializer is starting now...");
+        
         // ── 1. TENANT ──────────────────────────────────────────────────────────
         Tenant defaultTenant;
         try {
+            System.out.println("🚀 [DATA_INIT] Checking for existing tenants...");
             if (tenantRepository.count() == 0) {
-                System.out.println("DEBUG: Creating default tenant...");
+                System.out.println("🚀 [DATA_INIT] No tenant found. Creating 'Shree Samarth Enterprises'...");
                 Tenant t = new Tenant();
                 t.setCompanyName("Shree Samarth Enterprises");
                 t.setCompanyCode("SSE001");
@@ -43,19 +46,20 @@ public class DataInitializer implements CommandLineRunner {
                 t.setGstNumber("27ASXPP6488L1ZD");
                 t.setStatus("ACTIVE");
                 defaultTenant = tenantRepository.save(t);
-                System.out.println("DEBUG: Tenant created with ID=" + defaultTenant.getId());
+                System.out.println("🚀 [DATA_INIT] ✅ Tenant created with ID=" + defaultTenant.getId());
             } else {
                 defaultTenant = tenantRepository.findAll().get(0);
-                System.out.println("DEBUG: Using existing tenant: " + defaultTenant.getCompanyName());
+                System.out.println("🚀 [DATA_INIT] ✅ Using existing tenant: " + defaultTenant.getCompanyName());
             }
         } catch (Exception e) {
-            System.err.println("CRITICAL: Failed to initialize tenant: " + e.getMessage());
+            System.err.println("❌ [DATA_INIT] CRITICAL ERROR during Tenant init: " + e.getMessage());
             e.printStackTrace();
             return;
         }
 
         // ── 2. USERS ───────────────────────────────────────────────────────────
         try {
+            System.out.println("🚀 [DATA_INIT] Synchronizing administrative users...");
             User admin = userRepository.findByUsername("admin").orElse(new User());
             if (admin.getId() == null) {
                 admin.setUsername("admin");
@@ -64,7 +68,6 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRole("ADMIN");
             admin.setTenant(defaultTenant);
             userRepository.save(admin);
-            System.out.println("DEBUG: admin user synchronized.");
 
             User shrUser = userRepository.findByUsername("ShreeSamarth").orElse(new User());
             if (shrUser.getId() == null) {
@@ -74,14 +77,14 @@ public class DataInitializer implements CommandLineRunner {
             shrUser.setRole("ADMIN");
             shrUser.setTenant(defaultTenant);
             userRepository.save(shrUser);
-            System.out.println("DEBUG: ShreeSamarth user synchronized.");
+            System.out.println("🚀 [DATA_INIT] ✅ Users synchronized.");
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to initialize users: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ [DATA_INIT] ERROR during User init: " + e.getMessage());
         }
 
         // ── 3. VEHICLES ────────────────────────────────────────────────────────
         try {
+            System.out.println("🚀 [DATA_INIT] Synchronizing fleet detail...");
             Vehicle v1 = vehicleRepository.findByVehicleNumber("MH09CU1605").orElse(new Vehicle());
             v1.setVehicleNumber("MH09CU1605");
             v1.setModel("TATA LPK 2518TC BSIII");
@@ -94,7 +97,6 @@ public class DataInitializer implements CommandLineRunner {
             v1.setStatus("ACTIVE");
             v1.setTenant(defaultTenant);
             vehicleRepository.save(v1);
-            System.out.println("DEBUG: Vehicle MH09CU1605 synchronized.");
 
             Vehicle v2 = vehicleRepository.findByVehicleNumber("MH43Y2651").orElse(new Vehicle());
             v2.setVehicleNumber("MH43Y2651");
@@ -107,14 +109,14 @@ public class DataInitializer implements CommandLineRunner {
             v2.setStatus("ACTIVE");
             v2.setTenant(defaultTenant);
             vehicleRepository.save(v2);
-            System.out.println("DEBUG: Vehicle MH43Y2651 synchronized.");
+            System.out.println("🚀 [DATA_INIT] ✅ Fleet synchronized (MH09CU1605, MH43Y2651).");
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to initialize vehicles: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ [DATA_INIT] ERROR during Vehicle init: " + e.getMessage());
         }
 
         // ── 4. DRIVERS ─────────────────────────────────────────────────────────
         try {
+            System.out.println("🚀 [DATA_INIT] Synchronizing driver team...");
             Vehicle v1 = vehicleRepository.findByVehicleNumber("MH09CU1605").orElse(null);
             Vehicle v2 = vehicleRepository.findByVehicleNumber("MH43Y2651").orElse(null);
 
@@ -132,9 +134,6 @@ public class DataInitializer implements CommandLineRunner {
                 d1.setAssignedVehicle(v1);
                 d1.setTenant(defaultTenant);
                 driverRepository.save(d1);
-                System.out.println("DEBUG: Driver Janak Biswakarma created.");
-            } else {
-                System.out.println("DEBUG: Driver Janak already exists, skipping.");
             }
 
             if (!driverRepository.existsByName("Rabin")) {
@@ -151,20 +150,16 @@ public class DataInitializer implements CommandLineRunner {
                 d2.setAssignedVehicle(v2);
                 d2.setTenant(defaultTenant);
                 driverRepository.save(d2);
-                System.out.println("DEBUG: Driver Rabin created.");
-            } else {
-                System.out.println("DEBUG: Driver Rabin already exists, skipping.");
             }
+            System.out.println("🚀 [DATA_INIT] ✅ Driver team synchronized.");
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to initialize drivers: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ [DATA_INIT] ERROR during Driver init: " + e.getMessage());
         }
 
         // ── 5. CLIENTS ─────────────────────────────────────────────────────────
         try {
+            System.out.println("🚀 [DATA_INIT] Checking client registry...");
             if (clientRepository.count() == 0) {
-                System.out.println("DEBUG: Creating clients...");
-
                 Client c1 = new Client();
                 c1.setPartyName("PRISM JOHNSON LIMITED");
                 c1.setGstNumber("27ASXPP6488L1ZD");
@@ -191,22 +186,16 @@ public class DataInitializer implements CommandLineRunner {
                 c3.setEmail("ambuja@example.com");
                 c3.setTenant(defaultTenant);
                 clientRepository.save(c3);
-
-                System.out.println("DEBUG: 3 clients created.");
-            } else {
-                System.out.println("DEBUG: Clients already exist, skipping.");
+                System.out.println("🚀 [DATA_INIT] ✅ 3 professional clients created.");
             }
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to initialize clients: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ [DATA_INIT] ERROR during Client init: " + e.getMessage());
         }
 
-        // ── 6. BILLS ── Always fetches fresh from DB ───────────────────────────
+        // ── 6. BILLS ───────────────────────────────────────────────────────────
         try {
+            System.out.println("🚀 [DATA_INIT] Checking financial yield (bills)...");
             if (billRepository.count() == 0) {
-                System.out.println("DEBUG: Creating sample bills...");
-
-                // CRITICAL: Always fetch fresh — never rely on variables from other blocks
                 Vehicle v1 = vehicleRepository.findByVehicleNumber("MH09CU1605").orElse(null);
                 Vehicle v2 = vehicleRepository.findByVehicleNumber("MH43Y2651").orElse(null);
                 List<Client> clients = clientRepository.findAll();
@@ -224,7 +213,6 @@ public class DataInitializer implements CommandLineRunner {
                     b1.setStatus("PENDING");
                     b1.setTenant(defaultTenant);
                     billRepository.save(b1);
-                    System.out.println("DEBUG: Bill BILL-2026-001 saved.");
                 }
 
                 if (v2 != null && clients.size() > 1) {
@@ -240,7 +228,6 @@ public class DataInitializer implements CommandLineRunner {
                     b2.setStatus("PAID");
                     b2.setTenant(defaultTenant);
                     billRepository.save(b2);
-                    System.out.println("DEBUG: Bill BILL-2026-002 saved.");
                 }
 
                 if (v1 != null && clients.size() > 2) {
@@ -256,15 +243,12 @@ public class DataInitializer implements CommandLineRunner {
                     b3.setStatus("PARTIAL");
                     b3.setTenant(defaultTenant);
                     billRepository.save(b3);
-                    System.out.println("DEBUG: Bill BILL-2026-003 saved.");
                 }
-            } else {
-                System.out.println("DEBUG: Bills already exist (" + billRepository.count() + "), skipping.");
+                System.out.println("🚀 [DATA_INIT] ✅ professional bills synchronized.");
             }
-            System.out.println("DEBUG: ===== DataInitializer completed successfully =====");
+            System.out.println("🚀 [DATA_INIT] ⭐ ⭐ ⭐ SYSTEM DATA INITIALIZATION COMPLETED ⭐ ⭐ ⭐");
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to initialize bills: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("❌ [DATA_INIT] ERROR during Bill init: " + e.getMessage());
         }
     }
 }
