@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
@@ -52,7 +53,7 @@ public class Driver {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_vehicle_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "documents", "drivers", "vehicleLogs", "complianceRecords", "tenant"})
+    @JsonIgnore
     private Vehicle assignedVehicle;
 
     @Column(length = 20)
@@ -64,7 +65,7 @@ public class Driver {
     private Tenant tenant;
 
     @OneToMany(mappedBy = "driver", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "driver"})
+    @JsonIgnore
     private List<DriverDocument> documents = new ArrayList<>();
 
     @Column(name = "license_file_path")

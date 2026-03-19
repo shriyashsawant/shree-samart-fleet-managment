@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
@@ -74,19 +75,19 @@ public class Vehicle {
     private Tenant tenant;
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "vehicle"})
+    @JsonIgnore
     private List<VehicleDocument> documents = new ArrayList<>();
 
     @OneToMany(mappedBy = "assignedVehicle", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "assignedVehicle"})
+    @JsonIgnore
     private List<Driver> drivers = new ArrayList<>();
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "vehicle"})
+    @JsonIgnore
     private List<VehicleLog> vehicleLogs = new ArrayList<>();
 
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "vehicle"})
+    @JsonIgnore
     private List<VehicleCompliance> complianceRecords = new ArrayList<>();
 
     @Column(name = "fuel_economy", precision = 5, scale = 2)
