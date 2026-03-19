@@ -2,9 +2,8 @@ package com.shreesamarth.enterprise.config;
 
 import com.shreesamarth.enterprise.entity.*;
 import com.shreesamarth.enterprise.repository.*;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +26,7 @@ public class DataInitializer {
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d-M-yyyy");
 
-    @EventListener(ApplicationReadyEvent.class)
+    @PostConstruct
     public void init() {
         System.out.println("🚀 [DATA_INIT] >>> PULSE DETECTED: DataInitializer is starting now...");
         
