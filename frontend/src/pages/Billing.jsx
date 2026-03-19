@@ -325,10 +325,24 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
     
     try {
       const response = await ocrAPI.extractInvoice(file)
-      setExtracted(response.data)
-      setEditedData(response.data) // Initialize editable data
+      const raw = response.data
+      
+      const normalized = {
+        billNo: raw.bill_no || '',
+        date: raw.date || '',
+        partyName: raw.party_name || '',
+        partyGst: raw.party_gst || '',
+        basicAmount: raw.basic_amount || '',
+        totalAmount: raw.total_amount || '',
+        hsnCode: raw.hsn_code || '',
+        billType: raw.bill_type || '',
+        confidence: raw.confidence || 0,
+      }
+      
+      setExtracted(normalized)
+      setEditedData(normalized)
     } catch (e) {
-      console.error(e)
+      console.error('OCR error:', e)
       setError('Failed to extract data. Please try again or enter manually.')
     } finally {
       setProcessing(false)
@@ -476,17 +490,17 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
                       </div>
                     </div>
 
-                    {extracted.confidence && (
+                    {extracted.confidence !== undefined && (
                       <div className="pt-3 border-t border-dark-100">
                         <div className="flex items-center justify-between gap-3">
                           <span className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Engine Confidence</span>
                           <div className="flex-1 h-1.5 bg-dark-100 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-gradient-to-r from-primary-500 to-emerald-500" 
-                              style={{ width: `${(extracted.confidence || 0) * 100}%` }}
+                              style={{ width: `${extracted.confidence}%` }}
                             />
                           </div>
-                          <span className="text-[10px] font-black text-dark-900 tracking-tighter">{Math.round((extracted.confidence || 0) * 100)}%</span>
+                          <span className="text-[10px] font-black text-dark-900 tracking-tighter">{Math.round(extracted.confidence)}%</span>
                         </div>
                       </div>
                     )}
