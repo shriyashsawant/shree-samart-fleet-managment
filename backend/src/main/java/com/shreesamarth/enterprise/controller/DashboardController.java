@@ -117,6 +117,20 @@ public class DashboardController {
         dashboard.setUpcomingReminders(remindersList);
         dashboard.setVehiclePerformance(vehiclePerformance);
         
+        System.out.println("📊 [DASHBOARD] Dashboard stats: vehicles=" + totalVehicles + ", drivers=" + activeDrivers + ", revenue=" + monthlyRevenue);
+        
         return ResponseEntity.ok(dashboard);
+    }
+    
+    // Debug endpoint to check database state
+    @GetMapping("/debug")
+    public ResponseEntity<Map<String, Object>> debugDatabase() {
+        Map<String, Object> debug = new HashMap<>();
+        debug.put("vehicles", vehicleRepository.count());
+        debug.put("drivers", driverRepository.count());
+        debug.put("bills", billRepository.count());
+        debug.put("expenses", expenseRepository.count());
+        debug.put("reminders", reminderRepository.count());
+        return ResponseEntity.ok(debug);
     }
 }
