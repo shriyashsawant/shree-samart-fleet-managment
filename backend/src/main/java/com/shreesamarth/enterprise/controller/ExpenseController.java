@@ -1,14 +1,19 @@
 package com.shreesamarth.enterprise.controller;
 
 import com.shreesamarth.enterprise.entity.Expense;
+import com.shreesamarth.enterprise.entity.Tenant;
+import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.repository.ExpenseRepository;
+import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,17 +30,34 @@ public class ExpenseController {
 
     private final ExpenseRepository expenseRepository;
     private final VehicleRepository vehicleRepository;
+    private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+
+    private Tenant getCurrentTenant(Authentication auth) {
+        if (auth == null) return null;
+        String username = auth.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) return null;
+        return user.getTenant();
+    }
 
     @GetMapping
     public ResponseEntity<List<Expense>> getAllExpenses(
             @RequestParam(required = false) Long vehicleId,
             @RequestParam(required = false) String expenseType,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) LocalDate startDate,
-            @RequestParam(required = false) LocalDate endDate) {
-        
+            @RequestParam(required = false) LocalDate endDate,
+            Authentication auth) {
+
         List<Expense> expenses;
-        if (vehicleId != null) {
+        if (category != null) {
+            if (startDate != null && endDate != null) {
+                expenses = expenseRepository.findByCategoryAndDateBetween(category, startDate, endDate);
+            } else {
+                expenses = expenseRepository.findByCategory(category);
+            }
+        } else if (vehicleId != null) {
             if (startDate != null && endDate != null) {
                 expenses = expenseRepository.findByVehicleIdAndDateBetween(vehicleId, startDate, endDate);
             } else {
@@ -57,7 +79,12 @@ public class ExpenseController {
     }
 
     @PostMapping
-    public ResponseEntity<Expense> createExpense(@RequestBody Expense expense) {
+    @Transactional
+    public ResponseEntity<Expense> createExpense(@RequestBody Expense expense, Authentication auth) {
+        Tenant tenant = getCurrentTenant(auth);
+        if (tenant != null) {
+            expense.setTenant(tenant);
+        }
         Vehicle vehicle = vehicleRepository.findById(expense.getVehicle().getId())
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
         expense.setVehicle(vehicle);
@@ -65,11 +92,13 @@ public class ExpenseController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<Expense> updateExpense(@PathVariable Long id, @RequestBody Expense expense) {
         return expenseRepository.findById(id)
                 .map(existing -> {
                     expense.setId(id);
                     expense.setCreatedAt(existing.getCreatedAt());
+                    expense.setTenant(existing.getTenant());
                     return ResponseEntity.ok(expenseRepository.save(expense));
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -85,14 +114,14 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/bill")
+    @Transactional
     public ResponseEntity<Expense> uploadBill(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) throws IOException {
-        
+
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
 
-        // Upload to Firebase or local storage
         String fileUrl = fileUploadService.uploadFile(file, "expense-bills");
         expense.setBillFilePath(fileUrl);
         return ResponseEntity.ok(expenseRepository.save(expense));

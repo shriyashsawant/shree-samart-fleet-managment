@@ -24,6 +24,9 @@ public class Expense {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
+    @Column(name = "category", length = 50)
+    private String category = "OPERATIONAL";
+
     @Column(name = "expense_type", length = 50)
     private String expenseType;
 

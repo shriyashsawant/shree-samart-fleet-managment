@@ -15,10 +15,15 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByVehicleId(Long vehicleId);
     List<Expense> findByVehicleIdAndDateBetween(Long vehicleId, LocalDate start, LocalDate end);
     List<Expense> findByExpenseType(String expenseType);
-    
+    List<Expense> findByCategory(String category);
+    List<Expense> findByCategoryAndDateBetween(String category, LocalDate start, LocalDate end);
+
     @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.date BETWEEN :start AND :end")
     BigDecimal sumByDateBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
-    
+
     @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.vehicle.id = :vehicleId AND e.date BETWEEN :start AND :end")
     BigDecimal sumByVehicleAndDateBetween(@Param("vehicleId") Long vehicleId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.category = :category AND e.date BETWEEN :start AND :end")
+    BigDecimal sumByCategoryAndDateBetween(@Param("category") String category, @Param("start") LocalDate start, @Param("end") LocalDate end);
 }
