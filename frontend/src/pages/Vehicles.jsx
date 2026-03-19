@@ -95,10 +95,10 @@ export default function Vehicles() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard label="Total Units" value={stats.total} icon={Truck} color="primary" />
-        <StatCard label="Active Status" value={stats.active} icon={CheckCircle2} color="green" />
-        <StatCard label="In Maintenance" value={stats.maintenance} icon={Wrench} color="orange" />
-        <StatCard label="Driver Assigns" value={stats.active} icon={Users} color="blue" />
+        <StatCard label="Total Units" value={stats.totalVehicles} icon={Truck} color="primary" />
+        <StatCard label="Active Status" value={stats.activeVehicles} icon={CheckCircle2} color="green" />
+        <StatCard label="In Maintenance" value={stats.underMaintenance} icon={Wrench} color="orange" />
+        <StatCard label="Driver Assigns" value={stats.activeVehicles} icon={Users} color="blue" />
       </div>
 
       {loading ? (

@@ -143,7 +143,7 @@ npm i -g vercel
 ### 4.3 Add Environment Variables
 In Vercel dashboard → Project Settings → Environment Variables:
 ```
-VITE_API_URL=https://shreesamarth-backend.onrender.com/api
+VITE_API_URL=https://shree-samart-fleet-managment.onrender.com/api
 VITE_OCR_URL=https://shreesamarth-ocr.onrender.com/api/ocr
 ```
 
@@ -317,7 +317,7 @@ PORT=<provided by Render>
 
 ### Frontend (Vercel):
 ```
-VITE_API_URL=https://shreesamarth-backend.onrender.com/api
+VITE_API_URL=https://shree-samart-fleet-managment.onrender.com/api
 VITE_OCR_URL=https://shreesamarth-ocr.onrender.com/api/ocr
 ```
 

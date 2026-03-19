@@ -145,7 +145,7 @@ export default function VehicleProfile() {
 
                 <div className="space-y-4 bg-white p-6 rounded-3xl border border-dark-100 shadow-sm">
                   <ContactItem icon={Phone} text={assignedDriver.phone} />
-                  <ContactItem icon={CreditCard} text={`DL: ${assignedDriver.drivingLicense}`} />
+                  <ContactItem icon={CreditCard} text={`DL: ${assignedDriver.license}`} />
                   <ContactItem icon={MapPin} text={assignedDriver.address?.slice(0, 20) + '...'} />
                 </div>
               </div>
@@ -213,9 +213,6 @@ export default function VehicleProfile() {
 }
 
 function DetailedOverview({ profile, compliance }) {
-  const lastOilChange = profile.latestMaintenance?.find(m => m.maintenanceType === 'OIL_CHANGE')
-  const lastTyreChange = profile.latestMaintenance?.find(m => m.maintenanceType === 'TYRE_CHANGE' || (m.partsReplaced && m.partsReplaced.toLowerCase().includes('tyre')))
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
        <div className="space-y-12">
@@ -227,15 +224,13 @@ function DetailedOverview({ profile, compliance }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                <MilestoneCard 
                   label="Last Oil Change" 
-                  value={lastOilChange?.date} 
-                  subValue={lastOilChange?.cost}
+                  value={profile.lastOilChange} 
                   icon={Fuel} 
                   type="amber" 
                />
                <MilestoneCard 
                   label="Last Tyre Strategy" 
-                  value={lastTyreChange?.date} 
-                  subValue={lastTyreChange?.cost}
+                  value={profile.lastTyreChange} 
                   icon={Radius} 
                   type="emerald" 
                />
