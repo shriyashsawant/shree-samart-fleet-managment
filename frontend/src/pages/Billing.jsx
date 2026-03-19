@@ -332,6 +332,7 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
         date: raw.date || '',
         partyName: raw.party_name || '',
         partyGst: raw.party_gst || '',
+        companyGst: raw.company_gst || '',
         basicAmount: raw.basic_amount || '',
         totalAmount: raw.total_amount || '',
         hsnCode: raw.hsn_code || '',
@@ -471,6 +472,15 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
                         />
                       </div>
                       <div className="space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">HSN Code</label>
+                        <input 
+                          type="text" 
+                          value={editedData?.hsnCode || ''} 
+                          onChange={(e) => handleEditChange('hsnCode', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700 uppercase"
+                        />
+                      </div>
+                      <div className="space-y-1">
                         <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Basic Amount (₹)</label>
                         <input 
                           type="number" 
@@ -487,6 +497,16 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
                           onChange={(e) => handleEditChange('totalAmount', e.target.value)}
                           className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-emerald-600"
                         />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Company GST</label>
+                        <input 
+                          type="text" 
+                          value={editedData?.companyGst || ''} 
+                          onChange={(e) => handleEditChange('companyGst', e.target.value)}
+                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700 uppercase"
+                        />
+                      </div>
                       </div>
                     </div>
 

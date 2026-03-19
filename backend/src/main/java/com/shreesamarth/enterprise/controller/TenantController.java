@@ -23,27 +23,32 @@ public class TenantController {
     private final TenantRepository tenantRepository;
 
     @GetMapping("/me")
-    @Transactional(readOnly = true)
     public ResponseEntity<?> getMyTenant(Authentication authentication) {
         if (authentication == null) return ResponseEntity.status(401).build();
         
         try {
-            return userRepository.findByUsername(authentication.getName())
-                    .map(user -> {
-                        Hibernate.initialize(user);
-                        Tenant tenant = user.getTenant();
-                        if (tenant == null) {
-                            Tenant template = new Tenant();
-                            template.setCompanyName("New Entity");
-                            return ResponseEntity.ok(template);
-                        }
-                        return ResponseEntity.ok(tenant);
-                    })
-                    .orElse(ResponseEntity.notFound().build());
+            User user = userRepository.findByUsername(authentication.getName())
+                    .orElse(null);
+            if (user == null) return ResponseEntity.notFound().build();
+            
+            Long tenantId = user.getTenant() != null ? user.getTenant().getId() : null;
+            Tenant tenant = null;
+            if (tenantId != null) {
+                tenant = tenantRepository.findById(tenantId).orElse(null);
+            }
+            
+            if (tenant == null) {
+                Tenant template = new Tenant();
+                template.setCompanyName("New Entity");
+                return ResponseEntity.ok(template);
+            }
+            return ResponseEntity.ok(tenant);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
                 "error", e.getClass().getSimpleName(),
-                "message", e.getMessage()
+                "message", e.getMessage() != null ? e.getMessage() : "null",
+                "type", e.getClass().getName()
             ));
         }
     }
