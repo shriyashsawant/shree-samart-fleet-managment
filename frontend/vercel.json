@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://shree-samart-fleet-managment.onrender.com/api/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ]
 }
