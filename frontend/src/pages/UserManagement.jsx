@@ -102,6 +102,7 @@ export default function UserManagement() {
               <tr className="bg-dark-900/5 backdrop-blur-xl border-b border-dark-100">
                 <th className="px-8 py-6 text-[10px] font-black text-dark-500 uppercase tracking-[0.2em]">Personnel ID</th>
                 <th className="px-8 py-6 text-[10px] font-black text-dark-500 uppercase tracking-[0.2em]">Authorization Level</th>
+                <th className="px-8 py-6 text-[10px] font-black text-dark-500 uppercase tracking-[0.2em]">Company</th>
                 <th className="px-8 py-6 text-[10px] font-black text-dark-500 uppercase tracking-[0.2em]">Contact Node</th>
                 <th className="px-8 py-6 text-[10px] font-black text-dark-500 uppercase tracking-[0.2em]">Joined</th>
                 <th className="px-8 py-6 text-[10px] font-black text-dark-500 uppercase tracking-[0.2em]">Control</th>
@@ -124,6 +125,11 @@ export default function UserManagement() {
                       user.role === 'ADMIN' ? "bg-indigo-100 text-indigo-600 border border-indigo-200" : "bg-emerald-100 text-emerald-600 border border-emerald-200"
                     )}>
                       {user.role}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className="text-xs font-bold text-dark-600 bg-dark-50 px-3 py-1 rounded-lg border border-dark-100">
+                      {user.tenantName || 'N/A'}
                     </span>
                   </td>
                   <td className="px-8 py-6 font-bold text-dark-500 text-xs lowercase tracking-tighter italic">

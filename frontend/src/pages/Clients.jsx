@@ -91,6 +91,11 @@ export default function Clients() {
                   <ContactItem icon={Phone} text={c.phone || 'NO_CONTACT'} />
                   <ContactItem icon={Mail} text={c.email || 'NO_EMAIL'} />
                   <ContactItem icon={MapPin} text={c.address?.slice(0, 35) + '...' || 'NO_ADDRESS'} />
+                  {c.dieselProvidedByClient && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest rounded-full border border-amber-200">Diesel by Client</span>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -133,7 +138,8 @@ function ClientModal({ client, onClose, onSave }) {
     gstNumber: client?.gstNumber || '',
     phone: client?.phone || '',
     email: client?.email || '',
-    address: client?.address || ''
+    address: client?.address || '',
+    dieselProvidedByClient: client?.dieselProvidedByClient || false,
   })
 
   const handle = async (e) => {
@@ -167,6 +173,19 @@ function ClientModal({ client, onClose, onSave }) {
           <div className="space-y-1.5">
             <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Registered Office Address</label>
             <textarea value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} className="interactive-field resize-none h-24" />
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+            <input 
+              type="checkbox" 
+              id="dieselCheck"
+              checked={f.dieselProvidedByClient} 
+              onChange={(e) => setF({ ...f, dieselProvidedByClient: e.target.checked })} 
+              className="w-5 h-5 rounded border-amber-200 text-primary-600 focus:ring-primary-500"
+            />
+            <label htmlFor="dieselCheck" className="text-xs font-bold text-amber-800 uppercase tracking-tight cursor-pointer">
+              Diesel Provided by Client
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-6 border-t border-dark-50">

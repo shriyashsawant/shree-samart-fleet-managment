@@ -35,20 +35,13 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Failed to load dashboard:', error)
       setStats({
-        totalVehicles: 3,
-        activeDrivers: 4,
-        monthlyRevenue: 420000,
-        monthlyExpenses: 210000,
-        profit: 210000,
-        upcomingReminders: [
-          { title: 'Fitness Certificate Renewal', vehicle: 'MH43Y2651', daysRemaining: 5 },
-          { title: 'Insurance Expiry', vehicle: 'MH09CU1605', daysRemaining: 12 }
-        ],
-        vehiclePerformance: [
-          { vehicleNumber: 'MH12AB1234', revenue: 150000, expenses: 80000, profit: 70000 },
-          { vehicleNumber: 'MH12XY4567', revenue: 140000, expenses: 75000, profit: 65000 },
-          { vehicleNumber: 'MH14PQ7890', revenue: 130000, expenses: 55000, profit: 75000 },
-        ]
+        totalVehicles: 0,
+        activeDrivers: 0,
+        monthlyRevenue: 0,
+        monthlyExpenses: 0,
+        profit: 0,
+        upcomingReminders: [],
+        vehiclePerformance: []
       })
     } finally {
       setLoading(false)

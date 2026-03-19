@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Users, Edit, Trash2, Phone, Calendar, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, MapPin, ArrowUpRight, ArrowLeft, MoreVertical, FileSearch, ExternalLink } from 'lucide-react'
+import { Plus, Users, Edit, Trash2, Phone, Calendar, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, MapPin, ArrowUpRight, ArrowLeft, MoreVertical, FileSearch, ExternalLink, FileText } from 'lucide-react'
 import { driverAPI, vehicleAPI, attendanceAPI, driverDocumentAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 import { format } from 'date-fns'
@@ -120,11 +120,11 @@ export default function Drivers() {
                         <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mb-1">Standard Salary</p>
                         <p className="text-xl font-black text-primary-600 tracking-tighter">{formatCurrency(driver.salary)}</p>
                       </div>
-                      {driver.assignedVehicle && (
+                      {driver.assignedVehicleNumber && (
                         <div className="text-right">
                           <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mb-1">Unit Assignment</p>
                           <span className="font-black text-dark-900 text-sm bg-white px-3 py-1 rounded-lg border border-dark-100 shadow-sm block">
-                            {driver.assignedVehicle.vehicleNumber}
+                            {driver.assignedVehicleNumber}
                           </span>
                         </div>
                       )}
@@ -461,18 +461,38 @@ function DriverModal({ driver, vehicles, onClose, onSave }) {
     salary: driver?.salary || '',
     joiningDate: driver?.joiningDate || '',
     endDate: driver?.endDate || '',
-    assignedVehicleId: driver?.assignedVehicle?.id || '',
+    assignedVehicleId: driver?.assignedVehicleId || '',
     status: driver?.status || 'ACTIVE',
   })
+  const [licenseFile, setLicenseFile] = useState(null)
+  const [aadhaarFile, setAadhaarFile] = useState(null)
+  const [saving, setSaving] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setSaving(true)
     try {
       const data = { ...formData, salary: parseFloat(formData.salary) || 0 }
-      if (driver?.id) await driverAPI.update(driver.id, data)
-      else await driverAPI.create(data)
+      let savedDriver
+      if (driver?.id) {
+        savedDriver = (await driverAPI.update(driver.id, data)).data
+      } else {
+        savedDriver = (await driverAPI.create(data)).data
+      }
+
+      if (licenseFile) {
+        const fd = new FormData()
+        fd.append('file', licenseFile)
+        await driverAPI.uploadLicense(savedDriver.id, fd)
+      }
+      if (aadhaarFile) {
+        const fd = new FormData()
+        fd.append('file', aadhaarFile)
+        await driverAPI.uploadAadhaar(savedDriver.id, fd)
+      }
       onSave()
     } catch (error) { console.error('Failed to save driver:', error) }
+    finally { setSaving(false) }
   }
 
   return (
@@ -482,7 +502,7 @@ function DriverModal({ driver, vehicles, onClose, onSave }) {
           <h2 className="text-2xl font-black text-dark-900 tracking-tight">{driver ? 'Modify' : 'Enroll'} <span className="text-gradient">Operator</span></h2>
           <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-1">Personnel Management System</p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-10 space-y-8 overflow-y-auto bg-mesh">
           <div className="grid grid-cols-2 gap-8">
             <FormGroup label="Full Name" value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} required />
@@ -492,12 +512,12 @@ function DriverModal({ driver, vehicles, onClose, onSave }) {
             <FormGroup label="License Expiry" value={formData.licenseExpiry} onChange={(v) => setFormData({ ...formData, licenseExpiry: v })} type="date" />
             <FormGroup label="Standard Salary" value={formData.salary} onChange={(v) => setFormData({ ...formData, salary: v })} type="number" />
             <FormGroup label="Joining Date" value={formData.joiningDate} onChange={(v) => setFormData({ ...formData, joiningDate: v })} type="date" />
-            
+
             <div className="space-y-1.5">
               <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Unit Assignment</label>
-              <select 
-                value={formData.assignedVehicleId} 
-                onChange={(e) => setFormData({ ...formData, assignedVehicleId: e.target.value })} 
+              <select
+                value={formData.assignedVehicleId}
+                onChange={(e) => setFormData({ ...formData, assignedVehicleId: e.target.value })}
                 className="interactive-field"
               >
                 <option value="">No Active Unit</option>
@@ -511,9 +531,29 @@ function DriverModal({ driver, vehicles, onClose, onSave }) {
             <textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="interactive-field resize-none h-24" />
           </div>
 
+          <div className="p-6 bg-dark-50 rounded-3xl border border-dark-100 space-y-4">
+             <p className="text-[10px] font-black text-dark-400 uppercase tracking-widest">Document Upload</p>
+             <div className="grid grid-cols-2 gap-6">
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">Driving License Copy</label>
+                  {driver?.licenseFilePath && <span className="text-[9px] text-emerald-600 font-bold ml-1">File uploaded</span>}
+                  <div className="mt-1">
+                    <input type="file" accept="image/*,.pdf" onChange={e => setLicenseFile(e.target.files[0])} className="text-xs file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-dark-50 file:text-[10px] file:font-black file:text-dark-600 file:uppercase file:tracking-widest hover:file:bg-dark-100 transition-all cursor-pointer w-full" />
+                  </div>
+               </div>
+               <div className="space-y-1">
+                  <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">Aadhaar Card Copy</label>
+                  {driver?.aadhaarFilePath && <span className="text-[9px] text-emerald-600 font-bold ml-1">File uploaded</span>}
+                  <div className="mt-1">
+                    <input type="file" accept="image/*,.pdf" onChange={e => setAadhaarFile(e.target.files[0])} className="text-xs file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-dark-50 file:text-[10px] file:font-black file:text-dark-600 file:uppercase file:tracking-widest hover:file:bg-dark-100 transition-all cursor-pointer w-full" />
+                  </div>
+               </div>
+             </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-6 border-t border-dark-50">
             <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-            <button type="submit" className="btn-primary">Finalize Enrollment</button>
+            <button type="submit" disabled={saving} className="btn-primary disabled:opacity-50">{saving ? 'Saving...' : 'Finalize Enrollment'}</button>
           </div>
         </form>
       </motion.div>

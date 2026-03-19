@@ -589,13 +589,15 @@ function StatMini({ label, value, icon: Icon, color }) {
 }
 
 function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose, onSave }) {
+  const [submitting, setSubmitting] = useState(false)
+
   // Find matching client by GST number
   const findClientByGst = (gst) => {
     if (!gst) return ''
     return clients.find(c => c.gstNumber === gst)?.id || ''
   }
 
-  const [f, setF] = useState({ 
+  const [f, setF] = useState({
     billNo: bill?.billNo || extractedData?.billNo || nextBillNo,
     billDate: bill?.billDate || extractedData?.date || new Date().toISOString().split('T')[0], 
     client: { id: bill?.client?.id || findClientByGst(extractedData?.partyGst) || '' }, 
@@ -616,6 +618,7 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
 
   const handle = async (e) => {
     e.preventDefault()
+    setSubmitting(true)
     try {
       const data = { ...f, cgstAmount: cgst, sgstAmount: sgst, totalAmount: total }
       if (bill?.id) {
@@ -624,7 +627,9 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
         await billAPI.create(data)
       }
       onSave()
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e) } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -747,7 +752,7 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
           
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 p-2 border rounded-lg">Cancel</button>
-            <button type="submit" className="flex-1 p-2 bg-primary-600 text-white rounded-lg">{bill ? 'Update Bill' : 'Generate Bill'}</button>
+            <button type="submit" disabled={submitting} className="flex-1 p-2 bg-primary-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : bill ? 'Update Bill' : 'Generate Bill'}</button>
           </div>
         </form>
       </motion.div>

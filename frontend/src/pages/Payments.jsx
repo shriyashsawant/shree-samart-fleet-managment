@@ -221,15 +221,22 @@ function PaymentModal({ drivers, vehicles, onClose, onSave }) {
 
           <div className="space-y-1">
              <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">Assigned Entity</label>
-             {f.paymentType === 'SALARY' ? (
-                <select 
-                  value={f.driver.id} 
-                  onChange={(e) => setF({ ...f, driver: { id: e.target.value } })} 
-                  className="interactive-field w-full"
-                >
-                  <option value="">Select Operator</option>
-                  {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
+              {f.paymentType === 'SALARY' ? (
+                 <select 
+                   value={f.driver.id} 
+                   onChange={(e) => {
+                     const selectedDriver = drivers.find(d => String(d.id) === String(e.target.value))
+                     setF({ 
+                       ...f, 
+                       driver: { id: e.target.value },
+                       amount: selectedDriver ? String(selectedDriver.salary || '') : f.amount
+                     })
+                   }} 
+                   className="interactive-field w-full"
+                 >
+                   <option value="">Select Operator</option>
+                   {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                 </select>
              ) : (
                 <select 
                   value={f.vehicle.id} 

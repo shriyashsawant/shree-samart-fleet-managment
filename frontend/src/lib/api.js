@@ -87,6 +87,12 @@ export const driverAPI = {
   create: (data) => api.post('/api/drivers', data),
   update: (id, data) => api.put(`/api/drivers/${id}`, data),
   delete: (id) => api.delete(`/api/drivers/${id}`),
+  uploadLicense: (id, formData) => api.post(`/api/drivers/${id}/license-file`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  uploadAadhaar: (id, formData) => api.post(`/api/drivers/${id}/aadhaar-file`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
 }
 
 // Expense APIs
