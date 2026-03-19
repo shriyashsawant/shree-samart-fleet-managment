@@ -7,6 +7,7 @@ import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +29,7 @@ public class VehicleController {
     private final FileUploadService fileUploadService;
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Vehicle>> getAllVehicles() {
         List<Vehicle> vehicles = vehicleRepository.findAll();
         System.out.println("🚗 [VEHICLE] Found " + vehicles.size() + " vehicles");
@@ -36,6 +38,7 @@ public class VehicleController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Vehicle> getVehicleById(@PathVariable Long id) {
         return vehicleRepository.findById(id)
                 .map(ResponseEntity::ok)

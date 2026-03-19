@@ -9,6 +9,7 @@ import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +32,7 @@ public class DriverController {
     private final FileUploadService fileUploadService;
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Driver>> getAllDrivers() {
         List<Driver> drivers = driverRepository.findAll();
         System.out.println("👤 [DRIVER] Found " + drivers.size() + " drivers");

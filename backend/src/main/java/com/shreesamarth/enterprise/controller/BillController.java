@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ public class BillController {
     private final VehicleRepository vehicleRepository;
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Bill>> getAllBills(
             @RequestParam(required = false) Long clientId,
             @RequestParam(required = false) Long vehicleId,
