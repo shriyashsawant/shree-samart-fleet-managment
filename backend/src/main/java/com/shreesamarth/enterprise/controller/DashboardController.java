@@ -31,6 +31,8 @@ public class DashboardController {
 
     @GetMapping("/stats")
     public ResponseEntity<DashboardDTO> getDashboardStats() {
+        System.out.println("📊 [DASHBOARD] Fetching dashboard stats...");
+        
         // Get current month date range
         YearMonth currentMonth = YearMonth.now();
         LocalDate startOfMonth = currentMonth.atDay(1);
@@ -38,9 +40,11 @@ public class DashboardController {
         
         // Total vehicles
         long totalVehicles = vehicleRepository.count();
+        System.out.println("📊 [DASHBOARD] Total vehicles: " + totalVehicles);
         
         // Active drivers
         long activeDrivers = driverRepository.findByStatus("ACTIVE").size();
+        System.out.println("📊 [DASHBOARD] Active drivers: " + activeDrivers);
         
         // Monthly revenue (from bills)
         BigDecimal monthlyRevenue = billRepository.sumByDateBetween(startOfMonth, endOfMonth);

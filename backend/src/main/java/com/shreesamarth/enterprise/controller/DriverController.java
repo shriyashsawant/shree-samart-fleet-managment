@@ -32,7 +32,10 @@ public class DriverController {
 
     @GetMapping
     public ResponseEntity<List<Driver>> getAllDrivers() {
-        return ResponseEntity.ok(driverRepository.findAll());
+        List<Driver> drivers = driverRepository.findAll();
+        System.out.println("👤 [DRIVER] Found " + drivers.size() + " drivers");
+        drivers.forEach(d -> System.out.println("  - ID: " + d.getId() + ", Name: " + d.getName()));
+        return ResponseEntity.ok(drivers);
     }
 
     @GetMapping("/{id}")

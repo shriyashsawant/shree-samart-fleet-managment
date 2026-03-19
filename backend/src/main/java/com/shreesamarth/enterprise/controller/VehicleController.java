@@ -29,7 +29,10 @@ public class VehicleController {
 
     @GetMapping
     public ResponseEntity<List<Vehicle>> getAllVehicles() {
-        return ResponseEntity.ok(vehicleRepository.findAll());
+        List<Vehicle> vehicles = vehicleRepository.findAll();
+        System.out.println("🚗 [VEHICLE] Found " + vehicles.size() + " vehicles");
+        vehicles.forEach(v -> System.out.println("  - ID: " + v.getId() + ", Number: " + v.getVehicleNumber()));
+        return ResponseEntity.ok(vehicles);
     }
 
     @GetMapping("/{id}")
