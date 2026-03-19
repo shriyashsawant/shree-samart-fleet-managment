@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://shreesamarth-backend.onrender.com/api/:path*"
+      "destination": "https://shree-samart-fleet-managment.onrender.com/api/:path*"
     },
     {
       "source": "/:path*",
