@@ -44,8 +44,10 @@ export const analyticsAPI = {
   getGstSummary: (months) => api.get('/api/analytics/gst-summary', { params: { months } }),
   getPartyRevenue: () => api.get('/api/analytics/party-revenue'),
   getIdleAlerts: () => api.get('/api/analytics/idle-alerts'),
-  getVehicleSummaryList: () => api.get('/api/analytics/vehicles/summary'),
-  getVehicleProfile: (id) => api.get(`/api/analytics/vehicles/${id}/profile`),
+  getDocumentHealth: (id) => api.get(`/api/vehicles/${id}/document-health`),
+  getVehicleProfitByMonth: (id, month) => api.get(`/api/vehicles/${id}/profit`, { params: { month } }),
+  getVehicleSummaryList: () => api.get('/api/vehicles/summary'),
+  getVehicleProfile: (id) => api.get(`/api/vehicles/${id}/profile`),
 }
 
 // Dashboard APIs

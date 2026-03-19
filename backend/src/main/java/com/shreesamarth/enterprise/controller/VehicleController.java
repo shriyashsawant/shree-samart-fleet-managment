@@ -4,9 +4,16 @@ import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleDocument;
 import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.service.AnalyticsService;
 import com.shreesamarth.enterprise.service.FileUploadService;
+import com.shreesamarth.enterprise.dto.VehicleSummaryDTO;
+import com.shreesamarth.enterprise.dto.VehicleProfileDTO;
+import com.shreesamarth.enterprise.dto.DocumentHealthDTO;
+import com.shreesamarth.enterprise.dto.VehicleProfitDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +37,7 @@ public class VehicleController {
     private final VehicleRepository vehicleRepository;
     private final VehicleDocumentRepository documentRepository;
     private final FileUploadService fileUploadService;
+    private final AnalyticsService analyticsService;
 
     @GetMapping
     public ResponseEntity<List<Vehicle>> getAllVehicles() {
@@ -139,5 +147,34 @@ public class VehicleController {
         stats.put("avgFuelEconomy", avgFuelEconomy);
         
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<List<VehicleSummaryDTO>> getVehicleSummaries(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long tenantId = getTenantId(userDetails);
+        return ResponseEntity.ok(analyticsService.getVehicleSummaries(tenantId));
+    }
+
+    @GetMapping("/{id}/profile")
+    public ResponseEntity<VehicleProfileDTO> getVehicleProfile(@PathVariable("id") Long vehicleId) {
+        return ResponseEntity.ok(analyticsService.getVehicleProfile(vehicleId));
+    }
+
+    @GetMapping("/{id}/document-health")
+    public ResponseEntity<DocumentHealthDTO> getDocumentHealth(@PathVariable("id") Long vehicleId) {
+        return ResponseEntity.ok(analyticsService.getDocumentHealth(vehicleId));
+    }
+
+    @GetMapping("/{id}/profit")
+    public ResponseEntity<VehicleProfitDTO> getVehicleProfitByMonth(
+            @PathVariable("id") Long vehicleId,
+            @RequestParam String month) {
+        return ResponseEntity.ok(analyticsService.getVehicleProfitByMonth(vehicleId, month));
+    }
+
+    private Long getTenantId(UserDetails userDetails) {
+        // For now, return a default tenant ID
+        return 1L;
     }
 }

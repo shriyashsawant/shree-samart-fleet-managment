@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -29,41 +28,35 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Global variables for linking
-        Tenant defaultTenant = null;
-        Vehicle v1 = null;
-        Vehicle v2 = null;
-        Client client1 = null;
-        Client client2 = null;
-        Client client3 = null;
 
-        // Create default tenant (Shree Samarth Enterprises)
+        // ── 1. TENANT ──────────────────────────────────────────────────────────
+        Tenant defaultTenant;
         try {
             if (tenantRepository.count() == 0) {
-                System.out.println("DEBUG: Creating default tenant 'Shree Samarth Enterprises'...");
-                defaultTenant = new Tenant();
-                defaultTenant.setCompanyName("Shree Samarth Enterprises");
-                defaultTenant.setCompanyCode("SSE001");
-                defaultTenant.setEmail("shreesamarthenterprises@gmail.com");
-                defaultTenant.setPhone("9876543210");
-                defaultTenant.setAddress("Kolhapur, Maharashtra");
-                defaultTenant.setGstNumber("27ASXPP6488L1ZD");
-                defaultTenant.setStatus("ACTIVE");
-                defaultTenant = tenantRepository.save(defaultTenant);
+                System.out.println("DEBUG: Creating default tenant...");
+                Tenant t = new Tenant();
+                t.setCompanyName("Shree Samarth Enterprises");
+                t.setCompanyCode("SSE001");
+                t.setEmail("shreesamarthenterprises@gmail.com");
+                t.setPhone("9876543210");
+                t.setAddress("Kolhapur, Maharashtra");
+                t.setGstNumber("27ASXPP6488L1ZD");
+                t.setStatus("ACTIVE");
+                defaultTenant = tenantRepository.save(t);
+                System.out.println("DEBUG: Tenant created with ID=" + defaultTenant.getId());
             } else {
                 defaultTenant = tenantRepository.findAll().get(0);
                 System.out.println("DEBUG: Using existing tenant: " + defaultTenant.getCompanyName());
             }
         } catch (Exception e) {
             System.err.println("CRITICAL: Failed to initialize tenant: " + e.getMessage());
+            e.printStackTrace();
             return;
         }
 
-        // Create users
+        // ── 2. USERS ───────────────────────────────────────────────────────────
         try {
-            System.out.println("DEBUG: Ensuring 'admin' user is synchronized...");
-            User admin = userRepository.findByUsername("admin")
-                                        .orElse(new User());
+            User admin = userRepository.findByUsername("admin").orElse(new User());
             if (admin.getId() == null) {
                 admin.setUsername("admin");
                 admin.setPassword(passwordEncoder.encode("admin123"));
@@ -71,26 +64,25 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRole("ADMIN");
             admin.setTenant(defaultTenant);
             userRepository.save(admin);
+            System.out.println("DEBUG: admin user synchronized.");
 
-            System.out.println("DEBUG: Ensuring 'ShreeSamarth' user is synchronized...");
-            User user = userRepository.findByUsername("ShreeSamarth")
-                                        .orElse(new User());
-            if (user.getId() == null) {
-                user.setUsername("ShreeSamarth");
-                user.setPassword(passwordEncoder.encode("Aarti@2005"));
+            User shrUser = userRepository.findByUsername("ShreeSamarth").orElse(new User());
+            if (shrUser.getId() == null) {
+                shrUser.setUsername("ShreeSamarth");
+                shrUser.setPassword(passwordEncoder.encode("Aarti@2005"));
             }
-            user.setRole("ADMIN");
-            user.setTenant(defaultTenant);
-            userRepository.save(user);
+            shrUser.setRole("ADMIN");
+            shrUser.setTenant(defaultTenant);
+            userRepository.save(shrUser);
+            System.out.println("DEBUG: ShreeSamarth user synchronized.");
         } catch (Exception e) {
             System.err.println("ERROR: Failed to initialize users: " + e.getMessage());
+            e.printStackTrace();
         }
 
-        // Create vehicles and drivers
+        // ── 3. VEHICLES ────────────────────────────────────────────────────────
         try {
-            System.out.println("DEBUG: Ensuring vehicle MH09CU1605 exists and is updated...");
-            v1 = vehicleRepository.findByVehicleNumber("MH09CU1605")
-                                            .orElse(new Vehicle());
+            Vehicle v1 = vehicleRepository.findByVehicleNumber("MH09CU1605").orElse(new Vehicle());
             v1.setVehicleNumber("MH09CU1605");
             v1.setModel("TATA LPK 2518TC BSIII");
             v1.setManufacturer("TATA MOTORS LTD");
@@ -101,9 +93,32 @@ public class DataInitializer implements CommandLineRunner {
             v1.setOwnerName("MARUTI PATIL");
             v1.setStatus("ACTIVE");
             v1.setTenant(defaultTenant);
-            v1 = vehicleRepository.save(v1);
+            vehicleRepository.save(v1);
+            System.out.println("DEBUG: Vehicle MH09CU1605 synchronized.");
 
-            if (driverRepository.count() == 0 || !driverRepository.existsByName("Janak Biswakarma")) {
+            Vehicle v2 = vehicleRepository.findByVehicleNumber("MH43Y2651").orElse(new Vehicle());
+            v2.setVehicleNumber("MH43Y2651");
+            v2.setModel("EICHER");
+            v2.setManufacturer("VE Commercial Vehicles Ltd");
+            v2.setRegistrationDate(LocalDate.parse("02-05-2014", dateFormatter));
+            v2.setPurchaseDate(LocalDate.parse("02-05-2014", dateFormatter));
+            v2.setChassisNumber("MC236GRC0EA001727");
+            v2.setEngineNumber("3IK84132674");
+            v2.setStatus("ACTIVE");
+            v2.setTenant(defaultTenant);
+            vehicleRepository.save(v2);
+            System.out.println("DEBUG: Vehicle MH43Y2651 synchronized.");
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to initialize vehicles: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // ── 4. DRIVERS ─────────────────────────────────────────────────────────
+        try {
+            Vehicle v1 = vehicleRepository.findByVehicleNumber("MH09CU1605").orElse(null);
+            Vehicle v2 = vehicleRepository.findByVehicleNumber("MH43Y2651").orElse(null);
+
+            if (!driverRepository.existsByName("Janak Biswakarma")) {
                 Driver d1 = new Driver();
                 d1.setName("Janak Biswakarma");
                 d1.setPhone("9035867447");
@@ -117,24 +132,12 @@ public class DataInitializer implements CommandLineRunner {
                 d1.setAssignedVehicle(v1);
                 d1.setTenant(defaultTenant);
                 driverRepository.save(d1);
-                System.out.println("DEBUG: Synchronized Driver Janak.");
+                System.out.println("DEBUG: Driver Janak Biswakarma created.");
+            } else {
+                System.out.println("DEBUG: Driver Janak already exists, skipping.");
             }
 
-            System.out.println("DEBUG: Ensuring vehicle MH43Y2651 exists and is updated...");
-            v2 = vehicleRepository.findByVehicleNumber("MH43Y2651")
-                                            .orElse(new Vehicle());
-            v2.setVehicleNumber("MH43Y2651");
-            v2.setModel("EICHER");
-            v2.setManufacturer("VE Commercial Vehicles Ltd");
-            v2.setRegistrationDate(LocalDate.parse("02-05-2014", dateFormatter));
-            v2.setPurchaseDate(LocalDate.parse("02-05-2014", dateFormatter));
-            v2.setChassisNumber("MC236GRC0EA001727");
-            v2.setEngineNumber("3IK84132674");
-            v2.setStatus("ACTIVE");
-            v2.setTenant(defaultTenant);
-            v2 = vehicleRepository.save(v2);
-
-            if (driverRepository.count() < 2 || !driverRepository.existsByName("Rabin")) {
+            if (!driverRepository.existsByName("Rabin")) {
                 Driver d2 = new Driver();
                 d2.setName("Rabin");
                 d2.setPhone("7249532760");
@@ -148,91 +151,120 @@ public class DataInitializer implements CommandLineRunner {
                 d2.setAssignedVehicle(v2);
                 d2.setTenant(defaultTenant);
                 driverRepository.save(d2);
-                System.out.println("DEBUG: Synchronized Driver Rabin.");
+                System.out.println("DEBUG: Driver Rabin created.");
+            } else {
+                System.out.println("DEBUG: Driver Rabin already exists, skipping.");
             }
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to initialize fleet: " + e.getMessage());
+            System.err.println("ERROR: Failed to initialize drivers: " + e.getMessage());
+            e.printStackTrace();
         }
 
-        // Create sample clients
+        // ── 5. CLIENTS ─────────────────────────────────────────────────────────
         try {
-            if (clientRepository.count() < 3) {
-                System.out.println("DEBUG: Creating sample clients...");
-                client1 = new Client();
-                client1.setPartyName("PRISM JOHNSON LIMITED");
-                client1.setGstNumber("27ASXPP6488L1ZD");
-                client1.setAddress("Mumbai, Maharashtra");
-                client1.setPhone("9876543210");
-                client1.setEmail("prismjohnson@example.com");
-                client1.setTenant(defaultTenant);
-                client1 = clientRepository.save(client1);
+            if (clientRepository.count() == 0) {
+                System.out.println("DEBUG: Creating clients...");
 
-                client2 = new Client();
-                client2.setPartyName("ULTRA TECH CEMENT");
-                client2.setGstNumber("27AABCT8719Q1ZO");
-                client2.setAddress("Mumbai, Maharashtra");
-                client2.setPhone("9876543211");
-                client2.setEmail("ultratech@example.com");
-                client2.setTenant(defaultTenant);
-                client2 = clientRepository.save(client2);
+                Client c1 = new Client();
+                c1.setPartyName("PRISM JOHNSON LIMITED");
+                c1.setGstNumber("27ASXPP6488L1ZD");
+                c1.setAddress("Mumbai, Maharashtra");
+                c1.setPhone("9876543210");
+                c1.setEmail("prismjohnson@example.com");
+                c1.setTenant(defaultTenant);
+                clientRepository.save(c1);
 
-                client3 = new Client();
-                client3.setPartyName("AMBUJA CEMENTS");
-                client3.setGstNumber("27AABCA7507Q1ZI");
-                client3.setAddress("Mumbai, Maharashtra");
-                client3.setPhone("9876543212");
-                client3.setEmail("ambuja@example.com");
-                client3.setTenant(defaultTenant);
-                client3 = clientRepository.save(client3);
+                Client c2 = new Client();
+                c2.setPartyName("ULTRA TECH CEMENT");
+                c2.setGstNumber("27AABCT8719Q1ZO");
+                c2.setAddress("Mumbai, Maharashtra");
+                c2.setPhone("9876543211");
+                c2.setEmail("ultratech@example.com");
+                c2.setTenant(defaultTenant);
+                clientRepository.save(c2);
 
-                // Add sample bills for these clients
-                System.out.println("DEBUG: Creating professional invoices...");
-                Bill b1 = new Bill();
-                b1.setBillNo("BILL-2026-001");
-                b1.setClient(client1); // PRISM JOHNSON
-                b1.setVehicle(v1); // MH09CU1605
-                b1.setBillDate(LocalDate.parse("15-03-2026", dateFormatter));
-                b1.setBasicAmount(new BigDecimal("25000"));
-                b1.setCgstAmount(new BigDecimal("2250"));
-                b1.setSgstAmount(new BigDecimal("2250"));
-                b1.setTotalAmount(new BigDecimal("29500"));
-                b1.setStatus("PENDING");
-                b1.setTenant(defaultTenant);
-                billRepository.save(b1);
+                Client c3 = new Client();
+                c3.setPartyName("AMBUJA CEMENTS");
+                c3.setGstNumber("27AABCA7507Q1ZI");
+                c3.setAddress("Mumbai, Maharashtra");
+                c3.setPhone("9876543212");
+                c3.setEmail("ambuja@example.com");
+                c3.setTenant(defaultTenant);
+                clientRepository.save(c3);
 
-                Bill b2 = new Bill();
-                b2.setBillNo("BILL-2026-002");
-                b2.setClient(client2); // ULTRA TECH
-                b2.setVehicle(v2); // MH43Y2651
-                b2.setBillDate(LocalDate.parse("12-03-2026", dateFormatter));
-                b2.setBasicAmount(new BigDecimal("18500"));
-                b2.setCgstAmount(new BigDecimal("1665"));
-                b2.setSgstAmount(new BigDecimal("1665"));
-                b2.setTotalAmount(new BigDecimal("21830"));
-                b2.setStatus("PAID");
-                b2.setTenant(defaultTenant);
-                billRepository.save(b2);
-
-                Bill b3 = new Bill();
-                b3.setBillNo("BILL-2026-003");
-                b3.setClient(client3); // AMBUJA
-                b3.setVehicle(v1);
-                b3.setBillDate(LocalDate.parse("10-03-2026", dateFormatter));
-                b3.setBasicAmount(new BigDecimal("42000"));
-                b3.setCgstAmount(new BigDecimal("3780"));
-                b3.setSgstAmount(new BigDecimal("3780"));
-                b3.setTotalAmount(new BigDecimal("49560"));
-                b3.setStatus("PARTIAL");
-                b3.setTenant(defaultTenant);
-                billRepository.save(b3);
+                System.out.println("DEBUG: 3 clients created.");
             } else {
-                List<Client> existingClients = clientRepository.findAll();
-                client1 = existingClients.size() > 0 ? existingClients.get(0) : null;
-                client2 = existingClients.size() > 1 ? existingClients.get(1) : null;
-                client3 = existingClients.size() > 2 ? existingClients.get(2) : null;
+                System.out.println("DEBUG: Clients already exist, skipping.");
             }
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to initialize clients/bills: " + e.getMessage());
+            System.err.println("ERROR: Failed to initialize clients: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // ── 6. BILLS ── Always fetches fresh from DB ───────────────────────────
+        try {
+            if (billRepository.count() == 0) {
+                System.out.println("DEBUG: Creating sample bills...");
+
+                // CRITICAL: Always fetch fresh — never rely on variables from other blocks
+                Vehicle v1 = vehicleRepository.findByVehicleNumber("MH09CU1605").orElse(null);
+                Vehicle v2 = vehicleRepository.findByVehicleNumber("MH43Y2651").orElse(null);
+                List<Client> clients = clientRepository.findAll();
+
+                if (v1 != null && clients.size() > 0) {
+                    Bill b1 = new Bill();
+                    b1.setBillNo("BILL-2026-001");
+                    b1.setClient(clients.get(0));
+                    b1.setVehicle(v1);
+                    b1.setBillDate(LocalDate.of(2026, 3, 15));
+                    b1.setBasicAmount(new BigDecimal("25000"));
+                    b1.setCgstAmount(new BigDecimal("2250"));
+                    b1.setSgstAmount(new BigDecimal("2250"));
+                    b1.setTotalAmount(new BigDecimal("29500"));
+                    b1.setStatus("PENDING");
+                    b1.setTenant(defaultTenant);
+                    billRepository.save(b1);
+                    System.out.println("DEBUG: Bill BILL-2026-001 saved.");
+                }
+
+                if (v2 != null && clients.size() > 1) {
+                    Bill b2 = new Bill();
+                    b2.setBillNo("BILL-2026-002");
+                    b2.setClient(clients.get(1));
+                    b2.setVehicle(v2);
+                    b2.setBillDate(LocalDate.of(2026, 3, 12));
+                    b2.setBasicAmount(new BigDecimal("18500"));
+                    b2.setCgstAmount(new BigDecimal("1665"));
+                    b2.setSgstAmount(new BigDecimal("1665"));
+                    b2.setTotalAmount(new BigDecimal("21830"));
+                    b2.setStatus("PAID");
+                    b2.setTenant(defaultTenant);
+                    billRepository.save(b2);
+                    System.out.println("DEBUG: Bill BILL-2026-002 saved.");
+                }
+
+                if (v1 != null && clients.size() > 2) {
+                    Bill b3 = new Bill();
+                    b3.setBillNo("BILL-2026-003");
+                    b3.setClient(clients.get(2));
+                    b3.setVehicle(v1);
+                    b3.setBillDate(LocalDate.of(2026, 3, 10));
+                    b3.setBasicAmount(new BigDecimal("42000"));
+                    b3.setCgstAmount(new BigDecimal("3780"));
+                    b3.setSgstAmount(new BigDecimal("3780"));
+                    b3.setTotalAmount(new BigDecimal("49560"));
+                    b3.setStatus("PARTIAL");
+                    b3.setTenant(defaultTenant);
+                    billRepository.save(b3);
+                    System.out.println("DEBUG: Bill BILL-2026-003 saved.");
+                }
+            } else {
+                System.out.println("DEBUG: Bills already exist (" + billRepository.count() + "), skipping.");
+            }
+            System.out.println("DEBUG: ===== DataInitializer completed successfully =====");
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to initialize bills: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
