@@ -409,13 +409,18 @@ function PersonnelConsole({ driver, onClose }) {
                                       </div>
                                    </div>
                                    <div className="flex gap-2">
-                                      <button className="p-3 bg-dark-50 rounded-xl text-dark-600 hover:bg-primary-50 hover:text-primary-600 transition-all opacity-0 group-hover:opacity-100">
-                                         <ExternalLink className="w-4 h-4" />
-                                      </button>
-                                      <button onClick={() => deleteDoc(doc.id)} className="p-3 bg-dark-50 rounded-xl text-dark-400 hover:bg-rose-50 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100">
-                                         <Trash2 className="w-4 h-4" />
-                                      </button>
-                                   </div>
+                                       {doc.filePath && (
+                                          <button 
+                                             onClick={() => window.open(doc.filePath, '_blank')}
+                                             className="p-3 bg-dark-50 rounded-xl text-dark-600 hover:bg-primary-50 hover:text-primary-600 transition-all opacity-0 group-hover:opacity-100"
+                                          >
+                                             <ExternalLink className="w-4 h-4" />
+                                          </button>
+                                       )}
+                                       <button onClick={() => deleteDoc(doc.id)} className="p-3 bg-dark-50 rounded-xl text-dark-400 hover:bg-rose-50 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100">
+                                          <Trash2 className="w-4 h-4" />
+                                       </button>
+                                    </div>
                                 </div>
                              </motion.div>
                           ))}

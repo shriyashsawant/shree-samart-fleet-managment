@@ -215,7 +215,10 @@ export default function Compliance() {
                  <div className="px-8 py-6 bg-dark-50/50 mt-4 flex justify-between items-center group-hover:bg-primary-50 transition-colors border-t border-dark-100/50">
                     <div className="flex gap-2">
                        {item.filePath && (
-                          <button className="p-2 bg-white rounded-lg border border-dark-100 text-dark-400 hover:text-primary-600 transition-colors shadow-sm">
+                          <button 
+                             onClick={() => window.open(item.filePath, '_blank')}
+                             className="p-2 bg-white rounded-lg border border-dark-100 text-dark-400 hover:text-primary-600 transition-colors shadow-sm"
+                          >
                              <FileSearch className="w-4 h-4" />
                           </button>
                        )}
@@ -223,9 +226,12 @@ export default function Compliance() {
                           <Trash2 className="w-4 h-4" />
                        </button>
                     </div>
-                    <button className="text-[10px] font-black text-primary-600 uppercase tracking-widest flex items-center gap-1 group/btn">
-                       Access Dossier <ArrowUpRight className="w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-                    </button>
+                     <button 
+                        onClick={() => item.filePath && window.open(item.filePath, '_blank')}
+                        className="text-[10px] font-black text-primary-600 uppercase tracking-widest flex items-center gap-1 group/btn"
+                     >
+                        Access Dossier <ArrowUpRight className="w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                     </button>
                  </div>
               </motion.div>
             )

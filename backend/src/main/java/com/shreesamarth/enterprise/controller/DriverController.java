@@ -112,12 +112,15 @@ public class DriverController {
         Driver saved = driverRepository.save(driver);
 
         if (saved.getLicenseExpiry() != null) {
+            String title = "Driver License Expiring - " + (saved.getName() != null ? saved.getName() : "");
+            if (title.length() > 95) title = title.substring(0, 95) + "...";
+            
             Reminder reminder = new Reminder();
             reminder.setReminderType("LICENSE");
             reminder.setReferenceId(saved.getId());
             reminder.setReferenceType("DRIVER");
-            reminder.setTitle("Driver License Expiring - " + saved.getName());
-            reminder.setDescription("License number: " + saved.getDrivingLicense());
+            reminder.setTitle(title);
+            reminder.setDescription("License number: " + (saved.getDrivingLicense() != null ? saved.getDrivingLicense() : "N/A"));
             reminder.setExpiryDate(saved.getLicenseExpiry());
             reminder.setStatus("PENDING");
             if (tenant != null) reminder.setTenant(tenant);

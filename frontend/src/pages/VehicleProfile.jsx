@@ -482,7 +482,10 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                     <span className="text-[9px] font-black text-dark-300 uppercase tracking-widest flex items-center gap-2">
                        <Clock className="w-3 h-3" /> {formatDate(doc.updatedAt || doc.createdAt)}
                     </span>
-                    <button className="p-2 bg-dark-900 text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                    <button 
+                       onClick={() => window.open(doc.documentPath, '_blank')}
+                       className="p-2 bg-dark-900 text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0"
+                    >
                        <ExternalLink className="w-4 h-4" />
                     </button>
                  </div>

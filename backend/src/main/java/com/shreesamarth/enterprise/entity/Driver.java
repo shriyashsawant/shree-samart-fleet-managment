@@ -19,6 +19,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Driver {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,7 +37,7 @@ public class Driver {
     @Column(name = "aadhaar_number", length = 12)
     private String aadhaarNumber;
 
-    @Column(name = "driving_license", length = 20)
+    @Column(name = "driving_license", length = 30)
     private String drivingLicense;
 
     @Column(name = "license_expiry")
@@ -61,7 +62,6 @@ public class Driver {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Tenant tenant;
 
     @OneToMany(mappedBy = "driver", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -79,7 +79,14 @@ public class Driver {
     private LocalDateTime createdAt;
     
     @Transient
+    private Long assignedVehicleId;
+
+    public void setAssignedVehicleId(Long assignedVehicleId) {
+        this.assignedVehicleId = assignedVehicleId;
+    }
+
     public Long getAssignedVehicleId() {
+        if (this.assignedVehicleId != null) return this.assignedVehicleId;
         return assignedVehicle != null ? assignedVehicle.getId() : null;
     }
 }
