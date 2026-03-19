@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/ocr/:path*",
-      "destination": "https://shree-samarth-ocr.onrender.com/api/ocr/:path*"
+      "destination": "https://shreesamarth-ocr.onrender.com/api/ocr/:path*"
     },
     {
       "source": "/api/:path*",
