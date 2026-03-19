@@ -537,7 +537,17 @@ public class AnalyticsService {
                 v.getStatus(),
                 driverName,
                 revenue,
-                expenses
+                expenses,
+                v.getChassisNumber(),
+                v.getEngineNumber(),
+                v.getPurchaseDate(),
+                v.getInsuranceCompany(),
+                v.getInsuranceExpiry(),
+                v.getEmiAmount(),
+                v.getEmiBank(),
+                v.getEmiStartDate(),
+                v.getEmiEndDate(),
+                v.getFuelEconomy()
             );
         }).collect(Collectors.toList());
     }
@@ -614,8 +624,9 @@ public class AnalyticsService {
         List<VehicleProfileDTO.BillSummary> billSummaries = latestBills.stream()
             .map(b -> new VehicleProfileDTO.BillSummary(b.getId(), b.getBillNo(), b.getTotalAmount(), b.getBillDate()))
             .collect(Collectors.toList());
-            
-        return new VehicleProfileDTO(
+        
+        // Create nested VehicleInfo
+        VehicleProfileDTO.VehicleInfo vehicleInfo = new VehicleProfileDTO.VehicleInfo(
             vehicle.getId(),
             vehicle.getVehicleNumber(),
             vehicle.getModel(),
@@ -624,10 +635,27 @@ public class AnalyticsService {
             vehicle.getEngineNumber(),
             vehicle.getOwnerName(),
             vehicle.getStatus(),
-            driver != null ? driver.getId() : null,
-            driver != null ? driver.getName() : null,
-            driver != null ? driver.getPhone() : null,
-            driver != null ? driver.getDrivingLicense() : null,
+            vehicle.getFuelType(),
+            vehicle.getFinancer(),
+            vehicle.getPurchaseDate(),
+            vehicle.getEmiAmount(),
+            vehicle.getEmiBank()
+        );
+        
+        // Create nested DriverInfo
+        VehicleProfileDTO.DriverInfo driverInfo = null;
+        if (driver != null) {
+            driverInfo = new VehicleProfileDTO.DriverInfo(
+                driver.getId(),
+                driver.getName(),
+                driver.getPhone(),
+                driver.getDrivingLicense()
+            );
+        }
+        
+        return new VehicleProfileDTO(
+            vehicleInfo,
+            driverInfo,
             revenue,
             expenses,
             revenue.subtract(expenses),

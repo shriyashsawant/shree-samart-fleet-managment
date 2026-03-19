@@ -1,5 +1,6 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.dto.ClientDTO;
 import com.shreesamarth.enterprise.entity.Client;
 import com.shreesamarth.enterprise.repository.ClientRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,29 +17,33 @@ public class ClientController {
     private final ClientRepository clientRepository;
 
     @GetMapping
-    public ResponseEntity<List<Client>> getAllClients() {
-        return ResponseEntity.ok(clientRepository.findAll());
+    public ResponseEntity<List<ClientDTO>> getAllClients() {
+        List<Client> clients = clientRepository.findAll();
+        List<ClientDTO> dtos = clients.stream().map(this::toDTO).toList();
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Client> getClientById(@PathVariable Long id) {
+    public ResponseEntity<ClientDTO> getClientById(@PathVariable Long id) {
         return clientRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(client -> ResponseEntity.ok(toDTO(client)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Client> createClient(@RequestBody Client client) {
-        return ResponseEntity.ok(clientRepository.save(client));
+    public ResponseEntity<ClientDTO> createClient(@RequestBody Client client) {
+        Client saved = clientRepository.save(client);
+        return ResponseEntity.ok(toDTO(saved));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody Client client) {
+    public ResponseEntity<ClientDTO> updateClient(@PathVariable Long id, @RequestBody Client client) {
         return clientRepository.findById(id)
                 .map(existing -> {
                     client.setId(id);
                     client.setCreatedAt(existing.getCreatedAt());
-                    return ResponseEntity.ok(clientRepository.save(client));
+                    Client saved = clientRepository.save(client);
+                    return ResponseEntity.ok(toDTO(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -50,5 +55,17 @@ public class ClientController {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    private ClientDTO toDTO(Client client) {
+        return new ClientDTO(
+            client.getId(),
+            client.getPartyName(),
+            client.getGstNumber(),
+            client.getAddress(),
+            client.getPhone(),
+            client.getEmail(),
+            client.getCreatedAt()
+        );
     }
 }

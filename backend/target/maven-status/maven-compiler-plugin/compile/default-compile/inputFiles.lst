@@ -76,6 +76,7 @@ c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\co
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Vehicle.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\TyreController.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\AuthDTO.java
+c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\TripDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\VehicleDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Driver.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\AuthController.java
@@ -96,6 +97,7 @@ c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\co
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Payment.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\AnalyticsController.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Tenant.java
+c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\ClientDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\security\CustomUserDetailsService.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\VehicleProfitDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\VehicleDocument.java

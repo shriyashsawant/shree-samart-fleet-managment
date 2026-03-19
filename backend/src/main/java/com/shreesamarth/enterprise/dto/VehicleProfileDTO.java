@@ -12,21 +12,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VehicleProfileDTO {
-    // Vehicle data
-    private Long vehicleId;
-    private String vehicleNumber;
-    private String model;
-    private String manufacturer;
-    private String chassisNumber;
-    private String engineNumber;
-    private String ownerName;
-    private String status;
+    // Vehicle data - nested object
+    private VehicleInfo vehicle;
     
-    // Driver data
-    private Long driverId;
-    private String driverName;
-    private String driverPhone;
-    private String driverLicense;
+    // Driver data - nested object
+    private DriverInfo assignedDriver;
     
     // Financial data
     private BigDecimal totalRevenue;
@@ -43,6 +33,35 @@ public class VehicleProfileDTO {
     private LocalDate lastTyreChange;
     private LocalDate lastFuelDate;
     private BigDecimal lastFuelAmount;
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VehicleInfo {
+        private Long vehicleId;
+        private String vehicleNumber;
+        private String model;
+        private String manufacturer;
+        private String chassisNumber;
+        private String engineNumber;
+        private String ownerName;
+        private String status;
+        private String fuelType;
+        private String financier;
+        private LocalDate registrationDate;
+        private BigDecimal emiAmount;
+        private String emiBank;
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DriverInfo {
+        private Long driverId;
+        private String name;
+        private String phone;
+        private String license;
+    }
     
     @Data
     @NoArgsConstructor
