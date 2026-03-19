@@ -4,6 +4,7 @@ import { ShieldCheck, Plus, Search, AlertTriangle, Calendar, FileText, CheckCirc
 import axios from 'axios'
 import { format } from 'date-fns'
 import { cn } from '../lib/utils'
+import api, { analyticsAPI, vehicleAPI } from '../lib/api'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://shree-samart-fleet-managment.onrender.com/api'
 
@@ -39,8 +40,8 @@ export default function Compliance() {
   const fetchData = async () => {
     try {
       const [compRes, vehRes] = await Promise.all([
-        axios.get(`${API_URL}/compliance`),
-        axios.get(`${API_URL}/vehicles`)
+        api.get('/api/compliance'),
+        vehicleAPI.getAll()
       ])
       setCompliance(compRes.data)
       setVehicles(vehRes.data)
@@ -63,7 +64,9 @@ export default function Compliance() {
     if (file) data.append('file', file)
 
     try {
-      await axios.post(`${API_URL}/compliance`, data)
+      await api.post('/api/compliance', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       setShowAddModal(false)
       fetchData()
       setFormData({ vehicleId: '', type: 'Road Tax', issueDate: '', expiryDate: '', amount: '', remarks: '' })
@@ -76,7 +79,7 @@ export default function Compliance() {
   const handleDelete = async (id) => {
     if (confirm('AUTHORIZE PERMANENT DELETION of this compliance record?')) {
       try {
-        await axios.delete(`${API_URL}/compliance/${id}`)
+        await api.delete(`/api/compliance/${id}`)
         fetchData()
       } catch (error) {
         console.error('Authorization failed:', error)
