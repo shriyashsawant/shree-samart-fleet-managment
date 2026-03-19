@@ -6,6 +6,7 @@ import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.repository.BillRepository;
 import com.shreesamarth.enterprise.repository.ClientRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.dto.BillDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,7 +31,7 @@ public class BillController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<List<Bill>> getAllBills(
+    public ResponseEntity<List<BillDTO>> getAllBills(
             @RequestParam(required = false) Long clientId,
             @RequestParam(required = false) Long vehicleId,
             @RequestParam(required = false) LocalDate startDate,
@@ -46,7 +47,30 @@ public class BillController {
         } else {
             bills = billRepository.findAll();
         }
-        return ResponseEntity.ok(bills);
+        
+        List<BillDTO> billDTOs = bills.stream()
+            .map(b -> new BillDTO(
+                b.getId(),
+                b.getBillNo(),
+                b.getBillDate(),
+                b.getClient() != null ? b.getClient().getId() : null,
+                b.getClient() != null ? b.getClient().getPartyName() : null,
+                b.getClient() != null ? b.getClient().getGstNumber() : null,
+                b.getVehicle() != null ? b.getVehicle().getId() : null,
+                b.getVehicle() != null ? b.getVehicle().getVehicleNumber() : null,
+                b.getHsnCode(),
+                b.getBasicAmount(),
+                b.getCgstAmount(),
+                b.getSgstAmount(),
+                b.getPfAmount(),
+                b.getTotalAmount(),
+                b.getBillType(),
+                b.getStatus(),
+                b.getCreatedAt()
+            ))
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(billDTOs);
     }
 
     @GetMapping("/{id}")

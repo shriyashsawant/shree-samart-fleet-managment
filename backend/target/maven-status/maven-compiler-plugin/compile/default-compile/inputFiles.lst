@@ -1,9 +1,11 @@
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\VehicleProfileDTO.java
+c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\DebugController.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\IdleVehicleAlertDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\repository\VehicleLogRepository.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\config\RestTemplateConfig.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\service\FileUploadService.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\ExpenseBreakdownDTO.java
+c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\BillDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\VehicleLog.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Trip.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\TripController.java
@@ -36,6 +38,7 @@ c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\co
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\service\DriverAdvanceService.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\GstSummaryDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\config\SendGridConfig.java
+c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\DriverDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\repository\DriverAttendanceRepository.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\MaintenanceController.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\VehicleController.java
@@ -73,6 +76,7 @@ c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\co
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Vehicle.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\TyreController.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\AuthDTO.java
+c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\VehicleDTO.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Driver.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\AuthController.java
 c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\DriverAttendanceController.java

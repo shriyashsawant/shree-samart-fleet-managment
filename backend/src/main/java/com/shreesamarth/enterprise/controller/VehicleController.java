@@ -5,6 +5,7 @@ import com.shreesamarth.enterprise.entity.VehicleDocument;
 import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
+import com.shreesamarth.enterprise.dto.VehicleDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +31,28 @@ public class VehicleController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<List<Vehicle>> getAllVehicles() {
-        List<Vehicle> vehicles = vehicleRepository.findAll();
+    public ResponseEntity<List<VehicleDTO>> getAllVehicles() {
+        List<VehicleDTO> vehicles = vehicleRepository.findAll().stream()
+            .map(v -> new VehicleDTO(
+                v.getId(),
+                v.getVehicleNumber(),
+                v.getModel(),
+                v.getManufacturer(),
+                v.getRegistrationDate(),
+                v.getPurchaseDate(),
+                v.getChassisNumber(),
+                v.getEngineNumber(),
+                v.getOwnerName(),
+                v.getInsuranceCompany(),
+                v.getInsuranceExpiry(),
+                v.getEmiAmount(),
+                v.getEmiBank(),
+                v.getEmiStartDate(),
+                v.getEmiEndDate(),
+                v.getStatus(),
+                v.getCreatedAt()
+            ))
+            .collect(java.util.stream.Collectors.toList());
         System.out.println("🚗 [VEHICLE] Found " + vehicles.size() + " vehicles");
         vehicles.forEach(v -> System.out.println("  - ID: " + v.getId() + ", Number: " + v.getVehicleNumber()));
         return ResponseEntity.ok(vehicles);

@@ -7,6 +7,7 @@ import com.shreesamarth.enterprise.repository.DriverRepository;
 import com.shreesamarth.enterprise.repository.ReminderRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
+import com.shreesamarth.enterprise.dto.DriverDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +34,25 @@ public class DriverController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<List<Driver>> getAllDrivers() {
-        List<Driver> drivers = driverRepository.findAll();
+    public ResponseEntity<List<DriverDTO>> getAllDrivers() {
+        List<DriverDTO> drivers = driverRepository.findAll().stream()
+            .map(d -> new DriverDTO(
+                d.getId(),
+                d.getName(),
+                d.getPhone(),
+                d.getAddress(),
+                d.getAadhaarNumber(),
+                d.getDrivingLicense(),
+                d.getLicenseExpiry(),
+                d.getJoiningDate(),
+                d.getEndDate(),
+                d.getSalary(),
+                d.getStatus(),
+                d.getAssignedVehicle() != null ? d.getAssignedVehicle().getId() : null,
+                d.getAssignedVehicle() != null ? d.getAssignedVehicle().getVehicleNumber() : null,
+                d.getCreatedAt()
+            ))
+            .collect(java.util.stream.Collectors.toList());
         System.out.println("👤 [DRIVER] Found " + drivers.size() + " drivers");
         drivers.forEach(d -> System.out.println("  - ID: " + d.getId() + ", Name: " + d.getName()));
         return ResponseEntity.ok(drivers);
