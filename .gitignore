@@ -4,6 +4,7 @@ frontend/node_modules/
 
 # Build outputs - don't commit JAR files, build fresh on deployment
 backend/target/
+frontend/dist/
 
 # IDE
 .idea/
@@ -28,3 +29,13 @@ shree-samarth*.json
 # Local OCR environments
 ocr_env/
 shree-samarth-ocr-env/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Debug/test files
+debug_ocr_space.py
+debug_regex.py
+nul
+
