@@ -53,5 +53,6 @@ public class VehicleCompliance {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Tenant tenant;
 }

@@ -7,6 +7,7 @@ import com.shreesamarth.enterprise.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -21,6 +22,7 @@ public class TenantController {
     private final TenantRepository tenantRepository;
 
     @GetMapping("/me")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getMyTenant(Authentication authentication) {
         if (authentication == null) return ResponseEntity.status(401).build();
         

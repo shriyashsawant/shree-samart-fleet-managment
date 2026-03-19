@@ -7,6 +7,7 @@ import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,11 +30,13 @@ public class VehicleComplianceController {
     private final FileUploadService fileUploadService;
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<VehicleCompliance>> getAllCompliance() {
         return ResponseEntity.ok(complianceRepository.findAll());
     }
 
     @GetMapping("/vehicle/{vehicleId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<VehicleCompliance>> getComplianceByVehicle(@PathVariable Long vehicleId) {
         return ResponseEntity.ok(complianceRepository.findByVehicleId(vehicleId));
     }

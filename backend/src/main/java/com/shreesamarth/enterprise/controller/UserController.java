@@ -1,5 +1,6 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.dto.UserDTO;
 import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Tenant;
 import com.shreesamarth.enterprise.repository.UserRepository;
@@ -9,10 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -24,13 +27,22 @@ public class UserController {
     private final EmailService emailService;
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers(Authentication authentication) {
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<UserDTO>> getAllUsers(Authentication authentication) {
         // Find current user's tenant
         return userRepository.findByUsername(authentication.getName())
                 .map(user -> {
                     Tenant tenant = user.getTenant();
-                    if (tenant == null) return ResponseEntity.ok(userRepository.findAll());
-                    return ResponseEntity.ok(userRepository.findByTenantId(tenant.getId()));
+                    List<User> users;
+                    if (tenant == null) {
+                        users = userRepository.findAll();
+                    } else {
+                        users = userRepository.findByTenantId(tenant.getId());
+                    }
+                    List<UserDTO> dtos = users.stream()
+                        .map(u -> new UserDTO(u.getId(), u.getUsername(), u.getRole(), u.getCreatedAt()))
+                        .collect(Collectors.toList());
+                    return ResponseEntity.ok(dtos);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
