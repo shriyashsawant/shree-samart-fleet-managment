@@ -117,7 +117,7 @@ public class DriverController {
             reminder.setDescription("License number: " + saved.getDrivingLicense());
             reminder.setExpiryDate(saved.getLicenseExpiry());
             reminder.setStatus("PENDING");
-            if (tenant != null) reminder.setTenantId(tenant.getId());
+            if (tenant != null) reminder.setTenant(tenant);
             reminderRepository.save(reminder);
         }
 
