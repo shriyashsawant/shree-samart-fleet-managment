@@ -23,7 +23,7 @@ public class DriverAttendance {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "documents", "assignedVehicle", "tenant"})
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "documents", "assignedVehicle", "tenant", "licenseFilePath", "aadhaarFilePath"})
     private Driver driver;
 
     @Column(nullable = false)
@@ -47,5 +47,6 @@ public class DriverAttendance {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Tenant tenant;
 }

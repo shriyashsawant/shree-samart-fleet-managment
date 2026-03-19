@@ -52,6 +52,7 @@ public class Driver {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_vehicle_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "documents", "drivers", "vehicleLogs", "complianceRecords", "tenant"})
     private Vehicle assignedVehicle;
 
     @Column(length = 20)
