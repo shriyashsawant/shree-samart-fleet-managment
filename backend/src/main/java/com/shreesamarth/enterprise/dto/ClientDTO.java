@@ -15,5 +15,6 @@ public class ClientDTO {
     private String address;
     private String phone;
     private String email;
+    private Boolean dieselProvidedByClient;
     private LocalDateTime createdAt;
 }

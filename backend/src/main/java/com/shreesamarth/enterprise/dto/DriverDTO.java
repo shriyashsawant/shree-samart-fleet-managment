@@ -25,5 +25,7 @@ public class DriverDTO {
     private String status;
     private Long assignedVehicleId;
     private String assignedVehicleNumber;
+    private String licenseFilePath;
+    private String aadhaarFilePath;
     private LocalDateTime createdAt;
 }
