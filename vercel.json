@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/ocr/:path*",
+      "destination": "https://shree-samarth-ocr.onrender.com/api/ocr/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://shree-samart-fleet-managment.onrender.com/api/:path*"
     },
