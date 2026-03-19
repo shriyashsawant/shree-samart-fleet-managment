@@ -56,8 +56,8 @@ export default function Billing() {
       index + 1,
       bill.billDate ? new Date(bill.billDate).toLocaleDateString('en-GB') : '',
       bill.billNo || '',
-      bill.client?.partyName || '',
-      bill.client?.gstNumber || '',
+      bill.clientName || '',
+      bill.clientGstNumber || '',
       bill.hsnCode || '',
       bill.gstPercentage || '',
       bill.basicAmount || 0,
@@ -104,9 +104,9 @@ export default function Billing() {
     setShowModal(true)
   }
 
-  const filteredBills = bills.filter(b => 
-    b.billNo?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    b.client?.partyName?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredBills = bills.filter(b =>
+    b.billNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    b.clientName?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -214,8 +214,8 @@ export default function Billing() {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex flex-col">
-                        <span className="text-sm font-black text-dark-800 tracking-tight">{b.client?.partyName || '-'}</span>
-                        <span className="text-[10px] font-black text-primary-500 uppercase tracking-[0.1em] mt-1">{b.client?.gstNumber || 'NON-GST'}</span>
+                        <span className="text-sm font-black text-dark-800 tracking-tight">{b.clientName || '-'}</span>
+                        <span className="text-[10px] font-black text-primary-500 uppercase tracking-[0.1em] mt-1">{b.clientGstNumber || 'NON-GST'}</span>
                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">
@@ -512,7 +512,6 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
                           className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700 uppercase"
                         />
                       </div>
-                      </div>
                     </div>
 
                     {extracted.confidence !== undefined && (
@@ -599,9 +598,9 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
 
   const [f, setF] = useState({
     billNo: bill?.billNo || extractedData?.billNo || nextBillNo,
-    billDate: bill?.billDate || extractedData?.date || new Date().toISOString().split('T')[0], 
-    client: { id: bill?.client?.id || findClientByGst(extractedData?.partyGst) || '' }, 
-    vehicle: { id: bill?.vehicle?.id || '' }, 
+    billDate: bill?.billDate || extractedData?.date || new Date().toISOString().split('T')[0],
+    client: { id: bill?.clientId || findClientByGst(extractedData?.partyGst) || '' },
+    vehicle: { id: bill?.vehicleId || '' },
     hsnCode: bill?.hsnCode || extractedData?.hsnCode || '9973', 
     basicAmount: bill?.basicAmount || extractedData?.basicAmount || '', 
     gstPercentage: bill?.gstPercentage || '18', 
@@ -762,7 +761,6 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
 
 function BillPrintModal({ bill, onClose }) {
   const [companyGst, setCompanyGst] = useState(null)
-  const client = bill.client || {}
   const basic = parseFloat(bill.basicAmount) || 0
   const cgst = parseFloat(bill.cgstAmount) || 0
   const sgst = parseFloat(bill.sgstAmount) || 0
@@ -796,9 +794,9 @@ function BillPrintModal({ bill, onClose }) {
           </div>
           
           <div className="mb-4">
-            <p><span className="font-medium">Party Name:</span> {client.partyName || '-'}</p>
-            <p><span className="font-medium">Party GST No:</span> {client.gstNumber || '-'}</p>
-            {bill.vehicle && <p><span className="font-medium">Vehicle:</span> {bill.vehicle.vehicleNumber}</p>}
+            <p><span className="font-medium">Party Name:</span> {bill.clientName || '-'}</p>
+            <p><span className="font-medium">Party GST No:</span> {bill.clientGstNumber || '-'}</p>
+            {bill.vehicleNumber && <p><span className="font-medium">Vehicle:</span> {bill.vehicleNumber}</p>}
           </div>
           
           <table className="w-full border mb-4">

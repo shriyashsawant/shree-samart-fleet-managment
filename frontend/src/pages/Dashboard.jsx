@@ -286,7 +286,7 @@ export default function Dashboard() {
                     </div>
                     <div>
                        <p className="text-xs font-black text-rose-900 uppercase leading-none mb-1">{r.title}</p>
-                       <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">{r.vehicle} • Expiring in {r.daysRemaining} days</p>
+                        <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest">{r.type} • Expiring in {r.daysRemaining} days</p>
                     </div>
                   </div>
                   <button className="bg-white text-rose-600 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border border-rose-200 shadow-sm hover:bg-rose-600 hover:text-white transition-colors">

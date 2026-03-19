@@ -1,5 +1,7 @@
+com\shreesamarth\enterprise\dto\BillDTO.class
 com\shreesamarth\enterprise\entity\DriverAdvance.class
 com\shreesamarth\enterprise\controller\DashboardController.class
+com\shreesamarth\enterprise\dto\VehicleProfileDTO$ExpenseSummary.class
 com\shreesamarth\enterprise\service\AnalyticsService.class
 com\shreesamarth\enterprise\controller\VehicleLogDTO.class
 com\shreesamarth\enterprise\repository\InventoryRepository.class
@@ -18,12 +20,14 @@ com\shreesamarth\enterprise\repository\TyreLogRepository.class
 com\shreesamarth\enterprise\entity\Driver.class
 com\shreesamarth\enterprise\controller\PaymentController.class
 com\shreesamarth\enterprise\service\OcrService.class
+com\shreesamarth\enterprise\dto\VehicleProfileDTO$DriverInfo.class
 com\shreesamarth\enterprise\controller\DriverAdvanceController.class
 com\shreesamarth\enterprise\entity\Expense.class
 com\shreesamarth\enterprise\config\SendGridConfig.class
 com\shreesamarth\enterprise\repository\TyreRepository.class
 com\shreesamarth\enterprise\dto\GstSummaryDTO.class
 com\shreesamarth\enterprise\config\DataInitializer.class
+com\shreesamarth\enterprise\dto\DriverDTO.class
 com\shreesamarth\enterprise\dto\PartyRevenueDTO.class
 com\shreesamarth\enterprise\security\JwtService.class
 com\shreesamarth\enterprise\controller\ClientController.class
@@ -31,6 +35,7 @@ com\shreesamarth\enterprise\controller\DriverController.class
 com\shreesamarth\enterprise\entity\TyreLog.class
 com\shreesamarth\enterprise\controller\DriverDocumentController.class
 com\shreesamarth\enterprise\entity\User.class
+com\shreesamarth\enterprise\dto\TripDTO.class
 com\shreesamarth\enterprise\repository\VehicleLogRepository.class
 com\shreesamarth\enterprise\entity\Payment.class
 com\shreesamarth\enterprise\config\RestTemplateConfig.class
@@ -45,6 +50,7 @@ com\shreesamarth\enterprise\controller\AuthController.class
 com\shreesamarth\enterprise\repository\DriverAttendanceRepository.class
 com\shreesamarth\enterprise\service\InventoryService.class
 com\shreesamarth\enterprise\repository\ReminderRepository.class
+com\shreesamarth\enterprise\config\GlobalExceptionHandler.class
 com\shreesamarth\enterprise\dto\InvoiceExtractDTO.class
 com\shreesamarth\enterprise\repository\ExpenseRepository.class
 com\shreesamarth\enterprise\controller\BillController.class
@@ -55,6 +61,7 @@ com\shreesamarth\enterprise\controller\ReminderController.class
 com\shreesamarth\enterprise\repository\DriverAdvanceRepository.class
 com\shreesamarth\enterprise\dto\VehicleProfileDTO.class
 com\shreesamarth\enterprise\config\SecurityConfig.class
+com\shreesamarth\enterprise\dto\VehicleProfileDTO$VehicleInfo.class
 com\shreesamarth\enterprise\entity\Tyre.class
 com\shreesamarth\enterprise\repository\TripRepository.class
 com\shreesamarth\enterprise\repository\ClientRepository.class
@@ -65,6 +72,7 @@ com\shreesamarth\enterprise\dto\VehicleSummaryDTO.class
 com\shreesamarth\enterprise\repository\VehicleComplianceRepository.class
 com\shreesamarth\enterprise\entity\Trip.class
 com\shreesamarth\enterprise\controller\VehicleLogController.class
+com\shreesamarth\enterprise\dto\UserDTO.class
 com\shreesamarth\enterprise\repository\VehicleTelematicsRepository.class
 com\shreesamarth\enterprise\service\NotificationService.class
 com\shreesamarth\enterprise\repository\VehicleDocumentRepository.class
@@ -76,16 +84,20 @@ com\shreesamarth\enterprise\controller\MaintenanceController.class
 com\shreesamarth\enterprise\service\TripService.class
 com\shreesamarth\enterprise\repository\MaintenanceRepository.class
 com\shreesamarth\enterprise\entity\VehicleLog.class
+com\shreesamarth\enterprise\dto\VehicleProfileDTO$MaintenanceSummary.class
 com\shreesamarth\enterprise\dto\IdleVehicleAlertDTO.class
 com\shreesamarth\enterprise\entity\VehicleDocument.class
 com\shreesamarth\enterprise\dto\MonthlyProfitDTO.class
 com\shreesamarth\enterprise\entity\VehicleTelematics.class
 com\shreesamarth\enterprise\repository\UserRepository.class
 com\shreesamarth\enterprise\entity\Vehicle.class
+com\shreesamarth\enterprise\dto\VehicleProfileDTO$BillSummary.class
 com\shreesamarth\enterprise\controller\AnalyticsController.class
+com\shreesamarth\enterprise\dto\ClientDTO.class
 com\shreesamarth\enterprise\security\JwtAuthenticationFilter.class
 com\shreesamarth\enterprise\dto\AuthDTO.class
 com\shreesamarth\enterprise\repository\VehicleRepository.class
+com\shreesamarth\enterprise\controller\DebugController.class
 com\shreesamarth\enterprise\entity\Client.class
 com\shreesamarth\enterprise\entity\VehicleCompliance.class
 com\shreesamarth\enterprise\repository\PaymentRepository.class
@@ -93,6 +105,7 @@ com\shreesamarth\enterprise\controller\InventoryController.class
 com\shreesamarth\enterprise\dto\ExpenseBreakdownDTO.class
 com\shreesamarth\enterprise\controller\TripController.class
 com\shreesamarth\enterprise\controller\VehicleComplianceController.class
+com\shreesamarth\enterprise\dto\VehicleDTO.class
 com\shreesamarth\enterprise\repository\DriverDocumentRepository.class
 com\shreesamarth\enterprise\entity\Reminder.class
 com\shreesamarth\enterprise\ShreeSamarthApplication.class

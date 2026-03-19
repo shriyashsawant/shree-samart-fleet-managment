@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, Plus, Search, AlertTriangle, Calendar, FileText, CheckCircle2, Clock, Download, Trash2, Filter, Truck, ArrowUpRight, Shield, ExternalLink, X, FileSearch } from 'lucide-react'
-import axios from 'axios'
 import { format } from 'date-fns'
 import { cn } from '../lib/utils'
 import api, { analyticsAPI, vehicleAPI } from '../lib/api'
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://shree-samart-fleet-managment.onrender.com/api'
 
 const complianceTypes = [
   { id: 'RC Book', label: 'RC Book (Vehicle Registration)', description: 'Registration Certificate' },

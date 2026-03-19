@@ -19,10 +19,19 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.paymentDate BETWEEN :start AND :end")
     BigDecimal sumByDateBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
-    
+
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.tenant.id = :tenantId AND p.paymentDate BETWEEN :start AND :end")
+    BigDecimal sumByTenantIdAndDateBetween(@Param("tenantId") Long tenantId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.paymentType = 'SALARY' AND p.paymentDate BETWEEN :start AND :end")
     BigDecimal sumSalaryByDateBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
-    
+
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.tenant.id = :tenantId AND p.paymentType = 'SALARY' AND p.paymentDate BETWEEN :start AND :end")
+    BigDecimal sumSalaryByTenantIdAndDateBetween(@Param("tenantId") Long tenantId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.paymentType = 'EMI' AND p.paymentDate BETWEEN :start AND :end")
     BigDecimal sumEmiByDateBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.tenant.id = :tenantId AND p.paymentType = 'EMI' AND p.paymentDate BETWEEN :start AND :end")
+    BigDecimal sumEmiByTenantIdAndDateBetween(@Param("tenantId") Long tenantId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 }

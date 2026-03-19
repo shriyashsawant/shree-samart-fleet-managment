@@ -20,7 +20,10 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     
     @Query("SELECT SUM(b.totalAmount) FROM Bill b WHERE b.billDate BETWEEN :start AND :end")
     BigDecimal sumByDateBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
-    
+
+    @Query("SELECT SUM(b.totalAmount) FROM Bill b WHERE b.tenant.id = :tenantId AND b.billDate BETWEEN :start AND :end")
+    BigDecimal sumByTenantIdAndDateBetween(@Param("tenantId") Long tenantId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
     @Query("SELECT SUM(b.totalAmount) FROM Bill b WHERE b.vehicle.id = :vehicleId AND b.billDate BETWEEN :start AND :end")
     BigDecimal sumByVehicleAndDateBetween(@Param("vehicleId") Long vehicleId, @Param("start") LocalDate start, @Param("end") LocalDate end);
     

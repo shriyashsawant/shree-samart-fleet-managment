@@ -1,6 +1,9 @@
 package com.shreesamarth.enterprise.controller;
 
 import com.shreesamarth.enterprise.dto.*;
+import com.shreesamarth.enterprise.entity.Tenant;
+import com.shreesamarth.enterprise.entity.User;
+import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +20,7 @@ import java.util.List;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final UserRepository userRepository;
 
     // Get Vehicle P&L Report - Revenue - Expenses = Profit per mixer
     @GetMapping("/vehicle-profit")
@@ -98,8 +102,10 @@ public class AnalyticsController {
     }
 
     private Long getTenantId(UserDetails userDetails) {
-        // For now, return a default tenant ID
-        // In production, extract from JWT token
-        return 1L;
+        if (userDetails == null) return null;
+        return userRepository.findByUsername(userDetails.getUsername())
+                .map(User::getTenant)
+                .map(Tenant::getId)
+                .orElse(null);
     }
 }
