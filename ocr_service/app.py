@@ -36,20 +36,31 @@ def detect_document_type(text):
     """Detect document type from OCR text"""
     text_upper = text.upper()
     
-    if any(k in text_upper for k in ['TAX INVOICE', 'INVOICE', 'BILL NO', 'GST', 'CGST', 'SGST']):
+    # Priority 1: Invoice / Sales Bill / Tax Invoice
+    if any(k in text_upper for k in ['TAX INVOICE', 'SALES INVOICE', 'CASH MEMO', 'BILL NO', 'GSTIN']):
         return 'invoice'
-    elif any(k in text_upper for k in ['REGISTRATION CERTIFICATE', 'RC BOOK', 'CHASSIS NUMBER', 'ENGINE NUMBER']):
+    
+    # Priority 2: Government Documents
+    if any(k in text_upper for k in ['REGISTRATION CERTIFICATE', 'FORM 23', 'RC BOOK', 'CHASSIS NO']):
         return 'vehicle_rc'
-    elif any(k in text_upper for k in ['INSURANCE', 'POLICY', 'PREMIUM', 'COVER NOTE']):
-        return 'insurance'
-    elif any(k in text_upper for k in ['PUC', 'POLLUTION', 'EMISSION']):
-        return 'puc'
-    elif any(k in text_upper for k in ['DRIVING LICENSE', 'DL NO', 'LICENSE']):
+    if any(k in text_upper for k in ['DRIVING LICENCE', 'DRIVING LICENSE', 'DL NO']):
         return 'driving_license'
-    elif any(k in text_upper for k in ['AADHAAR', 'UIDAI']):
+    if any(k in text_upper for k in ['AADHAAR', 'UIDAI', 'GOVERNMENT OF INDIA']):
         return 'aadhaar'
-    elif any(k in text_upper for k in ['TAX RECEIPT', 'ROAD TAX']):
+    
+    # Priority 3: Commercial Documents
+    if any(k in text_upper for k in ['PUC', 'POLLUTION', 'EMISSION']):
+        return 'puc'
+    if any(k in text_upper for k in ['INSURANCE', 'POLICY', 'PREMIUM', 'LIABILITY']):
+        return 'insurance'
+    if any(k in text_upper for k in ['FITNESS CERTIFICATE', 'FORM 38']):
+        return 'fitness'
+    if any(k in text_upper for k in ['TAX RECEIPT', 'ROAD TAX', 'VIVA']):
         return 'tax_receipt'
+    
+    # FALLBACK: Keyword density search for invoice
+    if len(re.findall(r'GST|CGST|SGST|IGST|AMOUNT|TOTAL', text_upper)) >= 2:
+        return 'invoice'
     
     return 'unknown'
 
@@ -149,6 +160,11 @@ def extract_document():
         if not text:
             return jsonify({'error': 'Failed to extract text after multiple attempts'}), 400
         
+        # Apply learned corrections from memory
+        memory = load_memory()
+        text = apply_corrections(text, memory)
+        print("Applied learned corrections to OCR text.")
+
         doc_type = detect_document_type(text)
         
         if doc_type == 'invoice':

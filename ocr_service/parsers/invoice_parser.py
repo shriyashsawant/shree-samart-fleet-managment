@@ -37,18 +37,34 @@ def clean_amount(amt_str):
 
 def extract_full_amount(line):
     """Extract full amount from a line - handles various formats"""
-    # First try to find patterns like "1,12,100" or "195,000"
-    # Look for the entire number pattern
+    # 1. Clean line - remove percent symbols to avoid matching them as numbers
+    # Line like "CGST 9%: 8550.00" -> "CGST : 8550.00"
+    clean_line = re.sub(r'\d+%', '', line)
+    
+    # 2. Look for the largest number pattern in the line
     patterns = [
-        r'(\d{1,2},\d{1,3},\d{3})',  # Indian: 1,12,100 or 1,95,000
-        r'(\d{3},\d{3})',  # Standard: 195,000
-        r'(\d+\.?\d*)',  # Simple: 195000 or 195000.00
+        r'(\d{1,2},\d{1,3},\d{3}(?:\.\d{2})?)',  # Indian formatted with decimals
+        r'(\d{3},\d{3}(?:\.\d{2})?)',           # Standard formatted
+        r'(\d{4,}\.?\d*)',                       # Large numbers (>999)
+        r'(\d{2,}\.?\d*)',                       # Medium numbers (>9)
     ]
     
+    found_values = []
     for pattern in patterns:
-        match = re.search(pattern, line)
-        if match:
-            return clean_amount(match.group(1))
+        matches = re.findall(pattern, clean_line)
+        for m in matches:
+            val = clean_amount(m)
+            if val is not None:
+                found_values.append(val)
+    
+    if found_values:
+        # Return the largest value found on the line (usually the amount)
+        return max(found_values)
+    
+    # Final fallback for any number if nothing specific matched
+    match = re.search(r'(\d+\.?\d*)', clean_line)
+    if match: return clean_amount(match.group(1))
+    
     return None
 
 
@@ -76,48 +92,65 @@ def scan_all_amounts_by_position(text):
     keyword_positions = {}
     for i, line in enumerate(lines):
         line_lower = line.lower()
-        if 'subtotal' in line_lower:
+        if any(k in line_lower for k in ['subtotal', 'basic', 'taxable']):
             keyword_positions['basic'] = i
         elif 'cgst' in line_lower:
             keyword_positions['cgst'] = i
         elif 'sgst' in line_lower:
             keyword_positions['sgst'] = i
-        elif 'grand total' in line_lower or 'grandtotal' in line_lower:
+        elif any(k in line_lower for k in ['grand total', 'grandtotal', 'payable', 'invoice total']):
             keyword_positions['total'] = i
     
-    # For basic: look for largest amount near subtotal keyword
+    # For basic: look for FIRST amount near subtotal keyword (usually on same line or next)
     if 'basic' in keyword_positions:
         basic_line = keyword_positions['basic']
-        candidates = [a for a in all_amounts if basic_line < a['line'] <= basic_line + 5]
-        if candidates:
-            results['basic_amount'] = max(candidates, key=lambda x: x['value'])['value']
+        # Try to find amount on the SAME line first
+        val = extract_full_amount(lines[basic_line])
+        if val:
+            results['basic_amount'] = val
+        else:
+            candidates = [a for a in all_amounts if basic_line < a['line'] <= basic_line + 5]
+            if candidates:
+                results['basic_amount'] = sorted(candidates, key=lambda x: x['line'])[0]['value']
     
-    # For CGST: look for amount after CGST keyword (~9% of basic)
-    if 'cgst' in keyword_positions and results.get('basic_amount'):
+    # For CGST: look for amount after CGST keyword (~9% of basic or near it)
+    if 'cgst' in keyword_positions:
         cgst_line = keyword_positions['cgst']
-        expected = results['basic_amount'] * 0.09
-        candidates = [a for a in all_amounts if cgst_line < a['line'] <= cgst_line + 4]
-        for c in candidates:
-            if 0.5 * expected <= c['value'] <= 1.5 * expected:
-                results['cgst_amount'] = c['value']
-                break
+        val = extract_full_amount(lines[cgst_line])
+        if val:
+            results['cgst_amount'] = val
+        elif results.get('basic_amount'):
+            expected = results['basic_amount'] * 0.09
+            candidates = [a for a in all_amounts if cgst_line < a['line'] <= cgst_line + 4]
+            for c in candidates:
+                if 0.5 * expected <= c['value'] <= 1.5 * expected:
+                    results['cgst_amount'] = c['value']
+                    break
     
-    # For SGST: look for amount after SGST keyword (~9% of basic)
-    if 'sgst' in keyword_positions and results.get('basic_amount'):
+    # For SGST: look for amount after SGST keyword
+    if 'sgst' in keyword_positions:
         sgst_line = keyword_positions['sgst']
-        expected = results['basic_amount'] * 0.09
-        candidates = [a for a in all_amounts if sgst_line < a['line'] <= sgst_line + 4]
-        for c in candidates:
-            if 0.5 * expected <= c['value'] <= 1.5 * expected:
-                results['sgst_amount'] = c['value']
-                break
+        val = extract_full_amount(lines[sgst_line])
+        if val:
+            results['sgst_amount'] = val
+        elif results.get('basic_amount'):
+            expected = results['basic_amount'] * 0.09
+            candidates = [a for a in all_amounts if sgst_line < a['line'] <= sgst_line + 4]
+            for c in candidates:
+                if 0.5 * expected <= c['value'] <= 1.5 * expected:
+                    results['sgst_amount'] = c['value']
+                    break
     
-    # For Total: look for largest amount near Grand Total keyword
+    # For Total: look for amount near Total keyword
     if 'total' in keyword_positions:
         total_line = keyword_positions['total']
-        candidates = [a for a in all_amounts if total_line < a['line'] <= total_line + 5]
-        if candidates:
-            results['total_amount'] = max(candidates, key=lambda x: x['value'])['value']
+        val = extract_full_amount(lines[total_line])
+        if val:
+            results['total_amount'] = val
+        else:
+            candidates = [a for a in all_amounts if total_line < a['line'] <= total_line + 5]
+            if candidates:
+                results['total_amount'] = max(candidates, key=lambda x: x['value'])['value']
     
     return results
 
@@ -229,16 +262,32 @@ def parse_invoice(text, company_gst=None):
     result['total_amount'] = amount_results.get('total_amount')
     
     # Sanity Checks
-    # 1. Back-calculate basic amount if it's 0 but total is present
-    if (not result.get('basic_amount') or result['basic_amount'] == 0) and result.get('total_amount'):
+    # 1. Back-calculate amounts if only partial data is available
+    basic = result.get('basic_amount') or 0
+    cgst = result.get('cgst_amount') or 0
+    sgst = result.get('sgst_amount') or 0
+    igst = result.get('igst_amount') or 0
+    total = result.get('total_amount') or 0
+
+    # If basic is missing but total exists, back-calculate assuming 18% GST (standard in their case)
+    if basic == 0 and total > 0:
         gst_perc = 18.0
-        result['basic_amount'] = round(result['total_amount'] / (1 + (gst_perc / 100)), 2)
-        result['cgst_amount'] = round((result['total_amount'] - result['basic_amount']) / 2, 2)
+        result['basic_amount'] = round(total / (1 + (gst_perc / 100)), 2)
+        result['cgst_amount'] = round((total - result['basic_amount']) / 2, 2)
         result['sgst_amount'] = result['cgst_amount']
+        print(f"Back-calculated amounts from total: {total}")
     
-    # Ensure totals match (Final Sanity Check)
-    if result.get('basic_amount') and result.get('total_amount') == 0:
-        result['total_amount'] = result['basic_amount'] + result.get('cgst_amount', 0) + result.get('sgst_amount', 0) + result.get('igst_amount', 0)
+    # If basic/taxes exist but total is 0, sum them up
+    elif total == 0 and basic > 0:
+        result['total_amount'] = round(basic + cgst + sgst + igst, 2)
+        print(f"Calculated total from components: {result['total_amount']}")
+
+    # Math Validation Flag
+    final_basic = result.get('basic_amount') or 0
+    final_total = result.get('total_amount') or 0
+    sum_components = round(final_basic + (result.get('cgst_amount') or 0) + (result.get('sgst_amount') or 0) + (result.get('igst_amount') or 0), 2)
+    
+    result['math_valid'] = abs(sum_components - final_total) < 2.0 # Allow 2 rupee margin for rounding errors
         
     # Bill No
     bill_match = re.search(r'(?:Bill\.?\s*No\.?|Invoice\s*No)[\s:\-]*(\d+[\w\-]*)', text, re.IGNORECASE)
@@ -313,19 +362,34 @@ def parse_invoice(text, company_gst=None):
     if not result.get('company_name') and lines:
         result['company_name'] = lines[0].strip()
     
-    # Party Name
-    party_keywords = ['TO,', 'TO :', 'M/S', 'BILL TO', 'PARTY NAME', 'CONSIGNEE', 'CLIENT', 'BUYER', 'PRISM', 'JOHNSON']
+    # Party Name Logic (Enhanced)
+    party_keywords = ['BILL TO', 'TO,', 'TO :', 'M/S', 'PARTY NAME', 'CONSIGNEE', 'CLIENT', 'BUYER', 'NAME:', 'SOLD BY']
     for i, line in enumerate(lines):
         line_up = line.upper()
         if any(k in line_up for k in party_keywords):
-            if len(line) > 3 and 'GST' not in line.upper() and 'PAN' not in line.upper():
-                party_name = line.strip()
-                # Clean address garbage after company name (numbers, state codes, pin codes, special chars)
-                party_name = re.sub(r'\s*[\d\*,#]+\s*(?:E|Mumbai|Maharashtra|India|Pune|Kolhapur|Tamil|Country|Post|400\d+|411\d+|416\d+).*$', '', party_name, flags=re.IGNORECASE).strip()
-                # Remove trailing punctuation and numbers
-                party_name = re.sub(r'\s+[A-Z0-9]{2,}$', '', party_name).strip()
-                result['party_name'] = party_name
-                break
+            # Clean the line by removing the keyword itself
+            candidate = line.strip()
+            for k in party_keywords:
+                if k in line_up:
+                    candidate = re.sub(re.escape(k), '', candidate, flags=re.IGNORECASE).strip()
+            
+            # If line only has keyword, check next line
+            if len(candidate) < 3 and i + 1 < len(lines):
+                candidate = lines[i+1].strip()
+            
+            if len(candidate) > 3 and 'GST' not in candidate.upper() and 'PAN' not in candidate.upper():
+                # Clean address/junk from party name
+                # 1. Remove leading punctuation (common after keywords like "To:")
+                cleaned = re.sub(r'^[:\-#\*,.\s]+', '', candidate)
+                
+                # 2. Match common city/state noise patterns at the end
+                cleaned = re.sub(r'[, ]*[\d]{5,6}.*$', '', cleaned) 
+                cleaned = re.sub(r'[, ]*(?:MUMBAI|PUNE|MAHARASHTRA|INDIA|KOLHAPUR).*$', '', cleaned, flags=re.IGNORECASE)
+                cleaned = cleaned.strip()
+                
+                if len(cleaned) > 2:
+                   result['party_name'] = cleaned.upper()
+                   break
     
     # Bill Type
     if any(k in text.upper() for k in ['RENTAL', 'RENT', 'CHARGES', 'DIESEL', 'DIESEL', 'TRANSIT', 'MIXER']):

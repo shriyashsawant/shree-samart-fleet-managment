@@ -28,20 +28,21 @@ INVOICE_PATTERNS = {
         r'(?:Rs\.?|₹)\s*([\d,]+\.?\d*)',
     ],
     'cgst_amount': [
-        r'(?:CGST|CGS3)[@\s]*\d+[%]*[:.\-\s]*([\d,]+\.?\d*)',
-        r'(?:Central|CGST)[\s]*Tax[@\s]*\d+[%]*[:.\s₹]*\s*([\d,]+\.?\d*)',
+        r'(?:CGST|CGS3|Central\s*GST|C-GST)[@\s]*\d*[%]*[:.\-\s₹]*([\d,]+\.?\d*)',
+        r'(?:Central|CGST)[\s]*Tax[@\s]*\d*[%]*[:.\s₹]*\s*([\d,]+\.?\d*)',
     ],
     'sgst_amount': [
-        r'(?:SGST|SGS1)[@\s]*\d+[%]*[:.\-\s]*([\d,]+\.?\d*)',
-        r'(?:State|SGST)[\s]*Tax[@\s]*\d+[%]*[:.\s₹]*\s*([\d,]+\.?\d*)',
+        r'(?:SGST|SGS1|State\s*GST|S-GST)[@\s]*\d*[%]*[:.\-\s₹]*([\d,]+\.?\d*)',
+        r'(?:State|SGST)[\s]*Tax[@\s]*\d*[%]*[:.\s₹]*\s*([\d,]+\.?\d*)',
     ],
     'igst_amount': [
-        r'(?:IGST)[\s@]*[\d\s%]*[:\s₹]*\s*([\d,]+\.?\d*)',
+        r'(?:IGST|Integrated\s*GST)[@\s]*\d*[%]*[:\s₹]*\s*([\d,]+\.?\d*)',
         r'(?:Integrated|IGST)[\s]*Tax[:\s₹]*\s*([\d,]+\.?\d*)',
     ],
     'total_amount': [
-        r'(?:Grand\s*Total|Net\s*Total|Total\s*Amount|Payable|Amount\s*Payable)[:.\-\s₹]*([\d,]+\.?\d*)',
+        r'(?:Grand\s*Total|Net\s*Total|Total\s*Amount|Payable|Amount\s*Payable|Invoice\s*Total)[:.\-\s₹]*([\d,]+\.?\d*)',
         r'(?:Total)[:.\-\s₹]*\s*([\d,]+\.?\d*)',
+        r'Balance[\s*Due]*[:.\-\s₹]*([\d,]+\.?\d*)',
     ],
     'hsn_code': [
         r'(?:HSN|SAC)[\sCode:]*(\d{4,8})',
