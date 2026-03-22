@@ -62,6 +62,7 @@ public class Driver {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
+    @JsonIgnore
     private Tenant tenant;
 
     @OneToMany(mappedBy = "driver", cascade = CascadeType.ALL, orphanRemoval = true)

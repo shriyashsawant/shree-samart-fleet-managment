@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
@@ -29,12 +30,12 @@ public class Bill {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "tenant"})
+    @JsonIgnore
     private Client client;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "tenant", "documents", "drivers", "vehicleLogs", "complianceRecords"})
+    @JsonIgnore
     private Vehicle vehicle;
 
     @Column(name = "hsn_code", length = 10)
@@ -73,6 +74,6 @@ public class Bill {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private Tenant tenant;
 }
