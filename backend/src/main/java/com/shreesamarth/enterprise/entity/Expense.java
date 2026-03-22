@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,7 +23,7 @@ public class Expense {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "documents", "drivers", "vehicleLogs", "complianceRecords", "tenant"})
+    @JsonIgnore
     private Vehicle vehicle;
 
     @Column(name = "category", length = 50)
@@ -48,10 +48,10 @@ public class Expense {
     private String billFilePath;
 
     @Column(name = "fuel_quantity", precision = 10, scale = 2)
-    private java.math.BigDecimal fuelQuantity;
+    private BigDecimal fuelQuantity;
 
     @Column(name = "fuel_rate", precision = 10, scale = 2)
-    private java.math.BigDecimal fuelRate;
+    private BigDecimal fuelRate;
 
     @Column(name = "odometer_reading")
     private Long odometerReading;
@@ -62,6 +62,6 @@ public class Expense {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private Tenant tenant;
 }
