@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,11 +22,11 @@ public class DriverDocument {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "documents", "assignedVehicle", "tenant", "licenseFilePath", "aadhaarFilePath"})
+    @JsonIgnore
     private Driver driver;
 
     @Column(name = "document_type", length = 50)
-    private String documentType; // LICENSE, AADHAAR, PAN, etc.
+    private String documentType;
 
     @Column(name = "document_name", length = 100)
     private String documentName;
@@ -35,7 +35,7 @@ public class DriverDocument {
     private String filePath;
 
     @Column(name = "document_number", length = 50)
-    private String documentNumber; // License number, Aadhaar number, etc.
+    private String documentNumber;
 
     @Column(name = "expiry_date")
     private LocalDate expiryDate;

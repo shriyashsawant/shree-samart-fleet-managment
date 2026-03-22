@@ -2,21 +2,22 @@ package com.shreesamarth.enterprise.controller;
 
 import com.shreesamarth.enterprise.entity.Driver;
 import com.shreesamarth.enterprise.entity.DriverDocument;
+import com.shreesamarth.enterprise.entity.Tenant;
+import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.repository.DriverDocumentRepository;
 import com.shreesamarth.enterprise.repository.DriverRepository;
+import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/driver-documents")
@@ -25,7 +26,16 @@ public class DriverDocumentController {
 
     private final DriverDocumentRepository documentRepository;
     private final DriverRepository driverRepository;
+    private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+
+    private Tenant getCurrentTenant(Authentication auth) {
+        if (auth == null) return null;
+        String username = auth.getName();
+        User user = userRepository.findByUsernameWithTenant(username).orElse(null);
+        if (user == null) return null;
+        return user.getTenant();
+    }
 
     @GetMapping("/driver/{driverId}")
     public ResponseEntity<List<DriverDocument>> getByDriver(@PathVariable Long driverId) {
@@ -33,13 +43,16 @@ public class DriverDocumentController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<DriverDocument> uploadDocument(
             @RequestParam("driverId") Long driverId,
             @RequestParam("documentType") String documentType,
             @RequestParam(value = "documentNumber", required = false) String documentNumber,
             @RequestParam(value = "expiryDate", required = false) String expiryDate,
-            @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            Authentication auth) throws IOException {
 
+        Tenant tenant = getCurrentTenant(auth);
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
 
@@ -52,7 +65,6 @@ public class DriverDocumentController {
         }
 
         if (file != null && !file.isEmpty()) {
-            // Upload to Firebase or local storage
             String fileUrl = fileUploadService.uploadFile(file, "driver-documents");
             doc.setFilePath(fileUrl);
             doc.setDocumentName(file.getOriginalFilename());
@@ -62,6 +74,7 @@ public class DriverDocumentController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
         documentRepository.deleteById(id);
         return ResponseEntity.ok().build();
