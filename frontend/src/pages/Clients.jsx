@@ -29,7 +29,14 @@ export default function Clients() {
         await clientAPI.delete(id)
         loadData()
       } catch (e) {
-        console.error(e)
+        const msg = e?.response?.data?.error || ''
+        const bills = e?.response?.data?.bills || 0
+        const trips = e?.response?.data?.trips || 0
+        if (msg.includes('Cannot delete client with existing records')) {
+          alert(`Cannot delete: This client has ${bills} bill(s) and ${trips} trip(s). Remove them first.`)
+        } else {
+          alert('Failed to delete client. Please try again.')
+        }
       }
     }
   }

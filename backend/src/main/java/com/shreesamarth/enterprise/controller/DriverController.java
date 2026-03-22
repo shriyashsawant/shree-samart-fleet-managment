@@ -5,10 +5,7 @@ import com.shreesamarth.enterprise.entity.Reminder;
 import com.shreesamarth.enterprise.entity.Tenant;
 import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
-import com.shreesamarth.enterprise.repository.DriverRepository;
-import com.shreesamarth.enterprise.repository.ReminderRepository;
-import com.shreesamarth.enterprise.repository.UserRepository;
-import com.shreesamarth.enterprise.repository.VehicleRepository;
+import com.shreesamarth.enterprise.repository.*;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import com.shreesamarth.enterprise.dto.DriverDTO;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -36,6 +34,11 @@ public class DriverController {
     private final ReminderRepository reminderRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+    private final TripRepository tripRepository;
+    private final PaymentRepository paymentRepository;
+    private final DriverDocumentRepository driverDocumentRepository;
+    private final DriverAttendanceRepository driverAttendanceRepository;
+    private final DriverAdvanceRepository driverAdvanceRepository;
 
     private DriverDTO toDTO(Driver d) {
         return new DriverDTO(
@@ -153,12 +156,32 @@ public class DriverController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDriver(@PathVariable Long id) {
-        if (driverRepository.existsById(id)) {
-            driverRepository.deleteById(id);
-            return ResponseEntity.ok().build();
+    @Transactional
+    public ResponseEntity<?> deleteDriver(@PathVariable Long id) {
+        if (!driverRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
+
+        int trips = tripRepository.findByDriverId(id).size();
+        int payments = paymentRepository.findByDriverId(id).size();
+        int docs = driverDocumentRepository.findByDriverId(id).size();
+        int attendance = driverAttendanceRepository.findByDriverId(id).size();
+        int advances = driverAdvanceRepository.findByDriverId(id).size();
+        int reminders = reminderRepository.findByReferenceTypeAndReferenceId("DRIVER", id).size();
+
+        if (trips > 0 || payments > 0 || docs > 0 || attendance > 0 || advances > 0 || reminders > 0) {
+            String msg = "Cannot delete: This driver has associated records.";
+            if (trips > 0) msg += "\n- " + trips + " trip(s)";
+            if (payments > 0) msg += "\n- " + payments + " payment(s)";
+            if (docs > 0) msg += "\n- " + docs + " document(s)";
+            if (attendance > 0) msg += "\n- " + attendance + " attendance record(s)";
+            if (advances > 0) msg += "\n- " + advances + " advance(s)";
+            if (reminders > 0) msg += "\n- " + reminders + " reminder(s)";
+            return ResponseEntity.badRequest().body(Map.of("error", msg));
+        }
+
+        driverRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/license-file")

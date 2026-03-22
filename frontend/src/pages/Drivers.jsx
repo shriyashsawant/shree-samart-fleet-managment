@@ -36,8 +36,14 @@ export default function Drivers() {
       try {
         await driverAPI.delete(id)
         loadData()
-      } catch (error) {
-        console.error('Failed to delete driver:', error)
+      } catch (e) {
+        const msg = e?.response?.data?.error || ''
+        if (msg.includes('Cannot delete')) {
+          const parts = msg.split('\n').filter(Boolean)
+          alert(msg)
+        } else {
+          alert('Failed to delete driver. Please try again.')
+        }
       }
     }
   }
