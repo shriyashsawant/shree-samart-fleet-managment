@@ -1,8 +1,11 @@
 package com.shreesamarth.enterprise.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -16,6 +19,8 @@ import java.util.Map;
 @Service
 public class OcrService {
 
+    private static final Logger log = LoggerFactory.getLogger(OcrService.class);
+
     @Value("${ocr.service.url:https://shree-samarth-ocr.onrender.com}")
     private String ocrServiceUrl;
 
@@ -24,6 +29,21 @@ public class OcrService {
     @Autowired
     public OcrService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
+    }
+
+    @Scheduled(fixedRateString = "${ocr.ping.interval:240000}")
+    public void pingOcrService() {
+        try {
+            String url = ocrServiceUrl + "/api/ocr/health";
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("OCR service ping successful");
+            } else {
+                log.warn("OCR service ping returned status: {}", response.getStatusCode());
+            }
+        } catch (Exception e) {
+            log.warn("OCR service ping failed: {}", e.getMessage());
+        }
     }
 
     public Map<String, Object> extractDocument(MultipartFile file) throws IOException {
