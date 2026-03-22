@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -30,16 +31,18 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Not authenticated"));
         }
         String username = authentication.getName();
-        return userRepository.findByUsername(username)
+        return userRepository.findByUsernameWithTenant(username)
                 .map(user -> ResponseEntity.ok(Map.of(
                         "id", user.getId(),
                         "username", user.getUsername(),
-                        "role", user.getRole() != null ? user.getRole() : "USER"
+                        "role", user.getRole() != null ? user.getRole() : "USER",
+                        "tenantId", user.getTenant() != null ? user.getTenant().getId() : null
                 )))
                 .orElse(ResponseEntity.notFound().build());
     }

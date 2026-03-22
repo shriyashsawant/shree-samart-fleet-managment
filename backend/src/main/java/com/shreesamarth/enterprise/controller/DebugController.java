@@ -1,5 +1,6 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.service.FileUploadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,9 +20,11 @@ import java.util.Map;
 public class DebugController {
 
     private final DataSource dataSource;
+    private final FileUploadService fileUploadService;
 
-    public DebugController(DataSource dataSource) {
+    public DebugController(DataSource dataSource, FileUploadService fileUploadService) {
         this.dataSource = dataSource;
+        this.fileUploadService = fileUploadService;
     }
 
     @GetMapping("/raw-vehicles")
@@ -101,5 +104,25 @@ public class DebugController {
             info.put("error", e.getMessage());
             return ResponseEntity.internalServerError().body(info);
         }
+    }
+
+    @GetMapping("/firebase-status")
+    public ResponseEntity<Map<String, Object>> getFirebaseStatus() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("firebaseEnabled", fileUploadService.isFirebaseEnabled());
+        return ResponseEntity.ok(status);
+    }
+
+    @GetMapping("/storage-config")
+    public ResponseEntity<Map<String, Object>> getStorageConfig() {
+        Map<String, Object> info = new HashMap<>();
+        info.put("firebaseServiceAccountExists", getClass().getClassLoader()
+            .getResource("firebase-service-account.json") != null);
+        info.put("firebaseEnabled", fileUploadService.isFirebaseEnabled());
+        return ResponseEntity.ok(info);
+    }
+
+    private String getClassPathResource(String name) {
+        return getClass().getClassLoader().getResource(name) != null ? "found" : "not found";
     }
 }

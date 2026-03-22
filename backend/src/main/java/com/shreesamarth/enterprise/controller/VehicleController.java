@@ -117,6 +117,7 @@ public class VehicleController {
     }
 
     @GetMapping("/{id}/documents")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<VehicleDocument>> getVehicleDocuments(@PathVariable Long id) {
         return ResponseEntity.ok(documentRepository.findByVehicleId(id));
     }

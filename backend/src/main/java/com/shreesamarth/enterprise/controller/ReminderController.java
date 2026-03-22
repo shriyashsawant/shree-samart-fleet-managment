@@ -33,6 +33,7 @@ public class ReminderController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Reminder>> getAllReminders(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String reminderType,
@@ -56,6 +57,7 @@ public class ReminderController {
     }
 
     @GetMapping("/pending")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Reminder>> getPendingReminders(Authentication auth) {
         Tenant tenant = getCurrentTenant(auth);
         List<Reminder> allTenant = tenant != null

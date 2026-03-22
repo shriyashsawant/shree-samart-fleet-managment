@@ -8,7 +8,7 @@ import {
   Users, Receipt, ChevronLeft, CreditCard, Hash, IndianRupee, ArrowDownRight, MoreVertical, Printer, Edit, Settings, Fuel, CheckCircle2, Navigation, FileSearch, Upload, X, AlertCircle
 } from 'lucide-react'
 import { analyticsAPI, vehicleAPI, tripAPI, tyreAPI, complianceAPI, tyreLogAPI } from '../lib/api'
-import { formatCurrency, formatDate, cn } from '../lib/utils'
+import { formatCurrency, formatDate, cn, openDocument } from '../lib/utils'
 
 export default function VehicleProfile() {
   const { id } = useParams()
@@ -483,7 +483,7 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                        <Clock className="w-3 h-3" /> {formatDate(doc.updatedAt || doc.createdAt)}
                     </span>
                     <button 
-                       onClick={() => window.open(doc.documentPath, '_blank')}
+                        onClick={() => openDocument(doc.documentPath)}
                        className="p-2 bg-dark-900 text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0"
                     >
                        <ExternalLink className="w-4 h-4" />

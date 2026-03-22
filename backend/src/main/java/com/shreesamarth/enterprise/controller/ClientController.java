@@ -2,13 +2,16 @@ package com.shreesamarth.enterprise.controller;
 
 import com.shreesamarth.enterprise.dto.ClientDTO;
 import com.shreesamarth.enterprise.entity.Client;
+import com.shreesamarth.enterprise.repository.BillRepository;
 import com.shreesamarth.enterprise.repository.ClientRepository;
+import com.shreesamarth.enterprise.repository.TripRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/clients")
@@ -16,6 +19,8 @@ import java.util.List;
 public class ClientController {
 
     private final ClientRepository clientRepository;
+    private final BillRepository billRepository;
+    private final TripRepository tripRepository;
 
     @GetMapping
     @Transactional(readOnly = true)
@@ -52,12 +57,25 @@ public class ClientController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
-        if (clientRepository.existsById(id)) {
-            clientRepository.deleteById(id);
-            return ResponseEntity.ok().build();
+    @Transactional
+    public ResponseEntity<?> deleteClient(@PathVariable Long id) {
+        if (!clientRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
+
+        int billCount = billRepository.findByClientId(id).size();
+        int tripCount = tripRepository.findByClientId(id).size();
+
+        if (billCount > 0 || tripCount > 0) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "Cannot delete client with existing records",
+                "bills", billCount,
+                "trips", tripCount
+            ));
+        }
+
+        clientRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
     private ClientDTO toDTO(Client client) {

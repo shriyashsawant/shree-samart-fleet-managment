@@ -37,6 +37,7 @@ public class DriverAttendanceController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<DriverAttendance>> getAllAttendance(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             Authentication auth) {
@@ -54,6 +55,7 @@ public class DriverAttendanceController {
     }
 
     @GetMapping("/driver/{driverId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<DriverAttendance>> getAttendanceByDriver(
             @PathVariable Long driverId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

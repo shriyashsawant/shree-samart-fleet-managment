@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,6 +22,7 @@ public class TyreLog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tyre_id", nullable = false)
+    @JsonIgnore
     private Tyre tyre;
 
     @Column(name = "log_type", length = 50)

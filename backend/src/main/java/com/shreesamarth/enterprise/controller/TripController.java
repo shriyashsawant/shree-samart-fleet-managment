@@ -4,6 +4,7 @@ import com.shreesamarth.enterprise.dto.TripDTO;
 import com.shreesamarth.enterprise.entity.Trip;
 import com.shreesamarth.enterprise.service.TripService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +20,7 @@ public class TripController {
     private final TripService tripService;
 
     @PostMapping
+    @Transactional
     public ResponseEntity<TripDTO> createTrip(
             @RequestBody Trip trip,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -27,6 +29,7 @@ public class TripController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<TripDTO>> getAllTrips(
             @AuthenticationPrincipal UserDetails userDetails) {
         List<Trip> trips = tripService.getAllTrips(1L);
@@ -35,12 +38,14 @@ public class TripController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<TripDTO> getTripById(@PathVariable Long id) {
         Trip trip = tripService.getTripById(id);
         return ResponseEntity.ok(toDTO(trip));
     }
 
     @GetMapping("/vehicle/{vehicleId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<TripDTO>> getTripsByVehicle(@PathVariable Long vehicleId) {
         List<Trip> trips = tripService.getTripsByVehicle(vehicleId);
         List<TripDTO> dtos = trips.stream().map(this::toDTO).toList();
@@ -48,6 +53,7 @@ public class TripController {
     }
 
     @GetMapping("/driver/{driverId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<TripDTO>> getTripsByDriver(@PathVariable Long driverId) {
         List<Trip> trips = tripService.getTripsByDriver(driverId);
         List<TripDTO> dtos = trips.stream().map(this::toDTO).toList();
@@ -55,6 +61,7 @@ public class TripController {
     }
 
     @GetMapping("/client/{clientId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<TripDTO>> getTripsByClient(@PathVariable Long clientId) {
         List<Trip> trips = tripService.getTripsByClient(clientId);
         List<TripDTO> dtos = trips.stream().map(this::toDTO).toList();

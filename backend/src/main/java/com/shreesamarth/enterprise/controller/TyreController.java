@@ -30,11 +30,13 @@ public class TyreController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Tyre>> getAllTyres(Authentication auth) {
         return ResponseEntity.ok(tyreService.getAllTyres(getCurrentTenant(auth)));
     }
 
     @GetMapping("/vehicle/{vehicleId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Tyre>> getTyresByVehicle(@PathVariable Long vehicleId) {
         return ResponseEntity.ok(tyreService.getTyresByVehicle(vehicleId));
     }

@@ -30,16 +30,19 @@ public class DriverAdvanceController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<DriverAdvance>> getAllAdvances(Authentication auth) {
         return ResponseEntity.ok(advanceService.getAllAdvances(getCurrentTenant(auth)));
     }
 
     @GetMapping("/pending")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<DriverAdvance>> getPendingAdvances(Authentication auth) {
         return ResponseEntity.ok(advanceService.getPendingAdvances(getCurrentTenant(auth)));
     }
 
     @GetMapping("/driver/{driverId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<DriverAdvance>> getAdvancesByDriver(@PathVariable Long driverId) {
         return ResponseEntity.ok(advanceService.getAdvancesByDriver(driverId));
     }

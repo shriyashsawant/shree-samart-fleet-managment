@@ -61,6 +61,7 @@ public class VehicleProfileDTO {
         private String name;
         private String phone;
         private String license;
+        private String address;
     }
     
     @Data

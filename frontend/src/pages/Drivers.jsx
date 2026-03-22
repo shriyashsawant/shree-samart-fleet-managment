@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Users, Edit, Trash2, Phone, Calendar, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, MapPin, ArrowUpRight, ArrowLeft, MoreVertical, FileSearch, ExternalLink, FileText } from 'lucide-react'
 import { driverAPI, vehicleAPI, attendanceAPI, driverDocumentAPI } from '../lib/api'
-import { formatCurrency, formatDate, cn } from '../lib/utils'
+import { formatCurrency, formatDate, cn, openDocument } from '../lib/utils'
 import { format } from 'date-fns'
 
 export default function Drivers() {
@@ -411,7 +411,7 @@ function PersonnelConsole({ driver, onClose }) {
                                    <div className="flex gap-2">
                                        {doc.filePath && (
                                           <button 
-                                             onClick={() => window.open(doc.filePath, '_blank')}
+                                              onClick={() => openDocument(doc.filePath)}
                                              className="p-3 bg-dark-50 rounded-xl text-dark-600 hover:bg-primary-50 hover:text-primary-600 transition-all opacity-0 group-hover:opacity-100"
                                           >
                                              <ExternalLink className="w-4 h-4" />

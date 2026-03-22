@@ -53,3 +53,18 @@ export function getDaysRemaining(date) {
   const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24))
   return diff
 }
+
+export function openDocument(filePath) {
+  if (!filePath) return
+  if (filePath.startsWith('https://')) {
+    window.open(filePath, '_blank')
+  } else {
+    let relativePath = filePath
+    if (relativePath.startsWith('./uploads/')) {
+      relativePath = relativePath.substring('./uploads/'.length)
+    } else if (relativePath.startsWith('uploads/')) {
+      relativePath = relativePath.substring('uploads/'.length)
+    }
+    window.open(`/api/files/${relativePath}`, '_blank')
+  }
+}

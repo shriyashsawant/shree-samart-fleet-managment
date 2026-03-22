@@ -38,6 +38,7 @@ public class DriverDocumentController {
     }
 
     @GetMapping("/driver/{driverId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<DriverDocument>> getByDriver(@PathVariable Long driverId) {
         return ResponseEntity.ok(documentRepository.findByDriverId(driverId));
     }

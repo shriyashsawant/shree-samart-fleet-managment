@@ -95,6 +95,7 @@ public class BillController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Bill> getBillById(@PathVariable Long id) {
         return billRepository.findById(id)
                 .map(ResponseEntity::ok)
@@ -212,6 +213,7 @@ public class BillController {
     }
 
     @GetMapping("/reports/gst-monthly")
+    @Transactional(readOnly = true)
     public ResponseEntity<byte[]> exportGstMonthly(
             @RequestParam String month,
             Authentication auth) {

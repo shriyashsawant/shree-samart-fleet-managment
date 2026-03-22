@@ -6,6 +6,7 @@ import com.shreesamarth.enterprise.repository.TyreLogRepository;
 import com.shreesamarth.enterprise.repository.TyreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,11 +20,13 @@ public class TyreLogController {
     private final TyreRepository tyreRepository;
 
     @GetMapping("/tyre/{tyreId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<TyreLog>> getLogsByTyre(@PathVariable Long tyreId) {
         return ResponseEntity.ok(tyreLogRepository.findByTyreIdOrderByLogDateDesc(tyreId));
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<TyreLog> createLog(@RequestBody TyreLog log) {
         if (log.getTyre() != null && log.getTyre().getId() != null) {
             Tyre tyre = tyreRepository.findById(log.getTyre().getId())
@@ -47,6 +50,7 @@ public class TyreLogController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deleteLog(@PathVariable Long id) {
         tyreLogRepository.deleteById(id);
         return ResponseEntity.ok().build();

@@ -35,11 +35,13 @@ public class VehicleLogController {
     }
 
     @GetMapping("/vehicle/{vehicleId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<VehicleLog>> getLogsByVehicle(@PathVariable Long vehicleId) {
         return ResponseEntity.ok(vehicleLogRepository.findByVehicleIdOrderByLogDateDesc(vehicleId));
     }
 
     @GetMapping("/vehicle/{vehicleId}/type/{logType}")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<VehicleLog>> getLogsByVehicleAndType(
             @PathVariable Long vehicleId,
             @PathVariable String logType) {

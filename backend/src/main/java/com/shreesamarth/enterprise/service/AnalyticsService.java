@@ -667,7 +667,8 @@ public class AnalyticsService {
                 driver.getId(),
                 driver.getName(),
                 driver.getPhone(),
-                driver.getDrivingLicense()
+                driver.getDrivingLicense(),
+                driver.getAddress()
             );
         }
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, Plus, Search, AlertTriangle, Calendar, FileText, CheckCircle2, Clock, Download, Trash2, Filter, Truck, ArrowUpRight, Shield, ExternalLink, X, FileSearch } from 'lucide-react'
 import { format } from 'date-fns'
-import { cn } from '../lib/utils'
+import { cn, openDocument } from '../lib/utils'
 import api, { analyticsAPI, vehicleAPI } from '../lib/api'
 
 const complianceTypes = [
@@ -216,7 +216,7 @@ export default function Compliance() {
                     <div className="flex gap-2">
                        {item.filePath && (
                           <button 
-                             onClick={() => window.open(item.filePath, '_blank')}
+                              onClick={() => openDocument(item.filePath)}
                              className="p-2 bg-white rounded-lg border border-dark-100 text-dark-400 hover:text-primary-600 transition-colors shadow-sm"
                           >
                              <FileSearch className="w-4 h-4" />
@@ -227,7 +227,7 @@ export default function Compliance() {
                        </button>
                     </div>
                      <button 
-                        onClick={() => item.filePath && window.open(item.filePath, '_blank')}
+                         onClick={() => item.filePath && openDocument(item.filePath)}
                         className="text-[10px] font-black text-primary-600 uppercase tracking-widest flex items-center gap-1 group/btn"
                      >
                         Access Dossier <ArrowUpRight className="w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />

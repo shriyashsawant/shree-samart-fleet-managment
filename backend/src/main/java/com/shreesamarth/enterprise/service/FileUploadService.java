@@ -69,9 +69,11 @@ public class FileUploadService {
                 this.bucket = storage.get(bucketName);
                 this.firebaseEnabled = true;
             } else {
+                // Firebase was already initialized by FirebaseConfig
                 this.storage = StorageOptions.getDefaultInstance().getService();
                 this.bucket = storage.get(bucketName);
                 this.firebaseEnabled = true;
+                log.info("Firebase already initialized by FirebaseConfig, FileUploadService using existing instance");
             }
         } catch (IOException e) {
             log.error("Failed to initialize Firebase in FileUploadService: {}", e.getMessage());
