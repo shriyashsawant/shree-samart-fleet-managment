@@ -90,9 +90,9 @@ public class DashboardController {
         List<Reminder> upcomingReminders;
         
         if (tenant != null) {
-            upcomingReminders = reminderRepository.findByTenantIdAndExpiryDateBeforeAndStatus(tenant.getId(), next30Days, "PENDING");
+            upcomingReminders = reminderRepository.findByTenantIdAndExpiryDateBetweenAndStatus(tenant.getId(), today, next30Days, "PENDING");
         } else {
-            upcomingReminders = reminderRepository.findByExpiryDateBeforeAndStatus(next30Days, "PENDING");
+            upcomingReminders = reminderRepository.findByExpiryDateBetweenAndStatus(today, next30Days, "PENDING");
         }
 
         List<Map<String, Object>> remindersList = new ArrayList<>();

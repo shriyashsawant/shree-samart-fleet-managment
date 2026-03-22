@@ -11,9 +11,11 @@ import java.util.List;
 public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     List<Reminder> findByStatus(String status);
     List<Reminder> findByExpiryDateBeforeAndStatus(LocalDate date, String status);
+    List<Reminder> findByExpiryDateBetweenAndStatus(LocalDate start, LocalDate end, String status);
     List<Reminder> findByReminderType(String reminderType);
     List<Reminder> findByReferenceTypeAndReferenceId(String referenceType, Long referenceId);
     List<Reminder> findByTenantId(Long tenantId);
     
     List<Reminder> findByTenantIdAndExpiryDateBeforeAndStatus(Long tenantId, LocalDate date, String status);
+    List<Reminder> findByTenantIdAndExpiryDateBetweenAndStatus(Long tenantId, LocalDate start, LocalDate end, String status);
 }
