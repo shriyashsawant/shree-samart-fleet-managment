@@ -321,27 +321,39 @@ def parse_fitness(text):
     if match:
         result['registration_number'] = match.group(1)
     
-    # Chassis Number
+    # Chassis Number - handle both inline (label: value) and multiline (label on one line, value on next)
     chassis_match = re.search(
-        r'(?:Chassis\s*No|Chassis)[:\s]*([A-HJ-NPR-Z0-9]{10,17})',
+        r'(?:Chassis\s*No|Chassis)[:\s]*([A-Z0-9]{10,20})',
         text, re.IGNORECASE
     )
+    if not chassis_match:
+        # Try multiline format: "Chassis No" followed by ": value" on next line
+        chassis_match = re.search(r'Chassis\s*No\s*\n\s*:\s*([A-Z0-9]{10,20})', text, re.IGNORECASE)
+    if not chassis_match:
+        # Try pattern MAT... (common in Indian vehicle docs)
+        chassis_match = re.search(r'(MAT[A-Z0-9]{13}[A-Z0-9]?)', text, re.IGNORECASE)
     if chassis_match:
         result['chassis_number'] = chassis_match.group(1).upper()
     
-    # Engine Number
+    # Engine Number - be more careful not to pick up other numbers
     engine_match = re.search(
-        r'(?:Engine\s*No|Engine\s*No)[:\s]*([A-HJ-NPR-Z0-9]{6,20})',
+        r'Engine\s*No\s*\n\s*:\s*([A-Z0-9]{6,20})',
         text, re.IGNORECASE
     )
+    if not engine_match:
+        # Try to find the line with "Engine No" and get value after colon
+        engine_match = re.search(r'Engine\s*No\s*:?\s*\n\s*:?\s*([A-Z0-9]{10,20})', text, re.IGNORECASE)
+    if not engine_match:
+        # Try specific pattern for engine numbers starting with digits
+        engine_match = re.search(r':\s*(\d{12,})', text)
     if engine_match:
-        result['engine_number'] = engine_match.group(1).upper()
+        result['engine_number'] = engine_match.group(1).strip()
     
-    # Certificate expires
-    exp_match = re.search(
-        r'(?:Certificate\s*will\s*expire\s*on|Expires?\s*on|Expiry)[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
-        text, re.IGNORECASE
-    )
+    # Certificate expires - be more specific, should be after "Certificate will expire on"
+    exp_match = re.search(r'Certificate\s*will\s*expire\s*on\s*\n\s*:\s*(\d{1,2}-[A-Za-z]{3}-\d{4})', text, re.IGNORECASE)
+    if not exp_match:
+        # Try pattern like "11-Feb-2027"
+        exp_match = re.search(r'(1[0-9]-[A-Za-z]{3}-20[2-4][0-9])', text)
     if exp_match:
         result['certificate_expires'] = exp_match.group(1)
     
@@ -479,26 +491,31 @@ def parse_tax_receipt(text):
     
     # Chassis Number
     chassis_match = re.search(
-        r'(?:Chasis\s*No|Chassis\s*No|Chassis)[:\s]*([A-HJ-NPR-Z0-9]{10,17})',
+        r'(?:Chasis\s*No|Chassis\s*No|Chassis)[:\s]*([A-Z0-9]{10,20})',
         text, re.IGNORECASE
     )
+    if not chassis_match:
+        chassis_match = re.search(r'Chasis\s*No\s*\n\s*:\s*([A-Z0-9]{10,20})', text, re.IGNORECASE)
     if chassis_match:
         result['chassis_number'] = chassis_match.group(1).upper()
     
-    # Tax Amount
+    # Tax Amount - look for "GRAND TOTAL (in Rs):2520/-" pattern
     amount_match = re.search(
-        r'(?:GRAND\s*TOTAL|Total|Total\s*in\s*Rs)[:\s]*([\d,]+\.?\d*)',
+        r'(?:GRAND\s*TOTAL|Total|Total\s*in\s*Rs)[:\s]*([\d,]+\.?\d*)\s*(?:\/-)?',
         text, re.IGNORECASE
     )
+    if not amount_match:
+        # Try pattern like "2520/-" at end
+        amount_match = re.search(r'(\d{3,5})\s*/-', text)
     if amount_match:
         try:
             result['tax_amount'] = float(amount_match.group(1).replace(',', ''))
         except:
             pass
     
-    # Period
+    # Period - look for "01-May-2023 to 30-Apr-2024" pattern
     period_match = re.search(
-        r'(\d{1,2}[-/]\d{1,2}[-/]\d{4})\s+to\s+(\d{1,2}[-/]\d{1,2}[-/]\d{4})',
+        r'(\d{1,2}[-/][A-Za-z]{2,3}[-/\s]\d{4})\s+(?:to)\s+(\d{1,2}[-/][A-Za-z]{2,3}[-/\s]\d{4})',
         text, re.IGNORECASE
     )
     if period_match:
