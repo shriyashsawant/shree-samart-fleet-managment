@@ -54,6 +54,21 @@ public class Vehicle {
     @Column(name = "insurance_expiry")
     private LocalDate insuranceExpiry;
 
+    @Column(name = "permit_number", length = 50)
+    private String permitNumber;
+
+    @Column(name = "permit_expiry")
+    private LocalDate permitExpiry;
+
+    @Column(name = "fitness_expiry")
+    private LocalDate fitnessExpiry;
+
+    @Column(name = "tax_receipt_date")
+    private LocalDate taxReceiptDate;
+
+    @Column(name = "tax_amount", precision = 10, scale = 2)
+    private BigDecimal taxAmount;
+
     @Column(name = "emi_amount", precision = 10, scale = 2)
     private BigDecimal emiAmount;
 

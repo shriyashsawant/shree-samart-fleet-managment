@@ -23,6 +23,11 @@ public class VehicleDTO {
     private String ownerName;
     private String insuranceCompany;
     private LocalDate insuranceExpiry;
+    private String permitNumber;
+    private LocalDate permitExpiry;
+    private LocalDate fitnessExpiry;
+    private LocalDate taxReceiptDate;
+    private BigDecimal taxAmount;
     private BigDecimal emiAmount;
     private String emiBank;
     private LocalDate emiStartDate;

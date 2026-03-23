@@ -66,6 +66,11 @@ public class VehicleController {
                 v.getOwnerName(),
                 v.getInsuranceCompany(),
                 v.getInsuranceExpiry(),
+                v.getPermitNumber(),
+                v.getPermitExpiry(),
+                v.getFitnessExpiry(),
+                v.getTaxReceiptDate(),
+                v.getTaxAmount(),
                 v.getEmiAmount(),
                 v.getEmiBank(),
                 v.getEmiStartDate(),
@@ -234,6 +239,58 @@ public class VehicleController {
             if (fields.get("policy_number") != null) {
                 // Could store in a field or just ignore for now
             }
+        } else if (docType.contains("FITNESS")) {
+            if (fields.get("chassis_number") != null && (vehicle.getChassisNumber() == null || vehicle.getChassisNumber().isEmpty())) {
+                vehicle.setChassisNumber(fields.get("chassis_number").toString());
+            }
+            if (fields.get("engine_number") != null && (vehicle.getEngineNumber() == null || vehicle.getEngineNumber().isEmpty())) {
+                vehicle.setEngineNumber(fields.get("engine_number").toString());
+            }
+            if (fields.get("expiry_date") != null) {
+                vehicle.setFitnessExpiry(parseOcrDate(fields.get("expiry_date")));
+            }
+            if (fields.get("certificate_expires") != null) {
+                vehicle.setFitnessExpiry(parseOcrDate(fields.get("certificate_expires")));
+            }
+        } else if (docType.contains("PERMIT")) {
+            if (fields.get("permit_number") != null) {
+                vehicle.setPermitNumber(fields.get("permit_number").toString());
+            }
+            if (fields.get("permit_no") != null) {
+                vehicle.setPermitNumber(fields.get("permit_no").toString());
+            }
+            if (fields.get("expiry_date") != null) {
+                vehicle.setPermitExpiry(parseOcrDate(fields.get("expiry_date")));
+            }
+            if (fields.get("valid_to") != null) {
+                vehicle.setPermitExpiry(parseOcrDate(fields.get("valid_to")));
+            }
+            if (fields.get("owner_name") != null && (vehicle.getOwnerName() == null || vehicle.getOwnerName().isEmpty())) {
+                vehicle.setOwnerName(fields.get("owner_name").toString());
+            }
+        } else if (docType.contains("TAX")) {
+            if (fields.get("tax_amount") != null) {
+                try {
+                    String amountStr = fields.get("tax_amount").toString().replace(",", "").replace("₹", "").trim();
+                    vehicle.setTaxAmount(new java.math.BigDecimal(amountStr));
+                } catch (NumberFormatException e) {
+                    // Ignore if parsing fails
+                }
+            }
+            if (fields.get("amount") != null) {
+                try {
+                    String amountStr = fields.get("amount").toString().replace(",", "").replace("₹", "").trim();
+                    vehicle.setTaxAmount(new java.math.BigDecimal(amountStr));
+                } catch (NumberFormatException e) {
+                    // Ignore if parsing fails
+                }
+            }
+            if (fields.get("tax_date") != null) {
+                vehicle.setTaxReceiptDate(parseOcrDate(fields.get("tax_date")));
+            }
+            if (fields.get("payment_date") != null) {
+                vehicle.setTaxReceiptDate(parseOcrDate(fields.get("payment_date")));
+            }
         }
     }
 
@@ -241,13 +298,34 @@ public class VehicleController {
         if (dateValue == null) return null;
         try {
             if (dateValue instanceof String) {
-                String dateStr = (String) dateValue;
-                // Try common formats
+                String dateStr = ((String) dateValue).trim();
+                
+                // ISO format: 2023-11-10
                 if (dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
                     return LocalDate.parse(dateStr);
-                } else if (dateStr.matches("\\d{2}/\\d{2}/\\d{4}")) {
-                    String[] parts = dateStr.split("/");
+                }
+                // US format: 11/10/2023 or 11-10-2023
+                if (dateStr.matches("\\d{1,2}[/-]\\d{1,2}[/-]\\d{4}")) {
+                    String[] parts = dateStr.split("[/-]");
                     return LocalDate.of(Integer.parseInt(parts[2]), Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+                }
+                // Indian format: 10-Nov-2023 or 10-Nov-2023
+                if (dateStr.matches("\\d{1,2}-[A-Za-z]{3}-\\d{4}")) {
+                    String[] parts = dateStr.split("-");
+                    int day = Integer.parseInt(parts[0]);
+                    int year = Integer.parseInt(parts[2]);
+                    int month = switch (parts[1].toLowerCase()) {
+                        case "jan" -> 1; case "feb" -> 2; case "mar" -> 3; case "apr" -> 4;
+                        case "may" -> 5; case "jun" -> 6; case "jul" -> 7; case "aug" -> 8;
+                        case "sep" -> 9; case "oct" -> 10; case "nov" -> 11; case "dec" -> 12;
+                        default -> 1;
+                    };
+                    return LocalDate.of(year, month, day);
+                }
+                // Format: 13-02-2041 (from license)
+                if (dateStr.matches("\\d{2}-\\d{2}-\\d{4}")) {
+                    String[] parts = dateStr.split("-");
+                    return LocalDate.of(Integer.parseInt(parts[2]), Integer.parseInt(parts[1]), Integer.parseInt(parts[0]));
                 }
             }
         } catch (Exception e) {
