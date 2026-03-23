@@ -426,6 +426,7 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
   const [docType, setDocType] = useState('RC')
   const [selectedFiles, setSelectedFiles] = useState([])
   const [isBulkMode, setIsBulkMode] = useState(false)
+  const [extractOcr, setExtractOcr] = useState(true)
   const fileInputRef = useRef(null)
   const bulkFileInputRef = useRef(null)
 
@@ -440,7 +441,17 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
       formData.append('documentType', docType)
       formData.append('expiryDate', new Date(Date.now() + 365*24*60*60*1000).toISOString().split('T')[0])
       
-      await vehicleAPI.uploadDocument(vehicleId, formData)
+      if (extractOcr) {
+        const response = await vehicleAPI.uploadWithOcr(vehicleId, formData)
+        if (response.data.vehicleUpdated) {
+          alert('Document uploaded! OCR data extracted and vehicle details updated.')
+        } else {
+          alert('Document uploaded! (No OCR data found)')
+        }
+      } else {
+        await vehicleAPI.uploadDocument(vehicleId, formData)
+        alert('Document uploaded!')
+      }
       setShowUploadModal(false)
       if (onUpload) onUpload()
     } catch (err) {
@@ -564,48 +575,64 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                    </select>
                  </div>
                  
-                 {isBulkMode ? (
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">Select Files (Multiple)</label>
-                     <div 
-                       className="interactive-field flex flex-col items-center justify-center border-dashed py-8 gap-3 cursor-pointer"
-                       onClick={() => bulkFileInputRef.current?.click()}
-                     >
-                       <FileSearch className="w-8 h-8 text-dark-200" />
-                       <span className="text-[10px] font-black uppercase text-dark-400">Click to select files</span>
-                       <input 
-                         type="file" 
-                         multiple 
-                         ref={bulkFileInputRef}
-                         className="hidden"
-                         onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
-                       />
-                       {selectedFiles.length > 0 && (
-                         <div className="text-xs font-black text-primary-600">
-                           {selectedFiles.length} file(s) selected
-                         </div>
-                       )}
-                     </div>
-                   </div>
-                 ) : (
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">File</label>
-                     <div 
-                       className="interactive-field flex flex-col items-center justify-center border-dashed py-8 gap-3 cursor-pointer"
-                       onClick={() => fileInputRef.current?.click()}
-                     >
-                       <FileSearch className="w-8 h-8 text-dark-200" />
-                       <span className="text-[10px] font-black uppercase text-dark-400">Click to select file</span>
-                       <input 
-                         type="file" 
-                         ref={fileInputRef}
-                         className="hidden"
-                         onChange={handleUpload}
-                       />
-                     </div>
-                   </div>
-                 )}
-               </div>
+                  {isBulkMode ? (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">Select Files (Multiple)</label>
+                      <div 
+                        className="interactive-field flex flex-col items-center justify-center border-dashed py-8 gap-3 cursor-pointer"
+                        onClick={() => bulkFileInputRef.current?.click()}
+                      >
+                        <FileSearch className="w-8 h-8 text-dark-200" />
+                        <span className="text-[10px] font-black uppercase text-dark-400">Click to select files</span>
+                        <input 
+                          type="file" 
+                          multiple 
+                          ref={bulkFileInputRef}
+                          className="hidden"
+                          onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
+                        />
+                        {selectedFiles.length > 0 && (
+                          <div className="text-xs font-black text-primary-600">
+                            {selectedFiles.length} file(s) selected
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">File</label>
+                      <div 
+                        className="interactive-field flex flex-col items-center justify-center border-dashed py-8 gap-3 cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <FileSearch className="w-8 h-8 text-dark-200" />
+                        <span className="text-[10px] font-black uppercase text-dark-400">Click to select file</span>
+                        <input 
+                          type="file" 
+                          ref={fileInputRef}
+                          className="hidden"
+                          onChange={handleUpload}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {!isBulkMode && (
+                    <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl border border-primary-100">
+                      <div>
+                        <p className="text-xs font-black text-dark-900 uppercase">Auto-Extract Data (OCR)</p>
+                        <p className="text-[10px] text-dark-400">Extract vehicle details from RC, Insurance, Permit</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setExtractOcr(!extractOcr)}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${extractOcr ? 'bg-primary-500' : 'bg-dark-200'}`}
+                      >
+                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${extractOcr ? 'left-7' : 'left-1'}`} />
+                      </button>
+                    </div>
+                  )}
+                </div>
                <div className="p-8 border-t border-dark-100 flex gap-4">
                  <button 
                    className="flex-1 btn-secondary"

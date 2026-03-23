@@ -8,6 +8,7 @@ import com.shreesamarth.enterprise.repository.DriverDocumentRepository;
 import com.shreesamarth.enterprise.repository.DriverRepository;
 import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
+import com.shreesamarth.enterprise.service.OcrService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.security.core.Authentication;
 
 @RestController
@@ -28,6 +31,7 @@ public class DriverDocumentController {
     private final DriverRepository driverRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+    private final OcrService ocrService;
 
     private Tenant getCurrentTenant(Authentication auth) {
         if (auth == null) return null;
@@ -72,6 +76,120 @@ public class DriverDocumentController {
         }
 
         return ResponseEntity.ok(documentRepository.save(doc));
+    }
+
+    @PostMapping("/extract-ocr")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> uploadDocumentWithOcr(
+            @RequestParam("driverId") Long driverId,
+            @RequestParam("documentType") String documentType,
+            @RequestParam(value = "documentNumber", required = false) String documentNumber,
+            @RequestParam(value = "expiryDate", required = false) String expiryDate,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            Authentication auth) throws IOException {
+
+        Tenant tenant = getCurrentTenant(auth);
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver not found"));
+
+        String fileUrl = null;
+        Map<String, Object> ocrData = new HashMap<>();
+        boolean ocrSuccess = false;
+
+        if (file != null && !file.isEmpty()) {
+            fileUrl = fileUploadService.uploadFile(file, "driver-documents");
+            
+            try {
+                ocrData = ocrService.extractDocument(file);
+                ocrSuccess = ocrData != null && !ocrData.isEmpty();
+            } catch (Exception e) {
+                // OCR failed, continue without OCR data
+            }
+        }
+
+        if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
+            applyOcrToDriver(driver, documentType, fields);
+            driverRepository.save(driver);
+        }
+
+        DriverDocument doc = new DriverDocument();
+        doc.setDriver(driver);
+        doc.setDocumentType(documentType);
+        
+        if (documentNumber != null && !documentNumber.isEmpty()) {
+            doc.setDocumentNumber(documentNumber);
+        } else if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
+            if (fields.get("license_number") != null) {
+                doc.setDocumentNumber(fields.get("license_number").toString());
+            }
+        }
+
+        if (expiryDate != null && !expiryDate.isEmpty()) {
+            doc.setExpiryDate(LocalDate.parse(expiryDate));
+        } else if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
+            LocalDate extractedExpiry = parseOcrDate(fields.get("expiry_date"));
+            if (extractedExpiry != null) {
+                doc.setExpiryDate(extractedExpiry);
+            }
+        }
+
+        if (fileUrl != null) {
+            doc.setFilePath(fileUrl);
+            doc.setDocumentName(file.getOriginalFilename());
+        }
+
+        DriverDocument savedDoc = documentRepository.save(doc);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("document", savedDoc);
+        response.put("ocrData", ocrData);
+        response.put("driverUpdated", ocrSuccess);
+
+        return ResponseEntity.ok(response);
+    }
+
+    private void applyOcrToDriver(Driver driver, String documentType, Map<String, Object> fields) {
+        String docType = documentType.toUpperCase();
+        
+        if (docType.contains("LICENSE") || docType.contains("DL")) {
+            if (fields.get("license_number") != null && (driver.getDrivingLicense() == null || driver.getDrivingLicense().isEmpty())) {
+                driver.setDrivingLicense(fields.get("license_number").toString());
+            }
+            if (fields.get("expiry_date") != null) {
+                driver.setLicenseExpiry(parseOcrDate(fields.get("expiry_date")));
+            }
+            if (fields.get("name") != null && (driver.getName() == null || driver.getName().isEmpty())) {
+                driver.setName(fields.get("name").toString());
+            }
+        } else if (docType.contains("AADHAAR") || docType.contains("AADHAR")) {
+            if (fields.get("aadhaar_number") != null && (driver.getAadhaarNumber() == null || driver.getAadhaarNumber().isEmpty())) {
+                driver.setAadhaarNumber(fields.get("aadhaar_number").toString());
+            }
+        }
+    }
+
+    private LocalDate parseOcrDate(Object dateValue) {
+        if (dateValue == null) return null;
+        try {
+            if (dateValue instanceof String) {
+                String dateStr = (String) dateValue;
+                if (dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    return LocalDate.parse(dateStr);
+                } else if (dateStr.matches("\\d{2}/\\d{2}/\\d{4}")) {
+                    String[] parts = dateStr.split("/");
+                    return LocalDate.of(Integer.parseInt(parts[2]), Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
     @DeleteMapping("/{id}")

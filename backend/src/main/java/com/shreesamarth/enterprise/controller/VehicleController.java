@@ -8,6 +8,7 @@ import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
 import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
+import com.shreesamarth.enterprise.service.OcrService;
 import com.shreesamarth.enterprise.dto.VehicleDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ public class VehicleController {
     private final VehicleDocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+    private final OcrService ocrService;
 
     private Tenant getCurrentTenant(Authentication auth) {
         if (auth == null) return null;
@@ -144,6 +146,114 @@ public class VehicleController {
         document.setExpiryDate(expiryDate != null && !expiryDate.isEmpty() ? LocalDate.parse(expiryDate) : null);
 
         return ResponseEntity.ok(documentRepository.save(document));
+    }
+
+    @PostMapping("/{id}/documents/extract-ocr")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> uploadDocumentWithOcr(
+            @PathVariable Long id,
+            @RequestParam("documentType") String documentType,
+            @RequestParam(value = "expiryDate", required = false) String expiryDate,
+            @RequestParam("file") MultipartFile file) throws IOException {
+
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+
+        String fileUrl = fileUploadService.uploadFile(file, "vehicle-documents/" + vehicle.getVehicleNumber());
+
+        Map<String, Object> ocrData = new HashMap<>();
+        boolean ocrSuccess = false;
+
+        try {
+            ocrData = ocrService.extractDocument(file);
+            ocrSuccess = ocrData != null && !ocrData.isEmpty();
+        } catch (Exception e) {
+            // OCR failed, continue without OCR data
+        }
+
+        if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
+            applyOcrToVehicle(vehicle, documentType, fields);
+            vehicleRepository.save(vehicle);
+        }
+
+        VehicleDocument document = new VehicleDocument();
+        document.setVehicle(vehicle);
+        document.setDocumentType(documentType);
+        document.setDocumentName(file.getOriginalFilename());
+        document.setFilePath(fileUrl);
+        
+        if (expiryDate != null && !expiryDate.isEmpty()) {
+            document.setExpiryDate(LocalDate.parse(expiryDate));
+        } else if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
+            LocalDate extractedExpiry = parseOcrDate(fields.get("expiry_date"));
+            if (extractedExpiry != null) {
+                document.setExpiryDate(extractedExpiry);
+            }
+        }
+
+        VehicleDocument savedDoc = documentRepository.save(document);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("document", savedDoc);
+        response.put("ocrData", ocrData);
+        response.put("vehicleUpdated", ocrSuccess);
+
+        return ResponseEntity.ok(response);
+    }
+
+    private void applyOcrToVehicle(Vehicle vehicle, String documentType, Map<String, Object> fields) {
+        String docType = documentType.toUpperCase();
+        
+        if (docType.contains("RC") || docType.contains("REGISTRATION")) {
+            if (fields.get("chassis_number") != null) {
+                vehicle.setChassisNumber(fields.get("chassis_number").toString());
+            }
+            if (fields.get("engine_number") != null) {
+                vehicle.setEngineNumber(fields.get("engine_number").toString());
+            }
+            if (fields.get("registration_date") != null) {
+                vehicle.setRegistrationDate(parseOcrDate(fields.get("registration_date")));
+            }
+            if (fields.get("owner_name") != null) {
+                vehicle.setOwnerName(fields.get("owner_name").toString());
+            }
+            if (fields.get("vehicle_number") != null && vehicle.getVehicleNumber() == null) {
+                vehicle.setVehicleNumber(fields.get("vehicle_number").toString());
+            }
+        } else if (docType.contains("INSURANCE")) {
+            if (fields.get("insurance_company") != null) {
+                vehicle.setInsuranceCompany(fields.get("insurance_company").toString());
+            }
+            if (fields.get("expiry_date") != null) {
+                vehicle.setInsuranceExpiry(parseOcrDate(fields.get("expiry_date")));
+            }
+            if (fields.get("policy_number") != null) {
+                // Could store in a field or just ignore for now
+            }
+        }
+    }
+
+    private LocalDate parseOcrDate(Object dateValue) {
+        if (dateValue == null) return null;
+        try {
+            if (dateValue instanceof String) {
+                String dateStr = (String) dateValue;
+                // Try common formats
+                if (dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    return LocalDate.parse(dateStr);
+                } else if (dateStr.matches("\\d{2}/\\d{2}/\\d{4}")) {
+                    String[] parts = dateStr.split("/");
+                    return LocalDate.of(Integer.parseInt(parts[2]), Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
     @PostMapping("/{id}/documents/bulk")

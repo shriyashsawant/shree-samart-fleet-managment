@@ -70,6 +70,9 @@ export const vehicleAPI = {
   uploadDocument: (id, formData) => api.post(`/api/vehicles/${id}/documents`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+  uploadWithOcr: (id, formData) => api.post(`/api/vehicles/${id}/documents/extract-ocr`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   uploadBulkDocuments: (id, files, documentType) => {
     const formData = new FormData()
     files.forEach(file => formData.append('files', file))
@@ -249,6 +252,9 @@ export default api
 export const driverDocumentAPI = {
   getByDriver: (id) => api.get(`/api/driver-documents/driver/${id}`),
   upload: (data) => api.post('/api/driver-documents', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  uploadWithOcr: (data) => api.post('/api/driver-documents/extract-ocr', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   delete: (id) => api.delete(`/api/driver-documents/${id}`)
