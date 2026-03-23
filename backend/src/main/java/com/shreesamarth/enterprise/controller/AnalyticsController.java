@@ -90,6 +90,7 @@ public class AnalyticsController {
 
     // Get Vehicle Summaries for card view: /api/analytics/vehicles/summary
     @GetMapping("/vehicles/summary")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<VehicleSummaryDTO>> getVehicleSummaries(
             @AuthenticationPrincipal UserDetails userDetails) {
         Long tenantId = getTenantId(userDetails);
