@@ -1,9 +1,11 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.entity.Driver;
 import com.shreesamarth.enterprise.entity.Expense;
 import com.shreesamarth.enterprise.entity.Tenant;
 import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
+import com.shreesamarth.enterprise.repository.DriverRepository;
 import com.shreesamarth.enterprise.repository.ExpenseRepository;
 import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
@@ -30,6 +32,7 @@ public class ExpenseController {
 
     private final ExpenseRepository expenseRepository;
     private final VehicleRepository vehicleRepository;
+    private final DriverRepository driverRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
 
@@ -97,6 +100,13 @@ public class ExpenseController {
         Vehicle vehicle = vehicleRepository.findById(expense.getVehicle().getId())
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
         expense.setVehicle(vehicle);
+        
+        if ("DRIVER_ADVANCE".equals(expense.getCategory()) && expense.getDriver() != null && expense.getDriver().getId() != null) {
+            Driver driver = driverRepository.findById(expense.getDriver().getId())
+                    .orElseThrow(() -> new RuntimeException("Driver not found"));
+            expense.setDriver(driver);
+        }
+        
         return ResponseEntity.ok(expenseRepository.save(expense));
     }
 
@@ -108,6 +118,21 @@ public class ExpenseController {
                     expense.setId(id);
                     expense.setCreatedAt(existing.getCreatedAt());
                     expense.setTenant(existing.getTenant());
+                    
+                    if (expense.getVehicle() != null && expense.getVehicle().getId() != null) {
+                        Vehicle vehicle = vehicleRepository.findById(expense.getVehicle().getId())
+                                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+                        expense.setVehicle(vehicle);
+                    }
+                    
+                    if ("DRIVER_ADVANCE".equals(expense.getCategory()) && expense.getDriver() != null && expense.getDriver().getId() != null) {
+                        Driver driver = driverRepository.findById(expense.getDriver().getId())
+                                .orElseThrow(() -> new RuntimeException("Driver not found"));
+                        expense.setDriver(driver);
+                    } else {
+                        expense.setDriver(existing.getDriver());
+                    }
+                    
                     return ResponseEntity.ok(expenseRepository.save(expense));
                 })
                 .orElse(ResponseEntity.notFound().build());

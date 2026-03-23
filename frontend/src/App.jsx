@@ -5,7 +5,6 @@ import Dashboard from './pages/Dashboard'
 import Vehicles from './pages/Vehicles'
 import Drivers from './pages/Drivers'
 import Expenses from './pages/Expenses'
-import Maintenance from './pages/Maintenance'
 import Billing from './pages/Billing'
 import Payments from './pages/Payments'
 import Reminders from './pages/Reminders'
@@ -13,9 +12,7 @@ import Clients from './pages/Clients'
 import Analytics from './pages/Analytics'
 import Compliance from './pages/Compliance'
 import Trips from './pages/Trips'
-import Tyres from './pages/Tyres'
 import Inventory from './pages/Inventory'
-import DriverAdvances from './pages/DriverAdvances'
 import VehicleProfile from './pages/VehicleProfile'
 import Settings from './pages/Settings'
 import UserManagement from './pages/UserManagement'
@@ -42,12 +39,9 @@ function App() {
           <Route path="drivers" element={<Drivers />} />
           <Route path="trips" element={<Trips />} />
           <Route path="expenses" element={<Expenses />} />
-          <Route path="maintenance" element={<Maintenance />} />
-          <Route path="tyres" element={<Tyres />} />
           <Route path="inventory" element={<Inventory />} />
           <Route path="billing" element={<Billing />} />
           <Route path="payments" element={<Payments />} />
-          <Route path="advances" element={<DriverAdvances />} />
           <Route path="settings" element={<Settings />} />
           <Route path="reminders" element={<Reminders />} />
           <Route path="clients" element={<Clients />} />

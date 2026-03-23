@@ -26,6 +26,11 @@ public class Expense {
     @JsonIgnore
     private Vehicle vehicle;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id")
+    @JsonIgnore
+    private Driver driver;
+
     @Column(name = "category", length = 50)
     private String category = "OPERATIONAL";
 
