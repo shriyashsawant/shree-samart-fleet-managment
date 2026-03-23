@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,6 +144,35 @@ public class VehicleController {
         document.setExpiryDate(expiryDate != null && !expiryDate.isEmpty() ? LocalDate.parse(expiryDate) : null);
 
         return ResponseEntity.ok(documentRepository.save(document));
+    }
+
+    @PostMapping("/{id}/documents/bulk")
+    @Transactional
+    public ResponseEntity<List<VehicleDocument>> uploadBulkDocuments(
+            @PathVariable Long id,
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam("documentType") String documentType) throws IOException {
+
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+
+        List<VehicleDocument> documents = new ArrayList<>();
+        
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                String fileUrl = fileUploadService.uploadFile(file, "vehicle-documents/" + vehicle.getVehicleNumber());
+                
+                VehicleDocument document = new VehicleDocument();
+                document.setVehicle(vehicle);
+                document.setDocumentType(documentType);
+                document.setDocumentName(file.getOriginalFilename());
+                document.setFilePath(fileUrl);
+                
+                documents.add(documentRepository.save(document));
+            }
+        }
+        
+        return ResponseEntity.ok(documents);
     }
 
     @DeleteMapping("/documents/{docId}")

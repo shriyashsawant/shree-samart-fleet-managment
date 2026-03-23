@@ -579,6 +579,7 @@ public class AnalyticsService {
     @Transactional(readOnly = true)
     public VehicleProfileDTO getVehicleProfile(Long tenantId, Long vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .filter(v -> v.getTenant() != null && v.getTenant().getId().equals(tenantId))
                 .orElseThrow(() -> new RuntimeException("Vehicle not found with ID: " + vehicleId));
 
         List<Driver> allDrivers = driversByTenant(tenantId);

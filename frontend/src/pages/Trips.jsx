@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, MapPin, Calendar, Clock, Truck, Users, Building2, Package, Hash, DollarSign, Navigation, MoreVertical, Edit, Trash2, CheckCircle2, AlertCircle } from 'lucide-react'
-import { tripAPI, vehicleAPI, driverAPI, clientAPI } from '../lib/api'
+import { Plus, MapPin, Calendar, Clock, Truck, Users, Building2, Package, Hash, DollarSign, Navigation, MoreVertical, Edit, Trash2, CheckCircle2, AlertCircle, FileText } from 'lucide-react'
+import { tripAPI, vehicleAPI, driverAPI, clientAPI, billAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 import { format } from 'date-fns'
 
@@ -43,6 +43,24 @@ export default function Trips() {
       } catch (error) {
         console.error('Failed to delete trip:', error)
       }
+    }
+  }
+
+  const handleConvertToBill = async (trip) => {
+    if (!trip.client) {
+      alert('This trip must have a client to generate a bill')
+      return
+    }
+    if (!confirm(`Generate bill from Trip ${trip.tripNumber || trip.id} for ${formatCurrency(trip.tripCharges)}?`)) {
+      return
+    }
+    try {
+      const res = await tripAPI.convertToBill(trip.id)
+      alert(`Bill ${res.data.bill.billNo} created successfully!`)
+      loadData()
+    } catch (error) {
+      console.error('Failed to convert to bill:', error)
+      alert(error.response?.data?.error || 'Failed to convert trip to bill')
     }
   }
 
@@ -128,6 +146,20 @@ export default function Trips() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 pl-8 border-l border-dark-100/50">
+                    {trip.status !== 'BILLED' && trip.client && (
+                      <button 
+                        onClick={() => handleConvertToBill(trip)} 
+                        className="p-3 bg-emerald-50 rounded-xl hover:bg-emerald-100 hover:text-emerald-600 transition-all border border-emerald-100 text-emerald-500"
+                        title="Convert to Bill"
+                      >
+                        <FileText className="w-5 h-5" />
+                      </button>
+                    )}
+                    {trip.status === 'BILLED' && (
+                      <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-full border border-emerald-100 uppercase tracking-widest">
+                        BILLED
+                      </span>
+                    )}
                     <button onClick={() => { setSelectedTrip(trip); setShowModal(true); }} className="p-3 bg-dark-50 rounded-xl hover:bg-primary-50 hover:text-primary-600 transition-all border border-dark-100">
                       <Edit className="w-5 h-5" />
                     </button>

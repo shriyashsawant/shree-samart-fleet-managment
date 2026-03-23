@@ -4,6 +4,7 @@ import com.shreesamarth.enterprise.entity.*;
 import com.shreesamarth.enterprise.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -112,11 +113,14 @@ public class TripService {
         tripRepository.delete(trip);
     }
 
+    @Transactional
+    public Trip updateTripEntity(Trip trip) {
+        return tripRepository.save(trip);
+    }
+
     private String generateTripNumber(Long tenantId) {
-        String prefix = "TRP";
-        String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
-        Random random = new Random();
-        int number = 1000 + random.nextInt(9000);
-        return prefix + datePart + number;
+        int year = LocalDate.now().getYear();
+        long count = tripRepository.countByTenantIdAndTripNumberStartingWith(tenantId, "TR-" + year);
+        return String.format("TR-%d-%04d", year, count + 1);
     }
 }

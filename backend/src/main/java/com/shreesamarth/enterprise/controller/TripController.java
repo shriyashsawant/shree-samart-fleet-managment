@@ -1,7 +1,9 @@
 package com.shreesamarth.enterprise.controller;
 
 import com.shreesamarth.enterprise.dto.TripDTO;
+import com.shreesamarth.enterprise.entity.Bill;
 import com.shreesamarth.enterprise.entity.Trip;
+import com.shreesamarth.enterprise.repository.BillRepository;
 import com.shreesamarth.enterprise.service.TripService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +12,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/trips")
@@ -18,6 +23,7 @@ import java.util.List;
 public class TripController {
 
     private final TripService tripService;
+    private final BillRepository billRepository;
 
     @PostMapping
     @Transactional
@@ -80,6 +86,46 @@ public class TripController {
     public ResponseEntity<Void> deleteTrip(@PathVariable Long id) {
         tripService.deleteTrip(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/convert-to-bill")
+    @Transactional
+    public ResponseEntity<?> convertToBill(@PathVariable Long id) {
+        Trip trip = tripService.getTripById(id);
+        
+        if (trip.getClient() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Trip must have a client to generate bill"));
+        }
+        
+        Bill bill = new Bill();
+        bill.setBillDate(trip.getTripDate());
+        bill.setClient(trip.getClient());
+        bill.setVehicle(trip.getVehicle());
+        bill.setBasicAmount(trip.getTripCharges() != null ? trip.getTripCharges() : BigDecimal.ZERO);
+        bill.setGstPercentage(BigDecimal.ZERO);
+        bill.setCgstAmount(BigDecimal.ZERO);
+        bill.setSgstAmount(BigDecimal.ZERO);
+        bill.setTotalAmount(trip.getTripCharges() != null ? trip.getTripCharges() : BigDecimal.ZERO);
+        bill.setBillType("TRIP");
+        bill.setNotes("Generated from Trip: " + trip.getTripNumber() + (trip.getSiteLocation() != null ? " - " + trip.getSiteLocation() : ""));
+        
+        bill.setTenant(trip.getTenant());
+        
+        int year = LocalDate.now().getYear();
+        String prefix = year + "-";
+        List<Bill> thisYearBills = billRepository.findAll().stream()
+                .filter(b -> b.getBillNo() != null && b.getBillNo().startsWith(prefix))
+                .toList();
+        int nextNum = thisYearBills.size() + 1;
+        bill.setBillNo(prefix + String.format("%03d", nextNum));
+        
+        Bill savedBill = billRepository.save(bill);
+        
+        trip.setBill(savedBill);
+        trip.setStatus("BILLED");
+        tripService.updateTripEntity(trip);
+        
+        return ResponseEntity.ok(Map.of("bill", savedBill, "trip", toDTO(trip)));
     }
 
     private TripDTO toDTO(Trip trip) {

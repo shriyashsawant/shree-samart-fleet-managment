@@ -15,4 +15,5 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
     List<Trip> findByTenantId(Long tenantId);
     Optional<Trip> findByTripNumber(String tripNumber);
     List<Trip> findByVehicleIdAndTripDateBetween(Long vehicleId, java.time.LocalDate start, java.time.LocalDate end);
+    long countByTenantIdAndTripNumberStartingWith(Long tenantId, String prefix);
 }

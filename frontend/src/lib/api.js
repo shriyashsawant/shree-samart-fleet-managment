@@ -70,6 +70,14 @@ export const vehicleAPI = {
   uploadDocument: (id, formData) => api.post(`/api/vehicles/${id}/documents`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+  uploadBulkDocuments: (id, files, documentType) => {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file))
+    formData.append('documentType', documentType)
+    return api.post(`/api/vehicles/${id}/documents/bulk`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
 }
 
 // Vehicle Log APIs
@@ -206,6 +214,7 @@ export const tripAPI = {
   create: (data) => api.post('/api/trips', data),
   update: (id, data) => api.put(`/api/trips/${id}`, data),
   delete: (id) => api.delete(`/api/trips/${id}`),
+  convertToBill: (id) => api.post(`/api/trips/${id}/convert-to-bill`),
 }
 
 // OCR APIs

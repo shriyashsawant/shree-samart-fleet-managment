@@ -135,15 +135,13 @@ public class BillController {
         }
 
         if (bill.getBillNo() == null || bill.getBillNo().isEmpty()) {
-            String lastBillNo = billRepository.findTopByOrderByBillNoDesc()
-                    .map(Bill::getBillNo)
-                    .orElse("0");
-            try {
-                int nextNum = Integer.parseInt(lastBillNo) + 1;
-                bill.setBillNo(String.valueOf(nextNum));
-            } catch (NumberFormatException e) {
-                bill.setBillNo("1");
-            }
+            int year = LocalDate.now().getYear();
+            String prefix = year + "-";
+            List<Bill> thisYearBills = billRepository.findAll().stream()
+                    .filter(b -> b.getBillNo() != null && b.getBillNo().startsWith(prefix))
+                    .toList();
+            int nextNum = thisYearBills.size() + 1;
+            bill.setBillNo(prefix + String.format("%03d", nextNum));
         }
 
         if (bill.getClient() != null && bill.getBillNo() != null) {

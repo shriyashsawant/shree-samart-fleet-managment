@@ -206,7 +206,7 @@ export default function VehicleProfile() {
           { activeTab === 'trips' && <TabTable headers={['Date', 'Route', 'Payload', 'Yield', 'Status']} data={trips.reverse().map(t => [formatDate(t.tripDate), t.siteLocation || 'Transit', `${t.quantity || 0}T`, formatCurrency(t.tripCharges), <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-black border uppercase tracking-widest", t.status === 'COMPLETED' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-primary-50 text-primary-600 border-primary-100")}>{t.status}</span>])} /> }
           { activeTab === 'tyres' && <TabTable headers={['Serial', 'Position', 'Brand', 'Status', 'Retreads']} data={tyres.map(t => [t.serialNumber, t.position, t.brand, <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-black border uppercase tracking-widest", t.status === 'ACTIVE' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : t.status === 'RETREADED' ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-rose-50 text-rose-600 border-rose-100")}>{t.status}</span>, `x${t.retreadCount}`])} /> }
           { activeTab === 'compliance' && <TabTable headers={['Protocol', 'Terminus', 'Premium', 'Status']} data={compliance.map(c => [c.type, formatDate(c.expiryDate), formatCurrency(c.amount), <StatusBadge date={c.expiryDate} />])} /> }
-          { activeTab === 'documents' && <DocumentVault vehicleId={id} compliance={compliance} /> }
+          { activeTab === 'documents' && <DocumentVault vehicleId={id} compliance={compliance} onUpload={loadProfile} /> }
           { activeTab === 'expenses' && <TabTable headers={['Date', 'Type', 'Amount', 'Notes']} data={profile.latestExpenses.map(e => [formatDate(e.date), e.expenseType, formatCurrency(e.amount), e.notes || '-'])} /> }
           { activeTab === 'maintenance' && <TabTable headers={['Date', 'Service', 'Cost', 'Next Due']} data={profile.latestMaintenance.map(m => [formatDate(m.date), m.maintenanceType, formatCurrency(m.cost), formatDate(m.nextDueDate)])} /> }
           { activeTab === 'payments' && <TabTable headers={['Date', 'Type', 'Amount', 'Mode', 'Status']} data={payments.map(p => [formatDate(p.paymentDate), p.paymentType, formatCurrency(p.amount), p.paymentMode || 'CASH', <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-widest">PAID</span>])} /> }
@@ -424,7 +424,10 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [docType, setDocType] = useState('RC')
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [isBulkMode, setIsBulkMode] = useState(false)
   const fileInputRef = useRef(null)
+  const bulkFileInputRef = useRef(null)
 
   const handleUpload = async (e) => {
     const file = e.target.files[0]
@@ -448,6 +451,25 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
     }
   }
 
+  const handleBulkUpload = async () => {
+    if (selectedFiles.length === 0) return
+    
+    setUploading(true)
+    try {
+      await vehicleAPI.uploadBulkDocuments(vehicleId, selectedFiles, docType)
+      setShowUploadModal(false)
+      setSelectedFiles([])
+      setIsBulkMode(false)
+      if (onUpload) onUpload()
+      alert(`Successfully uploaded ${selectedFiles.length} documents!`)
+    } catch (err) {
+      console.error('Bulk upload failed:', err)
+      alert('Bulk upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   return (
      <div className="space-y-10">
         <div className="flex items-center justify-between">
@@ -457,12 +479,20 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                  <Shield className="w-3 h-3 text-primary-500" /> Stored High-Resolution Asset Cryptography
               </p>
            </div>
-           <button 
-             className="btn-primary py-2 px-6 text-[10px]"
-             onClick={() => setShowUploadModal(true)}
-           >
-              <Plus className="w-4 h-4" /> Deposit Asset
-           </button>
+           <div className="flex gap-2">
+              <button 
+                className="btn-secondary py-2 px-4 text-[10px]"
+                onClick={() => { setIsBulkMode(true); setShowUploadModal(true); }}
+              >
+                <Plus className="w-4 h-4" /> Bulk Upload
+              </button>
+              <button 
+                className="btn-primary py-2 px-6 text-[10px]"
+                onClick={() => { setIsBulkMode(false); setShowUploadModal(true); }}
+              >
+                <Plus className="w-4 h-4" /> Deposit Asset
+              </button>
+           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -496,16 +526,108 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                  </div>
               </motion.div>
            ))}
-           {compliance.filter(c => c.documentPath).length === 0 && (
-              <div className="col-span-full py-32 text-center bg-dark-50/20 border border-dashed border-dark-100 rounded-[2.5rem]">
-                 <FileSearch className="w-16 h-16 text-dark-100 mx-auto mb-6 opacity-30" />
-                 <p className="font-black text-[10px] text-dark-300 uppercase tracking-[0.3em]">No encrypted asset twins detected</p>
-                 <button className="mt-8 text-[9px] font-black text-primary-600 uppercase tracking-[0.2em] hover:underline"onClick={() => setShowUploadModal(true)}>Connect Storage Node</button>
-              </div>
-           )}
-        </div>
-     </div>
-  )
+            {compliance.filter(c => c.documentPath).length === 0 && (
+               <div className="col-span-full py-32 text-center bg-dark-50/20 border border-dashed border-dark-100 rounded-[2.5rem]">
+                  <FileSearch className="w-16 h-16 text-dark-100 mx-auto mb-6 opacity-30" />
+                  <p className="font-black text-[10px] text-dark-300 uppercase tracking-[0.3em]">No encrypted asset twins detected</p>
+                  <button className="mt-8 text-[9px] font-black text-primary-600 uppercase tracking-[0.2em] hover:underline"onClick={() => setShowUploadModal(true)}>Connect Storage Node</button>
+               </div>
+            )}
+         </div>
+
+         {showUploadModal && (
+           <div className="fixed inset-0 bg-dark-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden premium-shadow">
+               <div className="p-8 border-b border-dark-100">
+                 <h3 className="text-xl font-black text-dark-900 uppercase">
+                   {isBulkMode ? 'Bulk Upload Documents' : 'Deposit Asset'}
+                 </h3>
+                 <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-1">
+                   {isBulkMode ? 'Upload multiple documents at once' : 'Upload single document'}
+                 </p>
+               </div>
+               <div className="p-8 space-y-6">
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">Document Type</label>
+                   <select 
+                     value={docType} 
+                     onChange={(e) => setDocType(e.target.value)}
+                     className="interactive-field"
+                   >
+                     <option value="RC">Registration Certificate (RC)</option>
+                     <option value="INSURANCE">Insurance</option>
+                     <option value="PERMIT">Permit</option>
+                     <option value="PUC">PUC Certificate</option>
+                     <option value="FITNESS">Fitness Certificate</option>
+                     <option value="TAX">Tax Receipt</option>
+                     <option value="OTHER">Other</option>
+                   </select>
+                 </div>
+                 
+                 {isBulkMode ? (
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">Select Files (Multiple)</label>
+                     <div 
+                       className="interactive-field flex flex-col items-center justify-center border-dashed py-8 gap-3 cursor-pointer"
+                       onClick={() => bulkFileInputRef.current?.click()}
+                     >
+                       <FileSearch className="w-8 h-8 text-dark-200" />
+                       <span className="text-[10px] font-black uppercase text-dark-400">Click to select files</span>
+                       <input 
+                         type="file" 
+                         multiple 
+                         ref={bulkFileInputRef}
+                         className="hidden"
+                         onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
+                       />
+                       {selectedFiles.length > 0 && (
+                         <div className="text-xs font-black text-primary-600">
+                           {selectedFiles.length} file(s) selected
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">File</label>
+                     <div 
+                       className="interactive-field flex flex-col items-center justify-center border-dashed py-8 gap-3 cursor-pointer"
+                       onClick={() => fileInputRef.current?.click()}
+                     >
+                       <FileSearch className="w-8 h-8 text-dark-200" />
+                       <span className="text-[10px] font-black uppercase text-dark-400">Click to select file</span>
+                       <input 
+                         type="file" 
+                         ref={fileInputRef}
+                         className="hidden"
+                         onChange={handleUpload}
+                       />
+                     </div>
+                   </div>
+                 )}
+               </div>
+               <div className="p-8 border-t border-dark-100 flex gap-4">
+                 <button 
+                   className="flex-1 btn-secondary"
+                   onClick={() => { setShowUploadModal(false); setSelectedFiles([]); setIsBulkMode(false); }}
+                 >
+                   Cancel
+                 </button>
+                 {isBulkMode && (
+                   <button 
+                     className="flex-1 btn-primary disabled:opacity-50"
+                     disabled={selectedFiles.length === 0 || uploading}
+                     onClick={handleBulkUpload}
+                   >
+                     {uploading ? 'Uploading...' : `Upload ${selectedFiles.length} Files`}
+                   </button>
+                 )}
+               </div>
+             </motion.div>
+           </div>
+         )}
+      </div>
+   )
 }
 
 
