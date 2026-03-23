@@ -302,13 +302,243 @@ def parse_puc(text):
     return result
 
 
+def parse_fitness(text):
+    """Parse Fitness Certificate (FORM 38)"""
+    result = {
+        'document_type': 'fitness',
+        'registration_number': None,
+        'chassis_number': None,
+        'engine_number': None,
+        'registration_date': None,
+        'certificate_expires': None,
+        'next_inspection_date': None,
+        'category': None,
+        'manufacturing_year': None,
+    }
+    
+    # Registration Number
+    match = re.search(r'([A-Z]{2}\d{2}[A-Z]{1,2}\d{4})', text.upper())
+    if match:
+        result['registration_number'] = match.group(1)
+    
+    # Chassis Number
+    chassis_match = re.search(
+        r'(?:Chassis\s*No|Chassis)[:\s]*([A-HJ-NPR-Z0-9]{10,17})',
+        text, re.IGNORECASE
+    )
+    if chassis_match:
+        result['chassis_number'] = chassis_match.group(1).upper()
+    
+    # Engine Number
+    engine_match = re.search(
+        r'(?:Engine\s*No|Engine\s*No)[:\s]*([A-HJ-NPR-Z0-9]{6,20})',
+        text, re.IGNORECASE
+    )
+    if engine_match:
+        result['engine_number'] = engine_match.group(1).upper()
+    
+    # Certificate expires
+    exp_match = re.search(
+        r'(?:Certificate\s*will\s*expire\s*on|Expires?\s*on|Expiry)[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        text, re.IGNORECASE
+    )
+    if exp_match:
+        result['certificate_expires'] = exp_match.group(1)
+    
+    # Next inspection date
+    next_match = re.search(
+        r'(?:Next\s*Inspection\s*Due\s*Date|Next\s*Inspection)[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        text, re.IGNORECASE
+    )
+    if next_match:
+        result['next_inspection_date'] = next_match.group(1)
+    
+    # Category
+    cat_match = re.search(
+        r'(?:Category\s*of\s*Vehicle|Category)[:\s]*([A-Za-z]+)',
+        text, re.IGNORECASE
+    )
+    if cat_match:
+        result['category'] = cat_match.group(1).strip()
+    
+    # Manufacturing Year
+    year_match = re.search(
+        r'(?:Manufacturing\s*Year|Manuf\.?\s*year)[:\s]*(\d{4})',
+        text, re.IGNORECASE
+    )
+    if year_match:
+        result['manufacturing_year'] = year_match.group(1)
+    
+    return result
+
+
+def parse_permit(text):
+    """Parse Permit Document"""
+    result = {
+        'document_type': 'permit',
+        'registration_number': None,
+        'permit_number': None,
+        'permit_holder': None,
+        'chassis_number': None,
+        'engine_number': None,
+        'owner_name': None,
+        'valid_from': None,
+        'valid_to': None,
+        'route': None,
+    }
+    
+    # Registration Number
+    match = re.search(r'([A-Z]{2}\d{2}[A-Z]{1,2}\d{4})', text.upper())
+    if match:
+        result['registration_number'] = match.group(1)
+    
+    # Permit Number
+    permit_match = re.search(
+        r'(?:Permit\s*No|Permit\s*Number|MH\d{4}-[A-Z]{2}-\d{4}[A-Z])',
+        text, re.IGNORECASE
+    )
+    if permit_match:
+        result['permit_number'] = permit_match.group(0)
+    
+    # Permit holder
+    holder_match = re.search(
+        r'(?:Name\s*Of\s*The\s*Permit\s*Holder|Permit\s*Holder)[:\s]*([A-Za-z\s&\.]+)',
+        text, re.IGNORECASE
+    )
+    if holder_match:
+        result['permit_holder'] = holder_match.group(1).strip()
+    
+    # Chassis Number
+    chassis_match = re.search(
+        r'(?:Chassis\s*No|Chassis)[:\s]*([A-HJ-NPR-Z0-9]{10,17})',
+        text, re.IGNORECASE
+    )
+    if chassis_match:
+        result['chassis_number'] = chassis_match.group(1).upper()
+    
+    # Engine Number
+    engine_match = re.search(
+        r'(?:Engine\s*No|Engine)[:\s]*([A-HJ-NPR-Z0-9]{6,20})',
+        text, re.IGNORECASE
+    )
+    if engine_match:
+        result['engine_number'] = engine_match.group(1).upper()
+    
+    # Owner Name
+    owner_match = re.search(
+        r'(?:Owner\s*Name|Owner)[:\s]*([A-Za-z\s&\.]+)',
+        text, re.IGNORECASE
+    )
+    if owner_match:
+        result['owner_name'] = owner_match.group(1).strip()
+    
+    # Valid from
+    from_match = re.search(
+        r'(?:From:)[\s]*(\d{1,2}[-/][A-Za-z]{3}[-/\s]\d{4})',
+        text, re.IGNORECASE
+    )
+    if from_match:
+        result['valid_from'] = from_match.group(1).strip()
+    
+    # Valid to
+    to_match = re.search(
+        r'(?:To:)[\s]*(\d{1,2}[-/][A-Za-z]{3}[-/\s]\d{4})',
+        text, re.IGNORECASE
+    )
+    if to_match:
+        result['valid_to'] = to_match.group(1).strip()
+    
+    # Route
+    route_match = re.search(
+        r'(?:Region\s*Covered|Route)[:\s]*([A-Za-z\s]+)',
+        text, re.IGNORECASE
+    )
+    if route_match:
+        result['route'] = route_match.group(1).strip()
+    
+    return result
+
+
+def parse_tax_receipt(text):
+    """Parse Tax Receipt"""
+    result = {
+        'document_type': 'tax_receipt',
+        'registration_number': None,
+        'chassis_number': None,
+        'tax_amount': None,
+        'tax_date': None,
+        'period_from': None,
+        'period_to': None,
+        'payment_date': None,
+    }
+    
+    # Registration Number
+    match = re.search(r'([A-Z]{2}\d{2}[A-Z]{1,2}\d{4})', text.upper())
+    if match:
+        result['registration_number'] = match.group(1)
+    
+    # Chassis Number
+    chassis_match = re.search(
+        r'(?:Chasis\s*No|Chassis\s*No|Chassis)[:\s]*([A-HJ-NPR-Z0-9]{10,17})',
+        text, re.IGNORECASE
+    )
+    if chassis_match:
+        result['chassis_number'] = chassis_match.group(1).upper()
+    
+    # Tax Amount
+    amount_match = re.search(
+        r'(?:GRAND\s*TOTAL|Total|Total\s*in\s*Rs)[:\s]*([\d,]+\.?\d*)',
+        text, re.IGNORECASE
+    )
+    if amount_match:
+        try:
+            result['tax_amount'] = float(amount_match.group(1).replace(',', ''))
+        except:
+            pass
+    
+    # Period
+    period_match = re.search(
+        r'(\d{1,2}[-/]\d{1,2}[-/]\d{4})\s+to\s+(\d{1,2}[-/]\d{1,2}[-/]\d{4})',
+        text, re.IGNORECASE
+    )
+    if period_match:
+        result['period_from'] = period_match.group(1)
+        result['period_to'] = period_match.group(2)
+    
+    # Payment Date
+    pay_match = re.search(
+        r'(?:Payment\s*Date|Transaction\s*Date)[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{4})',
+        text, re.IGNORECASE
+    )
+    if pay_match:
+        result['payment_date'] = pay_match.group(1)
+        result['tax_date'] = pay_match.group(1)
+    
+    return result
+
+
 def parse_vehicle_document(text, doc_type):
     """Route to appropriate vehicle parser"""
-    if doc_type == 'rc':
+    if doc_type == 'rc' or doc_type == 'vehicle_rc':
         return parse_rc(text)
     elif doc_type == 'insurance':
         return parse_insurance(text)
     elif doc_type == 'puc':
         return parse_puc(text)
+    elif doc_type == 'fitness':
+        return parse_fitness(text)
+    elif doc_type == 'permit':
+        return parse_permit(text)
+    elif doc_type == 'tax_receipt':
+        return parse_tax_receipt(text)
     else:
-        return {'error': f'Unknown vehicle document type: {doc_type}'}
+        # Try to auto-detect
+        text_upper = text.upper()
+        if 'FORM 38' in text_upper or 'CERTIFICATE OF FITNESS' in text_upper:
+            return parse_fitness(text)
+        elif 'PERMIT' in text_upper and 'GOODS' in text_upper:
+            return parse_permit(text)
+        elif 'TAX RECEIPT' in text_upper or 'ROAD TAX' in text_upper:
+            return parse_tax_receipt(text)
+        else:
+            return parse_rc(text)
