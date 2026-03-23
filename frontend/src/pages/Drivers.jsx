@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Users, Edit, Trash2, Phone, Calendar, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, MapPin, ArrowUpRight, ArrowLeft, MoreVertical, FileSearch, ExternalLink, FileText } from 'lucide-react'
-import { driverAPI, vehicleAPI, attendanceAPI, driverDocumentAPI } from '../lib/api'
+import { driverAPI, vehicleAPI, attendanceAPI, driverDocumentAPI, expenseAPI, paymentAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn, openDocument } from '../lib/utils'
 import { format } from 'date-fns'
 
@@ -168,6 +168,8 @@ function PersonnelConsole({ driver, onClose }) {
   const [activeTab, setActiveTab] = useState('attendance')
   const [attendance, setAttendance] = useState([])
   const [documents, setDocuments] = useState([])
+  const [expenses, setExpenses] = useState([])
+  const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [markingDate, setMarkingDate] = useState(new Date().toISOString().split('T')[0])
   const [status, setStatus] = useState('PRESENT')
@@ -180,6 +182,8 @@ function PersonnelConsole({ driver, onClose }) {
   useEffect(() => { 
      loadAttendance()
      loadDocuments()
+     loadExpenses()
+     loadPayments()
   }, [driver.id])
 
   useEffect(() => {
@@ -213,6 +217,21 @@ function PersonnelConsole({ driver, onClose }) {
         const res = await driverDocumentAPI.getByDriver(driver.id)
         setDocuments(res.data)
      } catch (e) { console.error(e) }
+  }
+
+  const loadExpenses = async () => {
+    try {
+      const res = await expenseAPI.getAll({ category: 'DRIVER_ADVANCE' })
+      const driverExpenses = res.data.filter(e => e.driver && e.driver.id === driver.id)
+      setExpenses(driverExpenses.sort((a, b) => new Date(b.date) - new Date(a.date)))
+    } catch (e) { console.error('Error fetching expenses:', e) }
+  }
+
+  const loadPayments = async () => {
+    try {
+      const res = await paymentAPI.getAll({ driverId: driver.id })
+      setPayments(res.data.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate)))
+    } catch (e) { console.error('Error fetching payments:', e) }
   }
 
   const handleMark = async (e) => {
@@ -264,7 +283,7 @@ function PersonnelConsole({ driver, onClose }) {
             </div>
             <div className="h-10 w-px bg-dark-100" />
             <div className="flex gap-1 p-1 bg-dark-50 rounded-2xl">
-               {['attendance', 'vault'].map(tab => (
+               {['attendance', 'advances', 'payments', 'vault'].map(tab => (
                   <button 
                     key={tab} 
                     onClick={() => setActiveTab(tab)}
@@ -360,9 +379,65 @@ function PersonnelConsole({ driver, onClose }) {
                           ))
                        )}
                     </div>
-                 </div>
-              </>
-           ) : (
+                  </div>
+               </>
+            ) : activeTab === 'advances' ? (
+               <div className="flex-1 p-10 overflow-y-auto">
+                  <h4 className="text-[10px] font-black text-dark-900 uppercase tracking-[0.3em] mb-8 font-outfit">Driver Advances Ledger</h4>
+                  {expenses.length === 0 ? (
+                     <div className="py-32 text-center bg-white border border-dashed border-dark-100 rounded-[2rem]">
+                        <CreditCard className="w-16 h-16 text-dark-50 mx-auto mb-6" />
+                        <p className="font-black text-[10px] text-dark-300 uppercase tracking-[0.2em]">No advance records detected</p>
+                     </div>
+                  ) : (
+                     <div className="space-y-4">
+                        {expenses.map((expense) => (
+                           <motion.div key={expense.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between p-6 bg-white border border-dark-100 rounded-[2rem] premium-shadow group hover:border-primary-500 transition-all">
+                              <div className="flex items-center gap-6">
+                                 <div className="w-3 h-3 rounded-full bg-amber-500 shadow-amber-200" />
+                                 <div>
+                                    <p className="text-sm font-black text-dark-900 font-outfit tracking-tight">{format(new Date(expense.date), 'dd MMMM yyyy')}</p>
+                                    <p className="text-[9px] font-bold text-dark-400 uppercase tracking-[0.2em] mt-1">{expense.expenseType || 'Advance'}</p>
+                                 </div>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-lg font-black text-amber-600 tracking-tight">{formatCurrency(expense.amount)}</p>
+                                 {expense.notes && <p className="text-[9px] font-bold text-dark-300 mt-1 italic max-w-[200px] truncate">{expense.notes}</p>}
+                              </div>
+                           </motion.div>
+                        ))}
+                     </div>
+                  )}
+               </div>
+            ) : activeTab === 'payments' ? (
+               <div className="flex-1 p-10 overflow-y-auto">
+                  <h4 className="text-[10px] font-black text-dark-900 uppercase tracking-[0.3em] mb-8 font-outfit">Salary & Settlement Records</h4>
+                  {payments.length === 0 ? (
+                     <div className="py-32 text-center bg-white border border-dashed border-dark-100 rounded-[2rem]">
+                        <CreditCard className="w-16 h-16 text-dark-50 mx-auto mb-6" />
+                        <p className="font-black text-[10px] text-dark-300 uppercase tracking-[0.2em]">No payment records detected</p>
+                     </div>
+                  ) : (
+                     <div className="space-y-4">
+                        {payments.map((payment) => (
+                           <motion.div key={payment.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between p-6 bg-white border border-dark-100 rounded-[2rem] premium-shadow group hover:border-primary-500 transition-all">
+                              <div className="flex items-center gap-6">
+                                 <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-emerald-200" />
+                                 <div>
+                                    <p className="text-sm font-black text-dark-900 font-outfit tracking-tight">{format(new Date(payment.paymentDate), 'dd MMMM yyyy')}</p>
+                                    <p className="text-[9px] font-bold text-dark-400 uppercase tracking-[0.2em] mt-1">{payment.paymentType || 'SALARY'}</p>
+                                 </div>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-lg font-black text-emerald-600 tracking-tight">{formatCurrency(payment.amount)}</p>
+                                 <p className="text-[9px] font-bold text-dark-300 mt-1">{payment.paymentMode || 'CASH'}</p>
+                              </div>
+                           </motion.div>
+                        ))}
+                     </div>
+                  )}
+               </div>
+            ) : (
               <div className="flex-1 p-10 overflow-y-auto">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     <div className="space-y-8">

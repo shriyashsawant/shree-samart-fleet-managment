@@ -7,7 +7,7 @@ import {
   Map as MapIcon, ChevronRight, Download, Eye, ExternalLink, Radius,
   Users, Receipt, ChevronLeft, CreditCard, Hash, IndianRupee, ArrowDownRight, MoreVertical, Printer, Edit, Settings, Fuel, CheckCircle2, Navigation, FileSearch, Upload, X, AlertCircle
 } from 'lucide-react'
-import { analyticsAPI, vehicleAPI, tripAPI, tyreAPI, complianceAPI, tyreLogAPI } from '../lib/api'
+import { analyticsAPI, vehicleAPI, tripAPI, tyreAPI, complianceAPI, tyreLogAPI, paymentAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn, openDocument } from '../lib/utils'
 
 export default function VehicleProfile() {
@@ -18,22 +18,25 @@ export default function VehicleProfile() {
   const [trips, setTrips] = useState([])
   const [tyres, setTyres] = useState([])
   const [compliance, setCompliance] = useState([])
+  const [payments, setPayments] = useState([])
   const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => { loadProfile() }, [id])
 
   const loadProfile = async () => {
     try {
-      const [profileRes, tripsRes, tyresRes, compRes] = await Promise.all([
+      const [profileRes, tripsRes, tyresRes, compRes, paymentsRes] = await Promise.all([
         analyticsAPI.getVehicleProfile(id),
         tripAPI.getByVehicle(id),
         tyreAPI.getByVehicle(id),
-        complianceAPI.getByVehicle(id)
+        complianceAPI.getByVehicle(id),
+        paymentAPI.getAll({ vehicleId: id })
       ])
       setProfile(profileRes.data)
       setTrips(tripsRes.data)
       setTyres(tyresRes.data)
       setCompliance(compRes.data)
+      setPayments(paymentsRes.data)
     } catch (error) {
       console.error('Failed to load vehicle profile:', error)
     } finally {
@@ -171,6 +174,7 @@ export default function VehicleProfile() {
             { id: 'documents', label: 'Vault', icon: FileText },
             { id: 'expenses', label: 'Burn', icon: TrendingDown },
             { id: 'maintenance', label: 'Service', icon: Wrench },
+            { id: 'payments', label: 'Settlement', icon: CreditCard },
             { id: 'bills', label: 'Yield', icon: TrendingUp },
           ].map(tab => (
             <button
@@ -205,6 +209,7 @@ export default function VehicleProfile() {
           { activeTab === 'documents' && <DocumentVault vehicleId={id} compliance={compliance} /> }
           { activeTab === 'expenses' && <TabTable headers={['Date', 'Type', 'Amount', 'Notes']} data={profile.latestExpenses.map(e => [formatDate(e.date), e.expenseType, formatCurrency(e.amount), e.notes || '-'])} /> }
           { activeTab === 'maintenance' && <TabTable headers={['Date', 'Service', 'Cost', 'Next Due']} data={profile.latestMaintenance.map(m => [formatDate(m.date), m.maintenanceType, formatCurrency(m.cost), formatDate(m.nextDueDate)])} /> }
+          { activeTab === 'payments' && <TabTable headers={['Date', 'Type', 'Amount', 'Mode', 'Status']} data={payments.map(p => [formatDate(p.paymentDate), p.paymentType, formatCurrency(p.amount), p.paymentMode || 'CASH', <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-widest">PAID</span>])} /> }
           { activeTab === 'bills' && <TabTable headers={['Date', 'No.', 'Gross', 'Status']} data={profile.latestBills.map(b => [formatDate(b.billDate), b.billNo, formatCurrency(b.totalAmount), <span className="text-emerald-500 font-black">PAID</span>])} /> }
         </motion.div>
       </AnimatePresence>
