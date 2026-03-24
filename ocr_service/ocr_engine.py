@@ -8,11 +8,16 @@ import os
 import pytesseract
 from PIL import Image
 
-# Tesseract Configuration - handle windows path if testing locally
+# Tesseract Configuration
 if os.name == 'nt':
     TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     if os.path.exists(TESSERACT_CMD):
         pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+else:
+    # On Render/Linux, it's typically in /usr/bin/tesseract
+    tess_bin = '/usr/bin/tesseract'
+    if os.path.exists(tess_bin):
+        pytesseract.pytesseract.tesseract_cmd = tess_bin
 
 # OCR.space configuration
 OCR_SPACE_API_KEY = os.environ.get('OCR_SPACE_API_KEY', 'helloworld')
@@ -22,14 +27,21 @@ OCR_SPACE_URL = 'https://api.ocr.space/parse/image'
 def extract_with_local(image_path):
     """Extract text from image using local Tesseract OCR"""
     try:
+        img = None
         if str(image_path).lower().endswith('.pdf'):
-            from pdf2image import convert_from_path
-            # Convert first page of PDF to Image
-            images = convert_from_path(image_path, dpi=300, first_page=1, last_page=1)
-            if not images: return None
-            img = images[0]
+            try:
+                from pdf2image import convert_from_path
+                # Convert at 150 DPI (Balanced for accuracy vs 512MB RAM)
+                images = convert_from_path(image_path, dpi=150, first_page=1, last_page=1)
+                if images:
+                    img = images[0]
+            except Exception as pe:
+                print(f"PDF Conversion Error: {pe}")
+                return None
         else:
             img = Image.open(image_path)
+            
+        if not img: return None
             
         text = pytesseract.image_to_string(img)
         if text and text.strip():
