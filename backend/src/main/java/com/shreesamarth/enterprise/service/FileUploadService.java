@@ -36,6 +36,9 @@ public class FileUploadService {
     @PostConstruct
     public void initialize() {
         try {
+            log.info("=== Firebase FileUploadService initialization started ===");
+            log.info("Firebase credentials JSON is set: {}", firebaseCredentialsJson != null && !firebaseCredentialsJson.isEmpty());
+            
             if (FirebaseApp.getApps().isEmpty()) {
                 GoogleCredentials credentials;
                 
@@ -53,9 +56,9 @@ public class FileUploadService {
                         );
                         log.info("Firebase FileUploadService initialized with classpath credentials");
                     } catch (Exception e) {
-                        log.warn("Firebase credentials not found in FileUploadService. Using local storage. " +
+                        log.error("Firebase credentials not found in FileUploadService. Using local storage. " +
                                  "Set FIREBASE_CREDENTIALS_JSON environment variable or add firebase-service-account.json to resources.");
-                        log.warn("Exception details: {}", e.getMessage());
+                        log.error("Exception details: {}", e.getMessage());
                         return;
                     }
                 }
