@@ -22,9 +22,15 @@ OCR_SPACE_URL = 'https://api.ocr.space/parse/image'
 def extract_with_local(image_path):
     """Extract text from image using local Tesseract OCR"""
     try:
-        # Check if tesseract is actually installed/callable
-        # On Render/Linux, 'tesseract' should be in the PATH
-        img = Image.open(image_path)
+        if str(image_path).lower().endswith('.pdf'):
+            from pdf2image import convert_from_path
+            # Convert first page of PDF to Image
+            images = convert_from_path(image_path, dpi=300, first_page=1, last_page=1)
+            if not images: return None
+            img = images[0]
+        else:
+            img = Image.open(image_path)
+            
         text = pytesseract.image_to_string(img)
         if text and text.strip():
             return text.strip()

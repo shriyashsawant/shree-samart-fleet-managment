@@ -3,6 +3,7 @@ FROM python:3.10-slim
 # Install system dependencies including Tesseract OCR
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
+    poppler-utils \
     libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
