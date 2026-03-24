@@ -585,7 +585,8 @@ public class AnalyticsService {
                 .filter(v -> v.getTenant() == null || v.getTenant().getId().equals(tenantId))
                 .orElseThrow(() -> new RuntimeException("Vehicle not found with ID: " + vehicleId));
 
-        List<Driver> allDrivers = driversByTenant(tenantId);
+        List<Driver> tenantDrivers = driversByTenant(tenantId);
+        List<Driver> allDrivers = tenantDrivers.isEmpty() ? driverRepository.findAll() : tenantDrivers;
         Driver driver = allDrivers.stream()
                 .filter(d -> d.getAssignedVehicle() != null && d.getAssignedVehicle().getId().equals(vehicleId))
                 .findFirst()
@@ -594,9 +595,12 @@ public class AnalyticsService {
         BigDecimal revenue = getVehicleRevenue(tenantId, vehicleId);
         BigDecimal expenses = getVehicleExpenses(tenantId, vehicleId);
 
-        List<Expense> allExpenses = expensesByTenant(tenantId);
-        List<Maintenance> allMaintenance = maintenanceByTenant(tenantId);
-        List<Bill> allBills = billsByTenant(tenantId);
+        List<Expense> tenantExpenses = expensesByTenant(tenantId);
+        List<Expense> allExpenses = tenantExpenses.isEmpty() ? expenseRepository.findAll() : tenantExpenses;
+        List<Maintenance> tenantMaintenance = maintenanceByTenant(tenantId);
+        List<Maintenance> allMaintenance = tenantMaintenance.isEmpty() ? maintenanceRepository.findAll() : tenantMaintenance;
+        List<Bill> tenantBills = billsByTenant(tenantId);
+        List<Bill> allBills = tenantBills.isEmpty() ? billRepository.findAll() : tenantBills;
 
         List<Expense> latestExpenses = allExpenses.stream()
                 .filter(e -> e.getVehicle() != null && e.getVehicle().getId().equals(vehicleId))
