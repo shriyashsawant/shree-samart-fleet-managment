@@ -72,6 +72,7 @@ def extract_with_local(image_path):
 
         if str(image_path).lower().endswith('.pdf'):
             # Ultra-Memory-Safe Segmented PDF processing: Convert to disk-paths only
+            print(f"Starting memory-safe PDF extraction for: {image_path}")
             full_text = []
             from pdf2image import convert_from_path
             import tempfile
@@ -79,9 +80,10 @@ def extract_with_local(image_path):
             try:
                 # Store images on disk briefly instead of RAM
                 with tempfile.TemporaryDirectory() as output_path:
+                    print(f"Rasterizing PDF to disk at 100 DPI... (Output: {output_path})")
                     page_paths = convert_from_path(
                         image_path, 
-                        dpi=120, 
+                        dpi=100, 
                         first_page=1, 
                         last_page=2,
                         fmt="jpeg",
@@ -89,30 +91,37 @@ def extract_with_local(image_path):
                         paths_only=True
                     )
                     
-                    for p_path in page_paths:
+                    print(f"Rasterization complete. Found {len(page_paths)} pages.")
+                    
+                    for i, p_path in enumerate(page_paths):
                         try:
+                            print(f"Processing page {i+1} from disk...")
                             with Image.open(p_path) as img_curr:
+                                print(f"Preprocessing page {i+1} (OpenCV filters)...")
                                 thresh = preprocess(img_curr)
                                 
+                                print(f"Running Tesseract on page {i+1}...")
                                 page_text = pytesseract.image_to_string(
                                     thresh,
                                     config="--oem 3 --psm 6"
                                 )
                                 if page_text:
+                                    print(f"Successfully extracted {len(page_text)} chars from page {i+1}")
                                     full_text.append(page_text)
                                 
                                 del thresh
                             
                             # Clean up and flush after each page
                             gc.collect()
+                            print(f"Memory flushed after page {i+1}")
                             
                         except Exception as e:
-                            print(f"Failed extracting on page: {e}")
+                            print(f"Failed extracting on page {i+1}: {e}")
                             continue
             except Exception as e:
-                print(f"PDF Conversion Error: {e}")
-                # Fallback to single text if possible or re-raise
-                
+                print(f"Critical PDF Conversion Error: {e}")
+            
+            print(f"PDF extraction total pages: {len(full_text)}")
             # Final heap cleanup
             gc.collect()
         else:
