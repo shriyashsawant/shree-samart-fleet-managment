@@ -125,7 +125,11 @@ def extract_document():
     
     company_gst = request.form.get('company_gst', '').strip() or None
     
-    temp_filename = f"{uuid.uuid4()}.jpg"
+    # Extract the correct extension (e.g., .pdf, .jpg, .png)
+    ext = os.path.splitext(file.filename)[1].lower()
+    if not ext: ext = ".jpg"
+    
+    temp_filename = f"{uuid.uuid4()}{ext}"
     temp_path = os.path.join(tempfile.gettempdir(), temp_filename)
     file.save(temp_path)
     
