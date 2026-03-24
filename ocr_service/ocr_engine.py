@@ -49,11 +49,16 @@ def extract_with_ocr_space(image_path):
                     'scale': True,
                     'OCREngine': 2, # Engine 2 is usually better for invoices/tabular data
                 },
-                timeout=30
+                timeout=120
             )
         
         result = response.json()
         
+        if not isinstance(result, dict):
+            print(f"OCR.space unexpected response type: {type(result)}")
+            print(f"Response Snippet: {str(result)[:200]}...")
+            return str(result) if isinstance(result, str) else None
+            
         if result.get('IsErroredOnProcessing'):
             print(f"OCR.space processing error: {result.get('ErrorMessage')}")
             return None

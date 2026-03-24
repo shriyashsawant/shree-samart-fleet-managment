@@ -24,16 +24,10 @@ app = Flask(__name__)
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Pre-load models on startup in the background
-try:
-    on_render = os.environ.get('RENDER') == 'true'
-    if not on_render:
-        from ocr_engine import get_ocr_instance
-        import threading
-        threading.Thread(target=get_ocr_instance).start()
-    else:
-        print("Running on Render: Skipping PaddleOCR model pre-load to save RAM.")
-except: pass
+# Render specific optimizations 
+on_render = os.environ.get('RENDER') == 'true'
+if on_render:
+    print("Running on Render: Optimization active (Tesseract + OCR.space mode)")
 
 @app.route('/', methods=['GET'])
 def home():

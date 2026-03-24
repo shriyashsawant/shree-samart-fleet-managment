@@ -96,6 +96,35 @@ def parse_fitness(text):
     
     return result
 
+def parse_permit(text):
+    """Parse Vehicle Permit (Form 25/26 etc)"""
+    text = fix_vehicle_ocr_errors(text)
+    result = {
+        'document_type': 'permit',
+        'registration_number': None,
+        'chassis_number': None,
+        'engine_number': None,
+        'permit_valid_from': None,
+        'permit_valid_to': None,
+        'gross_weight': None,
+    }
+    
+    for field in result.keys():
+        if field == 'document_type': continue
+        val = extract_with_anchor(text, field, VEHICLE_PATTERNS)
+        if val: result[field] = val
+        
+    # Support for the "10-Nov-2023 ... To: 09-Nov-2028" format
+    if not result.get('permit_valid_from'):
+        match_fm = re.search(r'From[:\s]*(\d{1,2}-[A-Za-z]{3}-\d{4})', text)
+        if match_fm: result['permit_valid_from'] = match_fm.group(1)
+        
+    if not result.get('permit_valid_to'):
+        match_to = re.search(r'To[:\s]*(\d{1,2}-[A-Za-z]{3}-\d{4})', text)
+        if match_to: result['permit_valid_to'] = match_to.group(1)
+
+    return result
+
 def parse_vehicle_document(text, doc_type):
     """Route to appropriate vehicle parser based on detected subtype"""
     text = clean_ocr_text(text)
@@ -108,6 +137,8 @@ def parse_vehicle_document(text, doc_type):
         return parse_puc(text)
     elif doc_type == 'fitness':
         return parse_fitness(text)
+    elif doc_type == 'permit':
+        return parse_permit(text)
     else:
         # Fallback to RC if subtype unclear
         return parse_rc(text)

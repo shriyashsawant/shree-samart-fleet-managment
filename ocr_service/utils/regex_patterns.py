@@ -84,7 +84,20 @@ VEHICLE_PATTERNS = {
         r'(?:Policy|Policy\s*No|Certificate\s*No)[:\s]*([A-Z0-9/\-]+)',
     ],
     'fitness_expiry': [
-        r'(?:Fitness\s*Valid|Fitness\s*Upto|Valid\s*Upto|Expiry)[:\s]*(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
+        r'(?:Fitness\s*Valid|Fitness\s*Upto|Valid\s*Upto|Expiry|Valid\s*Till)[:\s]*(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
+    ],
+    'permit_valid_from': [
+        r'From[:\s]*(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
+    ],
+    'permit_valid_to': [
+        r'To[:\s]*(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
+    ],
+    'gross_weight': [
+        r'Gross\s*Weight\s*of\s*Vehicle[:\s]*(\d+)',
+        r'Gross\s*Wt[:\s]*(\d+)',
+    ],
+    'pay_load': [
+        r'Pay\s*Load[:\s]*(\d+)',
     ],
 }
 

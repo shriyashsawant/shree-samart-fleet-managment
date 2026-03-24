@@ -9,31 +9,36 @@ import tempfile
 
 
 def preprocess_image(image_path):
-    """Preprocess image to improve OCR accuracy"""
+    """Preprocess image to improve OCR accuracy - Optimized for Tesseract"""
     try:
         img = cv2.imread(image_path)
         if img is None:
             return image_path
+            
+        # Step 0: Resize if too small (Tesseract performs better on larger text)
+        h, w = img.shape[:2]
+        if w < 1000 or h < 1000:
+            scale = 2000 / max(h, w)
+            img = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
         
         # Step 1: Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
-        # Step 2: Apply adaptive thresholding (better than simple threshold)
+        # Step 2: Denoise BEFORE thresholding
+        denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
+        
+        # Step 3: Adaptive thresholding
         thresh = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-            cv2.THRESH_BINARY, 11, 2
+            denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+            cv2.THRESH_BINARY, 15, 8
         )
         
-        # Step 3: Denoise
-        denoised = cv2.fastNlMeansDenoising(thresh, None, 10, 7, 21)
-        
-        # Step 4: Sharpen (optional, can help with blurry images)
-        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-        sharpened = cv2.filter2D(denoised, -1, kernel)
+        # Step 4: Bilateral Filter to smooth edges while keeping them sharp
+        final = cv2.bilateralFilter(thresh, 9, 75, 75)
         
         # Save processed image
         temp_path = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False).name
-        cv2.imwrite(temp_path, sharpened)
+        cv2.imwrite(temp_path, final)
         
         return temp_path
     except Exception as e:
