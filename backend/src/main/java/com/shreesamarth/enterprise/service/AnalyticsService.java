@@ -581,9 +581,15 @@ public class AnalyticsService {
 
     @Transactional(readOnly = true)
     public VehicleProfileDTO getVehicleProfile(Long tenantId, Long vehicleId) {
+        try {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .filter(v -> v.getTenant() == null || v.getTenant().getId().equals(tenantId))
                 .orElseThrow(() -> new RuntimeException("Vehicle not found with ID: " + vehicleId));
+        
+        if (tenantId == null || vehicle.getTenant() == null || vehicle.getTenant().getId() == null || vehicle.getTenant().getId().equals(tenantId)) {
+            // Allow access for backward compatibility
+        } else {
+            throw new RuntimeException("Vehicle not found with ID: " + vehicleId + " for tenant: " + tenantId);
+        }
 
         List<Driver> tenantDrivers = driversByTenant(tenantId);
         List<Driver> allDrivers = tenantDrivers.isEmpty() ? driverRepository.findAll() : tenantDrivers;
@@ -694,6 +700,9 @@ public class AnalyticsService {
             lastFuel != null ? lastFuel.getDate() : null,
             lastFuel != null ? lastFuel.getAmount() : null
         );
+        } catch (Exception e) {
+            throw new RuntimeException("Error loading vehicle profile: " + e.getMessage(), e);
+        }
     }
 
     private int compareSeverity(String s1, String s2) {
