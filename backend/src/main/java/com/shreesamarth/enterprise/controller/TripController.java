@@ -28,9 +28,9 @@ public class TripController {
     @PostMapping
     @Transactional
     public ResponseEntity<TripDTO> createTrip(
-            @RequestBody Trip trip,
+            @RequestBody TripRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        Trip created = tripService.createTrip(trip, 1L);
+        Trip created = tripService.createTripFromRequest(request, 1L);
         return ResponseEntity.ok(toDTO(created));
     }
 

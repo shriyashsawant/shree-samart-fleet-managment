@@ -1,5 +1,6 @@
 package com.shreesamarth.enterprise.service;
 
+import com.shreesamarth.enterprise.dto.TripRequest;
 import com.shreesamarth.enterprise.entity.*;
 import com.shreesamarth.enterprise.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +80,64 @@ public class TripService {
         tenant.setId(tenantId);
         trip.setTenant(tenant);
 
+        return tripRepository.save(trip);
+    }
+
+    public Trip createTripFromRequest(TripRequest request, Long tenantId) {
+        Trip trip = new Trip();
+        
+        // Generate trip number
+        String tripNumber = generateTripNumber(tenantId);
+        trip.setTripNumber(tripNumber);
+        
+        // Set default status
+        if (request.getStatus() == null || request.getStatus().isEmpty()) {
+            trip.setStatus("COMPLETED");
+        } else {
+            trip.setStatus(request.getStatus());
+        }
+        
+        // Set default trip date
+        if (request.getTripDate() == null) {
+            trip.setTripDate(LocalDate.now());
+        } else {
+            trip.setTripDate(request.getTripDate());
+        }
+        
+        // Set other fields
+        trip.setSiteLocation(request.getSiteLocation());
+        trip.setMaterialType(request.getMaterialType());
+        trip.setQuantity(request.getQuantity());
+        trip.setTripCharges(request.getTripCharges());
+        trip.setDistance(request.getDistance());
+        trip.setStartTime(request.getStartTime());
+        trip.setEndTime(request.getEndTime());
+        trip.setNotes(request.getNotes());
+        
+        // Load and set relationships
+        if (request.getVehicleId() != null) {
+            Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
+                    .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+            trip.setVehicle(vehicle);
+        }
+        
+        if (request.getDriverId() != null) {
+            Driver driver = driverRepository.findById(request.getDriverId())
+                    .orElseThrow(() -> new RuntimeException("Driver not found"));
+            trip.setDriver(driver);
+        }
+        
+        if (request.getClientId() != null) {
+            Client client = clientRepository.findById(request.getClientId())
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+            trip.setClient(client);
+        }
+        
+        // Set tenant
+        Tenant tenant = new Tenant();
+        tenant.setId(tenantId);
+        trip.setTenant(tenant);
+        
         return tripRepository.save(trip);
     }
 
