@@ -61,17 +61,12 @@ public class TripRequest {
     private String notes;
     
     public Long resolveVehicleId() {
-        System.out.println("resolveVehicleId called: vehicleId=" + vehicleId + ", vehicle=" + vehicle);
         if (vehicleId != null) {
-            System.out.println("Using vehicleId: " + vehicleId);
             return vehicleId;
         }
         if (vehicle != null) {
-            Long vid = vehicle.getId();
-            System.out.println("Using vehicle.id: " + vid);
-            return vid;
+            return vehicle.getId();
         }
-        System.out.println("No vehicle ID found!");
         return null;
     }
     

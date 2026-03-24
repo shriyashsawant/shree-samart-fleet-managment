@@ -67,6 +67,7 @@ com\shreesamarth\enterprise\entity\Tyre.class
 com\shreesamarth\enterprise\repository\TripRepository.class
 com\shreesamarth\enterprise\repository\ClientRepository.class
 com\shreesamarth\enterprise\dto\AuthResponse.class
+com\shreesamarth\enterprise\dto\TripRequest$VehicleRef.class
 com\shreesamarth\enterprise\config\FirebaseConfig.class
 com\shreesamarth\enterprise\service\EmailService.class
 com\shreesamarth\enterprise\dto\VehicleSummaryDTO.class
@@ -79,6 +80,7 @@ com\shreesamarth\enterprise\service\NotificationService.class
 com\shreesamarth\enterprise\repository\VehicleDocumentRepository.class
 com\shreesamarth\enterprise\controller\TyreLogController.class
 com\shreesamarth\enterprise\service\AuthService.class
+com\shreesamarth\enterprise\dto\TripRequest.class
 com\shreesamarth\enterprise\controller\TyreController.class
 com\shreesamarth\enterprise\controller\BillController$GstSummaryData.class
 com\shreesamarth\enterprise\controller\MaintenanceController.class
