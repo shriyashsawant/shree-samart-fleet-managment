@@ -33,8 +33,10 @@ public class FileController {
     }
 
     @GetMapping("/{*relativePath}")
-    public ResponseEntity<Resource> serveFile(@PathVariable String relativePath) {
+    public ResponseEntity<?> serveFile(@PathVariable String relativePath) {
         try {
+            String originalPath = relativePath;
+            
             // Check if it's a Firebase URL - redirect to it
             if (relativePath.startsWith("https://firebasestorage.googleapis.com")) {
                 return ResponseEntity.status(302)
@@ -42,33 +44,42 @@ public class FileController {
                         .build();
             }
             
+            // Try local file first
             String filePath = relativePath;
             if (filePath.startsWith("./")) {
                 filePath = filePath.substring(2);
             }
             File file = new File("uploads/" + filePath);
-            if (!file.exists() || !file.isFile()) {
-                // File not found locally - might be Firebase URL stored incorrectly
-                return ResponseEntity.notFound().build();
+            if (file.exists() && file.isFile()) {
+                Resource resource = new FileSystemResource(file);
+                String filename = file.getName();
+                String contentType = guessContentType(filename);
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                        .body(resource);
             }
-            Resource resource = new FileSystemResource(file);
-            String filename = file.getName();
-            String contentType = "application/octet-stream";
-            if (filename.endsWith(".pdf")) {
-                contentType = "application/pdf";
-            } else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) {
-                contentType = "image/jpeg";
-            } else if (filename.endsWith(".png")) {
-                contentType = "image/png";
-            } else if (filename.endsWith(".doc") || filename.endsWith(".docx")) {
-                contentType = "application/msword";
-            }
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                    .body(resource);
+            
+            // File not found locally - return error with helpful message
+            return ResponseEntity.status(404).body(Map.of(
+                "error", "File not found",
+                "path", originalPath,
+                "suggestion", "Re-upload the file - it may have been stored on a previous server instance that no longer exists"
+            ));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", e.getMessage()
+            ));
         }
+    }
+    
+    private String guessContentType(String filename) {
+        if (filename == null) return "application/octet-stream";
+        if (filename.endsWith(".pdf")) return "application/pdf";
+        if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) return "image/jpeg";
+        if (filename.endsWith(".png")) return "image/png";
+        if (filename.endsWith(".doc")) return "application/msword";
+        if (filename.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        return "application/octet-stream";
     }
 }
