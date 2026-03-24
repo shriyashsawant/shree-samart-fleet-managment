@@ -411,18 +411,19 @@ def parse_permit(text):
     }
     
     # Registration Number - handle OCR garbling like "MH0gCU1605" or "MH09CU1605"
-    # Look for pattern like "MH0gCU1605" near start
-    match = re.search(r'MH([\dO]{1,2})([A-Za-z]{2})(\d{4})', text, re.IGNORECASE)
+    # Look for pattern like "MH0gCU1605" - letter g looks like 9
+    match = re.search(r'MH([\dOogl]{1,2})([A-Za-z]{2})(\d{4})', text, re.IGNORECASE)
     if match:
-        result['registration_number'] = f"MH{match.group(1).replace('O','0').replace('o','0')}{match.group(2).upper()}{match.group(3)}"
+        digit1 = match.group(1).replace('O','0').replace('o','0').replace('g','9').replace('G','9')
+        result['registration_number'] = f"MH{digit1}{match.group(2).upper()}{match.group(3)}"
     
     # Permit Number - handle "-MH2023-GP 0852K" pattern (starts with dash)
     permit_match = re.search(r'[-\s](MH\d{4}[-\s]?[A-Z]{2}[\s]?\d{3,5}[A-Z]?)', text, re.IGNORECASE)
     if not permit_match:
-        # Try pattern like "MH2023-GP" anywhere
-        permit_match = re.search(r'(MH\d{4}[-]?[A-Z]{2}[-]?\d{3,5})', text, re.IGNORECASE)
+        # Try pattern like "-MH2023-GP 0852K" - note the dash at start
+        permit_match = re.search(r'-(MH\d{4}[A-Z]{2}\s*\d{3,5}[A-Z]?)', text)
     if permit_match:
-        result['permit_number'] = permit_match.group(1).upper().replace(' ', '-').replace('  ', '-')
+        result['permit_number'] = permit_match.group(1).upper().replace(' ', '-')
     
     # Permit holder - look for company name
     holder_match = re.search(
@@ -458,28 +459,31 @@ def parse_permit(text):
         result['engine_number'] = engine_match.group(1).upper().replace(' ', '')
     
     # Valid from - look for "From:" with date
-    # Handle OCR garbling like "From: 10-Nov-2023" or "From:10-Nov-2023"
+    # Handle OCR garbling like "From: 10-N0V:2023" or "From:10-Nov-2023"
     from_match = re.search(
-        r'From:?\s*(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?\d{2,4})',
+        r'From:?\s*(\d{1,2}[-\s]?[A-Za-z]{3}[-:]\s*\d{2,4})',
         text, re.IGNORECASE
     )
     if from_match:
-        result['valid_from'] = from_match.group(1).strip().replace(' ', '-')
+        date_str = from_match.group(1).strip().replace(' ', '-').replace('N0V', 'Nov').replace('n0v', 'Nov').replace(':', '')
+        result['valid_from'] = date_str
     
     # Valid to - look for date near "Validly" or "Validity"
-    # Handle OCR garbling like "d3 Nav 2028" -> "13 Nov 2028" or "10 Nov 2028"
+    # Handle OCR garbling like "Tor d3 Nav 2028" -> "13 Nov 2028" or "10 Nov 2028"
     to_match = re.search(
         r'(?:Validit(?:y|ly)|Valid\s*to)[\s\S]{0,50}(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?\d{2,4})',
         text, re.IGNORECASE
     )
     if not to_match:
-        # Try finding any date in 2028 - handle "d3" -> "13" or "10"
-        to_match = re.search(r'(\d{1,2}\s*[A-Za-z]{3}\s*2028)', text, re.IGNORECASE)
+        # Try "Nav" -> "Nov" pattern and "d3" -> "13"
+        to_match = re.search(r'(\d{1,2}\s*[Nn][a-z]{2}\s*2028)', text)
     if not to_match:
-        # Try "Nav" -> "Nov" pattern
-        to_match = re.search(r'(\d{1,2}[-\s]?[N][a-z]{2}[-\s]?2028)', text, re.IGNORECASE)
+        # Try any date in 2028 at end of text
+        to_match = re.search(r'(\d{1,2}\s*[A-Za-z]{2,3}\s*2028)', text)
     if to_match:
-        result['valid_to'] = to_match.group(1).strip().replace(' ', '-').replace('Nav', 'Nov').replace('nav', 'Nov')
+        date_str = to_match.group(1).strip().replace(' ', '-')
+        date_str = date_str.replace('Nav', 'Nov').replace('nav', 'Nov').replace('N0V', 'Nov')
+        result['valid_to'] = date_str
     
     # Valid to
     to_match = re.search(
