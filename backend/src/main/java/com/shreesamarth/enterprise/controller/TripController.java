@@ -1,6 +1,7 @@
 package com.shreesamarth.enterprise.controller;
 
 import com.shreesamarth.enterprise.dto.TripDTO;
+import com.shreesamarth.enterprise.dto.TripRequest;
 import com.shreesamarth.enterprise.entity.Bill;
 import com.shreesamarth.enterprise.entity.Trip;
 import com.shreesamarth.enterprise.repository.BillRepository;
