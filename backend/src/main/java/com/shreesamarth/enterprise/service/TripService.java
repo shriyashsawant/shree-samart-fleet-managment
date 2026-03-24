@@ -114,21 +114,24 @@ public class TripService {
         trip.setEndTime(request.getEndTime());
         trip.setNotes(request.getNotes());
         
-        // Load and set relationships
-        if (request.getVehicleId() != null) {
-            Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
+        // Load and set relationships - use resolve methods to handle both vehicleId and nested vehicle object
+        Long vid = request.resolveVehicleId();
+        if (vid != null) {
+            Vehicle vehicle = vehicleRepository.findById(vid)
                     .orElseThrow(() -> new RuntimeException("Vehicle not found"));
             trip.setVehicle(vehicle);
         }
         
-        if (request.getDriverId() != null) {
-            Driver driver = driverRepository.findById(request.getDriverId())
+        Long did = request.resolveDriverId();
+        if (did != null) {
+            Driver driver = driverRepository.findById(did)
                     .orElseThrow(() -> new RuntimeException("Driver not found"));
             trip.setDriver(driver);
         }
         
-        if (request.getClientId() != null) {
-            Client client = clientRepository.findById(request.getClientId())
+        Long cid = request.resolveClientId();
+        if (cid != null) {
+            Client client = clientRepository.findById(cid)
                     .orElseThrow(() -> new RuntimeException("Client not found"));
             trip.setClient(client);
         }
