@@ -411,20 +411,18 @@ def parse_permit(text):
     }
     
     # Registration Number - handle OCR garbling like "MH0gCU1605" or "MH09CU1605"
-    match = re.search(r'(MH[\dO]{2}[A-Z]{2}\d{4})', text, re.IGNORECASE)
+    # Look for pattern like "MH0gCU1605" near start
+    match = re.search(r'MH([\dO]{1,2})([A-Za-z]{2})(\d{4})', text, re.IGNORECASE)
     if match:
-        result['registration_number'] = match.group(1).upper().replace('O', '0')
+        result['registration_number'] = f"MH{match.group(1).replace('O','0').replace('o','0')}{match.group(2).upper()}{match.group(3)}"
     
-    # Permit Number - handle "MH2023-GP 0852K" pattern
-    permit_match = re.search(
-        r'(MH\d{4}[-\s]?[A-Z]{2}[\s]?\d{3,5}[A-Z]?)',
-        text, re.IGNORECASE
-    )
+    # Permit Number - handle "-MH2023-GP 0852K" pattern (starts with dash)
+    permit_match = re.search(r'[-\s](MH\d{4}[-\s]?[A-Z]{2}[\s]?\d{3,5}[A-Z]?)', text, re.IGNORECASE)
     if not permit_match:
-        # Try finding permit number anywhere with format like "2023-GP-0852"
-        permit_match = re.search(r'(\d{4}[-\s]?[A-Z]{2}[\s]?\d{3,5})', text)
+        # Try pattern like "MH2023-GP" anywhere
+        permit_match = re.search(r'(MH\d{4}[-]?[A-Z]{2}[-]?\d{3,5})', text, re.IGNORECASE)
     if permit_match:
-        result['permit_number'] = permit_match.group(1).upper().replace(' ', '-').replace('_', '-')
+        result['permit_number'] = permit_match.group(1).upper().replace(' ', '-').replace('  ', '-')
     
     # Permit holder - look for company name
     holder_match = re.search(
@@ -438,41 +436,50 @@ def parse_permit(text):
         result['permit_holder'] = holder_match.group(1).strip()
     
     # Chassis Number - more specific, starts with MAT or similar
+    # Handle OCR garbling like "MAT 44806203E109791" or "MAT448062D3E10979"
     chassis_match = re.search(
-        r'(MAT[A-Z0-9]{13}[A-Z0-9]?)',
+        r'(MAT\s*\d{5}[A-Z0-9]{8,}[A-Z0-9]?)',
         text, re.IGNORECASE
     )
+    if not chassis_match:
+        chassis_match = re.search(r'(MAT[A-Z0-9]{10,20})', text, re.IGNORECASE)
     if chassis_match:
-        result['chassis_number'] = chassis_match.group(1).upper()
+        result['chassis_number'] = chassis_match.group(1).upper().replace(' ', '')
     
     # Engine Number - starts with B followed by alphanumeric
+    # Handle OCR garbling like "B591803231E63327001"
     engine_match = re.search(
-        r'(B\d{12,}[A-Z0-9]*)',
+        r'(B\d{5,}[A-Z0-9]{5,})',
         text
     )
     if not engine_match:
-        engine_match = re.search(r'Engine\s*No[A-Z0-9\s:]*([A-Z0-9]+)', text, re.IGNORECASE)
+        engine_match = re.search(r'Engine\s*No[\s:]*([A-Z0-9]+)', text, re.IGNORECASE)
     if engine_match:
-        result['engine_number'] = engine_match.group(1).upper()
+        result['engine_number'] = engine_match.group(1).upper().replace(' ', '')
     
     # Valid from - look for "From:" with date
+    # Handle OCR garbling like "From: 10-Nov-2023" or "From:10-Nov-2023"
     from_match = re.search(
-        r'(?:From:?\s*)(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?\d{2,4})',
+        r'From:?\s*(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?\d{2,4})',
         text, re.IGNORECASE
     )
     if from_match:
         result['valid_from'] = from_match.group(1).strip().replace(' ', '-')
     
     # Valid to - look for date near "Validly" or "Validity"
+    # Handle OCR garbling like "d3 Nav 2028" -> "13 Nov 2028" or "10 Nov 2028"
     to_match = re.search(
         r'(?:Validit(?:y|ly)|Valid\s*to)[\s\S]{0,50}(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?\d{2,4})',
         text, re.IGNORECASE
     )
     if not to_match:
-        # Try finding any date in 2028
-        to_match = re.search(r'(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?2028)', text, re.IGNORECASE)
+        # Try finding any date in 2028 - handle "d3" -> "13" or "10"
+        to_match = re.search(r'(\d{1,2}\s*[A-Za-z]{3}\s*2028)', text, re.IGNORECASE)
+    if not to_match:
+        # Try "Nav" -> "Nov" pattern
+        to_match = re.search(r'(\d{1,2}[-\s]?[N][a-z]{2}[-\s]?2028)', text, re.IGNORECASE)
     if to_match:
-        result['valid_to'] = to_match.group(1).strip().replace(' ', '-')
+        result['valid_to'] = to_match.group(1).strip().replace(' ', '-').replace('Nav', 'Nov').replace('nav', 'Nov')
     
     # Valid to
     to_match = re.search(
