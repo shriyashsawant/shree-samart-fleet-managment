@@ -30,6 +30,12 @@ public class DataInitializer {
     public void init() {
         System.out.println("🚀 [DATA_INIT] >>> PULSE DETECTED: DataInitializer is starting now...");
         
+        // Only initialize data on FIRST RUN - skip if users already exist
+        if (userRepository.count() > 0) {
+            System.out.println("🚀 [DATA_INIT] ⏭️ Data already exists, skipping initialization...");
+            return;
+        }
+        
         // ── 1. TENANT ──────────────────────────────────────────────────────────
         Tenant defaultTenant;
         try {
