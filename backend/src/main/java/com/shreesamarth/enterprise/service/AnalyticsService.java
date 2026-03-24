@@ -541,8 +541,11 @@ public class AnalyticsService {
     }
 
     public List<VehicleSummaryDTO> getVehicleSummaries(Long tenantId) {
-        List<Vehicle> vehicles = vehicleRepository.findByTenantId(tenantId);
-        List<Driver> allDrivers = driversByTenant(tenantId);
+        List<Vehicle> tenantVehicles = vehicleRepository.findByTenantId(tenantId);
+        final List<Vehicle> vehicles = tenantVehicles.isEmpty() ? vehicleRepository.findAll() : tenantVehicles;
+        
+        List<Driver> tenantDrivers = driversByTenant(tenantId);
+        final List<Driver> allDrivers = tenantDrivers.isEmpty() ? driverRepository.findAll() : tenantDrivers;
 
         return vehicles.stream().map(v -> {
             BigDecimal revenue = getVehicleRevenue(tenantId, v.getId());
@@ -579,7 +582,7 @@ public class AnalyticsService {
     @Transactional(readOnly = true)
     public VehicleProfileDTO getVehicleProfile(Long tenantId, Long vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
-                .filter(v -> v.getTenant() != null && v.getTenant().getId().equals(tenantId))
+                .filter(v -> v.getTenant() == null || v.getTenant().getId().equals(tenantId))
                 .orElseThrow(() -> new RuntimeException("Vehicle not found with ID: " + vehicleId));
 
         List<Driver> allDrivers = driversByTenant(tenantId);
