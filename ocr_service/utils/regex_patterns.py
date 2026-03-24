@@ -6,10 +6,9 @@ Using specific keyword associations for better extraction accuracy
 # Invoice Patterns - organized by field with keyword associations
 INVOICE_PATTERNS = {
     'date': [
-        r'(?:Date|Dt|Dated|Month)[:\s]*([A-Za-z]+\-\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        r'(?:Date|Dt|Dated|Month)[:\s]*([A-Za-z]+[-]\d{4}|\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
         r'((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[- ]\d{4})',
-        r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
-        r'(\d{1,2}[./]\d{1,2}[./]\d{2,4})',
+        r'(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
     ],
     'bill_no': [
         r'(?:Invoice|Bill|Receipt|Chalan|BillNo|BiNo)[\s#:\-]*No\.?[:\s]*([\w/\-]+)',
@@ -59,52 +58,65 @@ INVOICE_PATTERNS = {
 VEHICLE_PATTERNS = {
     'registration_number': [
         r'([A-Z]{2}\d{2}[A-Z]{1,2}\d{4})',
-        r'(?:MH|AP|TN|KA|GJ|HR|RJ)\d{2}[A-Z]{1,2}\d{4}',
+        r'([A-Z]{2}[\dOogl]{2}[A-Z]{1,2}[\dOogl]{4})', # Handle OCR garble
+        r'(?:Registration\s*No|Regn\s*No|Vehicle\s*No)[:\s]*([A-Z0-9]{8,12})',
     ],
     'chassis_number': [
-        r'(?:Chassis|Chassis\s*No|VIN)[:\s]*([A-HJ-NPR-Z0-9]{17})',
+        r'(?:Chassis|Chassis\s*No|VIN)[:\s]*([A-HJ-NPR-Z0-9]{10,17})',
+        r'([A-HJ-NPR-Z0-9]{17})',
     ],
     'engine_number': [
         r'(?:Engine|Engine\s*No)[:\s]*([A-HJ-NPR-Z0-9]{6,20})',
     ],
     'owner_name': [
-        r'(?:Owner|Name\s*of\s*Owner)[:\s]*([A-Za-z\s]+)',
+        r'(?:Owner|Name\s*of\s*Owner|Owner\s*Name)[:\s]*([A-Za-z &\.]+)',
     ],
     'make_model': [
-        r'(?:Make|Model|Vehicle\s*Type)[:\s]*([A-Za-z0-9\s]+)',
+        r'(?:Make|Model|Maker|Vehicle\s*Type|Class)[:\s]*([A-Za-z0-9 /]+)',
     ],
     'fuel_type': [
         r'(?:Fuel|Fuel\s*Type)[:\s]*([A-Za-z]+)',
     ],
     'insurance_company': [
-        r'(?:Insurance|Insurance\s*Co)[:\s]*([A-Za-z\s]+)',
+        r'(?:Insurance|Insurance\s*Co|Insurer)[:\s]*([A-Za-z ]+)',
     ],
     'policy_number': [
-        r'(?:Policy|Policy\s*No)[:\s]*([A-Z0-9]+)',
+        r'(?:Policy|Policy\s*No|Certificate\s*No)[:\s]*([A-Z0-9/\-]+)',
+    ],
+    'fitness_expiry': [
+        r'(?:Fitness\s*Valid|Fitness\s*Upto|Valid\s*Upto|Expiry)[:\s]*(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
     ],
 }
 
 # Driver Document Patterns
 DRIVER_PATTERNS = {
     'license_number': [
-        r'(?:Driving\s*License|License|License\s*No)[:\s]*([A-Z]{2}\d{13})',
-        r'([A-Z]{2}\d{13})',
+        r'(?:Driving\s*License|License|License\s*No|DL\s*No)[:\s]*([A-Z]{2}[\d\s]{13,20})',
+        r'([A-Z]{2}[\d\s]{13,20})',
     ],
     'license_expiry': [
-        r'(?:Valid\s*Upto|Expiry|Expires|Valid\s*Till)[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+        r'(?:Valid\s*Upto|Expiry|Expires|Valid\s*Till|Valid\s*Until)[:\s]*(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
     ],
     'driver_name': [
-        r'(?:Name|Name\s*of\s*Driver)[:\s]*([A-Za-z\s]+)',
+        r'(?:Name|Name\s*of\s*Driver|Driver\s*Name)[:\s]*([A-Za-z ]+)',
+    ],
+    'name': [
+        r'(?:Name)[:\s]*([A-Za-z ]+)',
     ],
     'father_name': [
-        r'(?:Father|S/o|D/O)[:\s]*([A-Za-z\s]+)',
+        r'(?:Father|S/o|D/O|W/O|Husband)[:\s]*([A-Za-z ]+)',
+        r'(?:S/O|D/O|W/O)\s+([A-Za-z ]+)',
+    ],
+    'dob': [
+        r'(?:DOB|Date\s*of\s*Birth|Birth\s*Date)[:\s]*(\d{1,2}[-/](?:[A-Za-z]{3}|\d{1,2})[-/]\d{2,4})',
     ],
     'address': [
-        r'(?:Address|Permanent\s*Address)[:\s]*([A-Za-z0-9\s,/-]+)',
+        r'(?:Address|Permanent\s*Address)[:\s]*([A-Za-z0-9 ,/-]{10,100})',
     ],
     'aadhaar_number': [
+        r'(\d{4}\s+\d{4}\s+\d{4})',
         r'(\d{12})',
-        r'(?:Aadhaar|Aadhaar\s*No)[:\s]*(\d{12})',
+        r'(?:Aadhaar|Aadhaar\s*No|Aadhar)[:\s]*(\d{4}\s+\d{4}\s+\d{4})',
     ],
 }
 

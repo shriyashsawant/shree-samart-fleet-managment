@@ -17,6 +17,7 @@ public class VehicleDTO {
     private String model;
     private String manufacturer;
     private LocalDate registrationDate;
+    private Integer manufacturingYear;
     private LocalDate purchaseDate;
     private String chassisNumber;
     private String engineNumber;
@@ -25,8 +26,13 @@ public class VehicleDTO {
     private LocalDate insuranceExpiry;
     private String permitNumber;
     private LocalDate permitExpiry;
+    private LocalDate permitIssueDate;
     private LocalDate fitnessExpiry;
+    private LocalDate pucExpiry;
+    private String emissionLevel;
     private LocalDate taxReceiptDate;
+    private LocalDate taxPeriodFrom;
+    private LocalDate taxPeriodTo;
     private BigDecimal taxAmount;
     private BigDecimal emiAmount;
     private String emiBank;

@@ -36,6 +36,10 @@ public class Vehicle {
     @Column(name = "registration_date")
     private LocalDate registrationDate;
 
+    // --- New OCR Field
+    @Column(name = "manufacturing_year")
+    private Integer manufacturingYear;
+
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;
 
@@ -60,11 +64,29 @@ public class Vehicle {
     @Column(name = "permit_expiry")
     private LocalDate permitExpiry;
 
+    // --- New OCR Field
+    @Column(name = "permit_issue_date")
+    private LocalDate permitIssueDate;
+
     @Column(name = "fitness_expiry")
     private LocalDate fitnessExpiry;
 
+    // --- New OCR Fields
+    @Column(name = "puc_expiry")
+    private LocalDate pucExpiry;
+
+    @Column(name = "emission_level", length = 50)
+    private String emissionLevel;
+
     @Column(name = "tax_receipt_date")
     private LocalDate taxReceiptDate;
+
+    // --- New OCR Fields
+    @Column(name = "tax_period_from")
+    private LocalDate taxPeriodFrom;
+
+    @Column(name = "tax_period_to")
+    private LocalDate taxPeriodTo;
 
     @Column(name = "tax_amount", precision = 10, scale = 2)
     private BigDecimal taxAmount;

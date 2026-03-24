@@ -21,6 +21,9 @@ public class DriverDTO {
     private LocalDate licenseExpiry;
     private LocalDate joiningDate;
     private LocalDate endDate;
+    private LocalDate dateOfBirth;
+    private String state;
+    private String bloodGroup;
     private BigDecimal salary;
     private String status;
     private Long assignedVehicleId;

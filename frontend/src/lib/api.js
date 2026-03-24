@@ -151,6 +151,9 @@ export const billAPI = {
   create: (data) => api.post('/api/bills', data),
   update: (id, data) => api.put(`/api/bills/${id}`, data),
   delete: (id) => api.delete(`/api/bills/${id}`),
+  extractOcr: (formData) => api.post('/api/bills/extract-ocr', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
 }
 
 // Reminder APIs
@@ -247,8 +250,6 @@ export const userAPI = {
   delete: (id) => api.delete(`/api/users/${id}`),
 }
 
-export default api
-
 export const driverDocumentAPI = {
   getByDriver: (id) => api.get(`/api/driver-documents/driver/${id}`),
   upload: (data) => api.post('/api/driver-documents', data, {
@@ -265,3 +266,5 @@ export const tyreLogAPI = {
   create: (data) => api.post('/api/tyre-logs', data),
   delete: (id) => api.delete(`/api/tyre-logs/${id}`)
 }
+
+export default api

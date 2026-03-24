@@ -62,6 +62,41 @@ public class Bill {
     @Column(name = "bill_type", length = 50)
     private String billType;
 
+    // --- New OCR Fields ---
+    @Column(name = "company_name", length = 150)
+    private String companyName;
+
+    @Column(name = "company_gst", length = 20)
+    private String companyGst;
+
+    @Column(name = "company_mobile", length = 20)
+    private String companyMobile;
+
+    @Column(name = "party_name", length = 150)
+    private String partyName;
+
+    @Column(name = "party_gst", length = 20)
+    private String partyGst;
+
+    @Column(name = "party_pan", length = 20)
+    private String partyPan;
+
+    @Column(name = "igst_amount", precision = 12, scale = 2)
+    private BigDecimal igstAmount;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @Column(name = "bank_account_no", length = 50)
+    private String bankAccountNo;
+
+    @Column(name = "bank_ifsc", length = 20)
+    private String bankIfsc;
+
+    @Column(name = "math_valid")
+    private Boolean mathValid;
+    // ----------------------
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 

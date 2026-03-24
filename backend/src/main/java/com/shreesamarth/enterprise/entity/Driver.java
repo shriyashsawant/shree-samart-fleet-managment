@@ -43,6 +43,15 @@ public class Driver {
     @Column(name = "license_expiry")
     private LocalDate licenseExpiry;
 
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(length = 50)
+    private String state;
+
+    @Column(name = "blood_group", length = 10)
+    private String bloodGroup;
+
     @Column(precision = 10, scale = 2)
     private BigDecimal salary;
 

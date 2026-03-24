@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, FileText, Download, Printer, Edit, Trash2, Upload, Camera, Check, AlertCircle, X, Search } from 'lucide-react'
-import { billAPI, clientAPI, vehicleAPI, ocrAPI, tenantAPI } from '../lib/api'
+import { billAPI, clientAPI, vehicleAPI, tenantAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
 
 export default function Billing() {
@@ -39,7 +39,6 @@ export default function Billing() {
     return String(maxBill + 1)
   }
 
-  // Delete bill
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this bill?')) {
       try {
@@ -49,7 +48,6 @@ export default function Billing() {
     }
   }
 
-  // Export to Excel format (matching the Excel sheet)
   const exportToExcel = () => {
     const headers = ['Sr No', 'Date', 'Bill No', 'Party Name', 'Party Gst No', 'HSN Code', 'GST %', 'Basic', 'CGST Amount', 'SGST Amount', 'P/F', 'Total', 'Bill Type']
     const rows = bills.map((bill, index) => [
@@ -68,26 +66,10 @@ export default function Billing() {
       bill.billType || ''
     ])
 
-    // Add subtotal row
-    rows.push([
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      'Sub Total:',
-      totalBasic.toFixed(2),
-      totalCgst.toFixed(2),
-      totalSgst.toFixed(2),
-      '0',
-      totalRevenue.toFixed(2),
-      ''
-    ])
-
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.join(','))
+      ...rows.map(row => row.join(',')),
+      ['', '', '', '', '', '', 'Sub Total:', totalBasic.toFixed(2), totalCgst.toFixed(2), totalSgst.toFixed(2), '0', totalRevenue.toFixed(2), '']
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -97,7 +79,6 @@ export default function Billing() {
     link.click()
   }
 
-  // Handle OCR upload and create bill
   const handleOcrComplete = (data) => {
     setExtractedData(data)
     setShowUploadModal(false)
@@ -305,12 +286,7 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
   const [extracted, setExtracted] = useState(null)
   const [editedData, setEditedData] = useState(null)
   const [error, setError] = useState(null)
-  const [companyGst, setCompanyGst] = useState(null)
   const fileInputRef = useRef(null)
-
-  useEffect(() => {
-    tenantAPI.getMe().then(r => setCompanyGst(r.data?.gstNumber || null)).catch(() => setCompanyGst(null))
-  }, [])
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -324,41 +300,35 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
 
   const handleExtract = async () => {
     if (!file) return
-    
-    setProcessing(true)
-    setError(null)
-    
+    setProcessing(true); setError(null)
     try {
-      const response = await ocrAPI.extractInvoice(file, companyGst)
-      const raw = response.data
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await billAPI.extractOcr(formData)
+      const raw = response.data.ocrData
       
       const normalized = {
         billNo: raw.bill_no || '',
         date: raw.date || '',
         partyName: raw.party_name || '',
         partyGst: raw.party_gst || '',
+        companyName: raw.company_name || '',
         companyGst: raw.company_gst || '',
+        companyMobile: raw.company_mobile || '',
         basicAmount: raw.basic_amount || '',
         totalAmount: raw.total_amount || '',
         hsnCode: raw.hsn_code || '',
+        bankName: raw.bank_name || '',
+        bankAccountNo: raw.bank_account_no || '',
+        bankIfsc: raw.bank_ifsc || '',
+        mathValid: raw.math_valid || false,
         billType: raw.bill_type || '',
         confidence: raw.confidence || 0,
       }
-      
-      setExtracted(normalized)
-      setEditedData(normalized)
+      setExtracted(normalized); setEditedData(normalized)
     } catch (e) {
-      console.error('OCR error:', e)
-      setError('Failed to extract data. Please try again or enter manually.')
-    } finally {
-      setProcessing(false)
-    }
-  }
-
-  const handleConfirm = () => {
-    if (editedData) {
-      onExtract(editedData)
-    }
+      console.error('OCR error:', e); setError('Extraction failed. Try manual entry.')
+    } finally { setProcessing(false) }
   }
 
   const handleEditChange = (field, value) => {
@@ -368,233 +338,94 @@ function InvoiceUploadModal({ clients, onClose, onExtract }) {
   return (
     <div className="fixed inset-0 bg-dark-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col premium-shadow">
-        <div className="p-6 border-b border-dark-100 flex justify-between items-center glass-card">
+        <div className="p-6 border-b border-dark-100 flex justify-between items-center bg-white">
           <div>
             <h2 className="text-2xl font-black text-dark-900 tracking-tight">Lens <span className="text-gradient">Scanner</span></h2>
-            <p className="text-xs text-dark-500 font-bold uppercase tracking-widest mt-0.5">Automated Intelligence</p>
+            <p className="text-[10px] text-dark-400 font-bold uppercase tracking-widest mt-0.5">AI Extraction Protocol</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-dark-100 rounded-xl transition-colors">
             <X className="w-5 h-5 text-dark-400" />
           </button>
         </div>
         
-        <div className="p-6 space-y-4">
-          {/* Upload Area */}
+        <div className="p-8 space-y-6 overflow-y-auto">
           {!preview ? (
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-dark-300 rounded-xl p-12 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors"
-            >
-              <Upload className="w-12 h-12 mx-auto text-dark-400 mb-4" />
-              <p className="text-lg font-medium text-dark-600">Drop invoice here</p>
-              <p className="text-dark-400 text-sm mt-1">or click to browse</p>
-              <p className="text-dark-400 text-xs mt-2">Supports: JPG, PNG, PDF</p>
+            <div onClick={() => fileInputRef.current?.click()} className="border-4 border-dashed border-dark-100 rounded-[2rem] p-16 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all group">
+              <div className="w-20 h-20 bg-dark-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <Upload className="w-10 h-10 text-dark-400" />
+              </div>
+              <p className="text-xl font-black text-dark-900 tracking-tight">Ingest Invoice Data</p>
+              <p className="text-dark-400 text-sm font-medium mt-1">Authorized Formats: PDF, JPG, PNG</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="relative rounded-xl overflow-hidden border">
-                <img src={preview} alt="Invoice preview" className="w-full max-h-64 object-contain bg-dark-100" />
-                <button 
-                  onClick={() => { setFile(null); setPreview(null); setExtracted(null); }}
-                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-lg"
-                >
-                  <X className="w-4 h-4" />
+            <div className="space-y-8">
+              <div className="relative rounded-[2rem] overflow-hidden border border-dark-100 shadow-lg">
+                <img src={preview} alt="Preview" className="w-full max-h-64 object-contain bg-dark-50" />
+                <button onClick={() => { setFile(null); setPreview(null); setExtracted(null); }} className="absolute top-4 right-4 p-2 bg-dark-900/80 text-white rounded-xl backdrop-blur-md">
+                   <X className="w-5 h-5" />
                 </button>
               </div>
               
               {!extracted && !processing && (
-                <button 
-                  onClick={handleExtract}
-                  className="w-full py-3 bg-purple-600 text-white rounded-lg font-medium flex items-center justify-center gap-2"
-                >
-                  <Camera className="w-5 h-5" />
-                  Extract Data
+                <button onClick={handleExtract} className="btn-primary w-full py-5 text-lg">
+                   <Camera className="w-6 h-6" /> Start Neural Scan
                 </button>
               )}
               
               {processing && (
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4" />
-                  <p className="text-dark-600">Processing invoice...</p>
+                <div className="text-center py-10 bg-dark-50 rounded-[2rem] border border-dark-100">
+                  <div className="animate-spin w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-6" />
+                  <p className="text-dark-900 font-black uppercase tracking-widest text-[10px]">Processing Telemetry...</p>
                 </div>
               )}
               
-              {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                  <AlertCircle className="w-5 h-5" />
-                  {error}
-                </div>
-              )}
+              {error && <div className="p-6 bg-rose-50 border border-rose-100 rounded-3xl text-rose-600 font-bold flex items-center gap-3"><AlertCircle /> {error}</div>}
               
               {extracted && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
-                    <Check className="w-5 h-5" />
-                    Data extracted successfully!
-                  </div>
-                  
-                  <div className="bg-dark-50 rounded-xl p-5 space-y-4 border border-dark-100">
-                    <div className="flex justify-between items-center pb-2 border-b border-dark-100">
-                      <h3 className="text-sm font-black text-dark-900 uppercase tracking-widest">Extracted Intelligence</h3>
-                      <span className="text-[10px] font-bold text-dark-400">EDITABLE FIELDS</span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Bill Number</label>
-                        <input 
-                          type="text" 
-                          value={editedData?.billNo || ''} 
-                          onChange={(e) => handleEditChange('billNo', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-primary-600 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Transaction Date</label>
-                        <input 
-                          type="text" 
-                          value={editedData?.date || ''} 
-                          onChange={(e) => handleEditChange('date', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700"
-                        />
-                      </div>
-                      <div className="col-span-2 space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Counterparty Identification</label>
-                        <input 
-                          type="text" 
-                          value={editedData?.partyName || ''} 
-                          onChange={(e) => handleEditChange('partyName', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">GST Validation ID</label>
-                        <input 
-                          type="text" 
-                          value={editedData?.partyGst || ''} 
-                          onChange={(e) => handleEditChange('partyGst', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700 uppercase"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">HSN Code</label>
-                        <input 
-                          type="text" 
-                          value={editedData?.hsnCode || ''} 
-                          onChange={(e) => handleEditChange('hsnCode', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700 uppercase"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Basic Amount (₹)</label>
-                        <input 
-                          type="number" 
-                          value={editedData?.basicAmount || ''} 
-                          onChange={(e) => handleEditChange('basicAmount', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-primary-600"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Total Yield (₹)</label>
-                        <input 
-                          type="number" 
-                          value={editedData?.totalAmount || ''} 
-                          onChange={(e) => handleEditChange('totalAmount', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-emerald-600"
-                        />
-                      </div>
-                      <div className="col-span-2 space-y-1">
-                        <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Company GST</label>
-                        <input 
-                          type="text" 
-                          value={editedData?.companyGst || ''} 
-                          onChange={(e) => handleEditChange('companyGst', e.target.value)}
-                          className="w-full bg-white border border-dark-200 rounded-lg px-3 py-1.5 text-sm font-black text-dark-700 uppercase"
-                        />
-                      </div>
-                    </div>
-
-                    {extracted.confidence !== undefined && (
-                      <div className="pt-3 border-t border-dark-100">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-[9px] font-black text-dark-400 uppercase tracking-widest">Engine Confidence</span>
-                          <div className="flex-1 h-1.5 bg-dark-100 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-primary-500 to-emerald-500" 
-                              style={{ width: `${extracted.confidence}%` }}
-                            />
-                          </div>
-                          <span className="text-[10px] font-black text-dark-900 tracking-tighter">{Math.round(extracted.confidence)}%</span>
+                <div className="space-y-8">
+                  <div className="grid grid-cols-2 gap-6 bg-dark-50/50 p-8 rounded-[2.5rem] border border-dark-100">
+                     <div className="col-span-2 flex justify-between items-center mb-2 border-b border-dark-100 pb-4">
+                        <span className="text-[10px] font-black text-dark-900 uppercase tracking-[0.3em]">Extracted Metadata</span>
+                        <div className="flex items-center gap-2">
+                           <div className="h-1.5 w-24 bg-dark-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500" style={{ width: `${extracted.confidence}%` }} />
+                           </div>
+                           <span className="text-[10px] font-black">{Math.round(extracted.confidence)}%</span>
                         </div>
-                      </div>
-                    )}
+                     </div>
+                     <MiniField label="Bill No" value={editedData.billNo} onChange={v => handleEditChange('billNo', v)} />
+                     <MiniField label="Date" value={editedData.date} onChange={v => handleEditChange('date', v)} />
+                     <MiniField label="Party Name" value={editedData.partyName} onChange={v => handleEditChange('partyName', v)} full />
+                     <MiniField label="Amount" value={editedData.basicAmount} onChange={v => handleEditChange('basicAmount', v)} type="number" />
+                     <MiniField label="Total" value={editedData.totalAmount} onChange={v => handleEditChange('totalAmount', v)} type="number" />
                   </div>
-                  
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => { setFile(null); setPreview(null); setExtracted(null); }}
-                      className="flex-1 py-2 border rounded-lg"
-                    >
-                      Scan Another
-                    </button>
-                    <button 
-                      onClick={handleConfirm}
-                      className="flex-1 py-2 bg-primary-600 text-white rounded-lg font-medium"
-                    >
-                      Use This Data
-                    </button>
+                  <div className="flex gap-4">
+                    <button onClick={() => { setFile(null); setPreview(null); setExtracted(null); }} className="btn-secondary flex-1 py-4">Re-Scan</button>
+                    <button onClick={() => onExtract(editedData)} className="btn-primary flex-1 py-4">Confirm Data</button>
                   </div>
                 </div>
               )}
             </div>
           )}
-          
-          <input 
-            ref={fileInputRef}
-            type="file" 
-            accept="image/*,.pdf"
-            onChange={handleFileChange}
-            className="hidden"
-          />
+          <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileChange} className="hidden" />
         </div>
       </motion.div>
     </div>
   )
 }
 
-function StatMini({ label, value, icon: Icon, color }) {
-  const colors = {
-    blue: "bg-blue-50 text-blue-600 border-blue-100",
-    amber: "bg-amber-50 text-amber-600 border-amber-100",
-    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100"
-  }
+function MiniField({ label, value, onChange, type = "text", full }) {
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 15 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      className="bg-white rounded-2xl p-5 border border-dark-100 shadow-sm group hover:border-primary-200 transition-all"
-    >
-      <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${colors[color] || colors.blue}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div>
-          <p className="text-dark-400 text-[10px] font-bold uppercase tracking-widest">{label}</p>
-          <p className="text-xl font-black text-dark-900 tracking-tight">{value}</p>
-        </div>
-      </div>
-    </motion.div>
+    <div className={cn("space-y-1.5", full && "col-span-2")}>
+       <label className="text-[9px] font-black text-dark-400 uppercase tracking-widest ml-1">{label}</label>
+       <input type={type} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-white border border-dark-100 rounded-xl px-4 py-2.5 text-sm font-black text-dark-900 focus:border-primary-500 transition-all outline-none" />
+    </div>
   )
 }
 
 function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose, onSave }) {
   const [submitting, setSubmitting] = useState(false)
-
-  // Find matching client by GST number
-  const findClientByGst = (gst) => {
-    if (!gst) return ''
-    return clients.find(c => c.gstNumber === gst)?.id || ''
-  }
+  const findClientByGst = (gst) => gst ? clients.find(c => c.gstNumber === gst)?.id || '' : ''
 
   const [f, setF] = useState({
     billNo: bill?.billNo || extractedData?.billNo || nextBillNo,
@@ -605,7 +436,16 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
     basicAmount: bill?.basicAmount || extractedData?.basicAmount || '', 
     gstPercentage: bill?.gstPercentage || '18', 
     pfAmount: bill?.pfAmount || '0', 
-    billType: bill?.billType || extractedData?.billType || 'Diseal' 
+    billType: bill?.billType || extractedData?.billType || 'Diseal',
+    companyName: bill?.companyName || extractedData?.companyName || '',
+    companyGst: bill?.companyGst || extractedData?.companyGst || '',
+    companyMobile: bill?.companyMobile || extractedData?.companyMobile || '',
+    partyName: bill?.partyName || extractedData?.partyName || '',
+    partyGst: bill?.partyGst || extractedData?.partyGst || '',
+    partyPan: bill?.partyPan || extractedData?.partyPan || '',
+    bankName: bill?.bankName || extractedData?.bankName || '',
+    bankAccountNo: bill?.bankAccountNo || extractedData?.bankAccountNo || '',
+    bankIfsc: bill?.bankIfsc || extractedData?.bankIfsc || '',
   })
   
   const basic = parseFloat(f.basicAmount) || 0
@@ -620,138 +460,50 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
     setSubmitting(true)
     try {
       const data = { ...f, cgstAmount: cgst, sgstAmount: sgst, totalAmount: total }
-      if (bill?.id) {
-        await billAPI.update(bill.id, data)
-      } else {
-        await billAPI.create(data)
-      }
+      if (bill?.id) await billAPI.update(bill.id, data)
+      else await billAPI.create(data)
       onSave()
-    } catch (e) { console.error(e) } finally {
-      setSubmitting(false)
-    }
+    } catch (e) { console.error(e) } finally { setSubmitting(false) }
   }
 
   return (
-    <div className="fixed inset-0 bg-dark-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto premium-shadow">
-        <div className="p-6 border-b border-dark-100 glass-card">
+    <div className="fixed inset-0 bg-dark-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto premium-shadow">
+        <div className="p-8 border-b border-dark-100 bg-white sticky top-0 z-10">
           <h2 className="text-2xl font-black text-dark-900 tracking-tight">{bill ? 'Update' : 'Generate'} <span className="text-gradient">Invoice</span></h2>
-          {extractedData && (
-            <div className="flex items-center gap-2 mt-2 py-1 px-3 bg-purple-50 text-purple-600 rounded-lg w-fit">
-              <Camera className="w-4 h-4" /> 
-              <span className="text-[10px] font-bold uppercase tracking-widest">AI Assisted Data</span>
-            </div>
-          )}
+          <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-1">Financial Integrity Protocol</p>
         </div>
-        <form onSubmit={handle} className="p-8 space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Bill No</label>
-              <input 
-                type="text" 
-                value={f.billNo} 
-                onChange={(e) => setF({ ...f, billNo: e.target.value })} 
-                className="w-full p-2 border rounded-lg" 
-                required 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Date</label>
-              <input 
-                type="date" 
-                value={f.billDate} 
-                onChange={(e) => setF({ ...f, billDate: e.target.value })} 
-                className="w-full p-2 border rounded-lg" 
-                required 
-              />
-            </div>
+        <form onSubmit={handle} className="p-10 space-y-8 bg-mesh">
+          <div className="grid grid-cols-2 gap-8">
+            <FormGroup label="Bill No" value={f.billNo} onChange={v => setF({...f, billNo:v})} required />
+            <FormGroup label="Date" value={f.billDate} onChange={v => setF({...f, billDate:v})} type="date" required />
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Party Name</label>
-              <select 
-                value={f.client.id} 
-                onChange={(e) => setF({ ...f, client: { id: e.target.value } })} 
-                className="w-full p-2 border rounded-lg" 
-                required
-              >
-                <option value="">Select Party</option>
+              <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1">Counterparty Selection</label>
+              <select value={f.client.id} onChange={e => setF({...f, client:{id:e.target.value}})} className="interactive-field" required>
+                <option value="">Select Protocol Party</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.partyName} ({c.gstNumber})</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Vehicle (Optional)</label>
-              <select 
-                value={f.vehicle.id} 
-                onChange={(e) => setF({ ...f, vehicle: { id: e.target.value } })} 
-                className="w-full p-2 border rounded-lg"
-              >
-                <option value="">Select Vehicle</option>
-                {vehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Bill Type</label>
-              <select 
-                value={f.billType} 
-                onChange={(e) => setF({ ...f, billType: e.target.value })} 
-                className="w-full p-2 border rounded-lg"
-              >
-                <option value="Diseal">Diseal (Diesel)</option>
-                <option value="Main">Main</option>
-                <option value="Rent">Rent</option>
-                <option value="Service">Service</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">HSN Code</label>
-              <input 
-                value={f.hsnCode} 
-                onChange={(e) => setF({ ...f, hsnCode: e.target.value })} 
-                className="w-full p-2 border rounded-lg" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">GST %</label>
-              <input 
-                type="number" 
-                value={f.gstPercentage} 
-                onChange={(e) => setF({ ...f, gstPercentage: e.target.value })} 
-                className="w-full p-2 border rounded-lg" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Basic Amount (₹)</label>
-              <input 
-                type="number" 
-                value={f.basicAmount} 
-                onChange={(e) => setF({ ...f, basicAmount: e.target.value })} 
-                className="w-full p-2 border rounded-lg" 
-                required 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">P/F Charges (₹)</label>
-              <input 
-                type="number" 
-                value={f.pfAmount} 
-                onChange={(e) => setF({ ...f, pfAmount: e.target.value })} 
-                className="w-full p-2 border rounded-lg" 
-              />
-            </div>
+            <FormGroup label="Basic Amount (₹)" value={f.basicAmount} onChange={v => setF({...f, basicAmount:v})} type="number" required />
+            <FormGroup label="GST % Slab" value={f.gstPercentage} onChange={v => setF({...f, gstPercentage:v})} type="number" />
+            <FormGroup label="HSN Code" value={f.hsnCode} onChange={v => setF({...f, hsnCode:v})} />
+            <FormGroup label="P/F Charges" value={f.pfAmount} onChange={v => setF({...f, pfAmount:v})} type="number" />
+          </div>
+
+          <div className="p-8 bg-dark-900 text-white rounded-[2rem] space-y-4 shadow-xl">
+             <div className="flex justify-between items-center opacity-60"><span className="text-[10px] font-black uppercase">Tax Breakdown</span> <span className="text-[10px] font-black font-mono tracking-widest">v1.2</span></div>
+             <div className="flex justify-between text-sm font-bold"><span>Taxable Value</span><span>{formatCurrency(basic)}</span></div>
+             <div className="flex justify-between text-sm opacity-80 font-medium"><span>Central Tax ({gst/2}%)</span><span>{formatCurrency(cgst)}</span></div>
+             <div className="flex justify-between text-sm opacity-80 font-medium"><span>State Tax ({gst/2}%)</span><span>{formatCurrency(sgst)}</span></div>
+             <div className="pt-4 border-t border-white/10 flex justify-between items-end">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400">Consolidated Yield</span>
+                <span className="text-3xl font-black tracking-tighter">{formatCurrency(total)}</span>
+             </div>
           </div>
           
-          {/* GST Calculation Preview */}
-          <div className="p-4 bg-dark-50 rounded-lg space-y-2">
-            <div className="flex justify-between"><span className="text-dark-600">Basic Amount</span><span className="font-medium">₹{basic.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span className="text-dark-600">CGST ({f.gstPercentage/2}%)</span><span className="font-medium">₹{cgst.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span className="text-dark-600">SGST ({f.gstPercentage/2}%)</span><span className="font-medium">₹{sgst.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span className="text-dark-600">P/F</span><span className="font-medium">₹{pf.toFixed(2)}</span></div>
-            <div className="flex justify-between pt-2 border-t font-bold text-lg"><span>Total</span><span className="text-primary-600">₹{total.toFixed(2)}</span></div>
-          </div>
-          
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 p-2 border rounded-lg">Cancel</button>
-            <button type="submit" disabled={submitting} className="flex-1 p-2 bg-primary-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">{submitting ? 'Saving...' : bill ? 'Update Bill' : 'Generate Bill'}</button>
+          <div className="flex gap-4">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 py-4">Discard</button>
+            <button type="submit" disabled={submitting} className="btn-primary flex-1 py-4">{submitting ? 'Processing...' : (bill ? 'Commit Changes' : 'Generate Record')}</button>
           </div>
         </form>
       </motion.div>
@@ -759,88 +511,123 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
   )
 }
 
+function StatMini({ label, value, icon: Icon, color }) {
+  const colors = {
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100"
+  }
+  return (
+    <div className="bg-white rounded-3xl p-6 border border-dark-100 premium-shadow group hover:border-primary-500 transition-all">
+      <div className="flex items-center gap-5">
+        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center border", colors[color])}>
+          <Icon className="w-6 h-6" />
+        </div>
+        <div>
+          <p className="text-dark-400 text-[10px] font-black uppercase tracking-widest">{label}</p>
+          <p className="text-xl font-black text-dark-900 tracking-tight">{value}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FormGroup({ label, value, onChange, type = "text", required }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">{label}</label>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} className="interactive-field" required={required} />
+    </div>
+  )
+}
+
 function BillPrintModal({ bill, onClose }) {
   const [companyGst, setCompanyGst] = useState(null)
-  const basic = parseFloat(bill.basicAmount) || 0
-  const cgst = parseFloat(bill.cgstAmount) || 0
-  const sgst = parseFloat(bill.sgstAmount) || 0
-  const pf = parseFloat(bill.pfAmount) || 0
-  const total = parseFloat(bill.totalAmount) || 0
-
   useEffect(() => {
     tenantAPI.getMe().then(r => setCompanyGst(r.data?.gstNumber || 'N/A')).catch(() => setCompanyGst('N/A'))
   }, [])
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Bill Print View */}
-        <div className="p-8" id="bill-print">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-dark-900">SHREE SAMARTH ENTERPRISES</h1>
-            <p className="text-dark-500">Cement Mixer Services</p>
-          </div>
-          
-          <div className="border-b-2 border-dark-800 mb-4 pb-2">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-bold">Bill No: {bill.billNo}</p>
-                <p>Date: {formatDate(bill.billDate)}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold">GSTIN: {companyGst || '...'}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mb-4">
-            <p><span className="font-medium">Party Name:</span> {bill.clientName || '-'}</p>
-            <p><span className="font-medium">Party GST No:</span> {bill.clientGstNumber || '-'}</p>
-            {bill.vehicleNumber && <p><span className="font-medium">Vehicle:</span> {bill.vehicleNumber}</p>}
-          </div>
-          
-          <table className="w-full border mb-4">
-            <thead className="bg-dark-100">
-              <tr>
-                <th className="border p-2 text-left">HSN Code</th>
-                <th className="border p-2 text-right">Basic Amount</th>
-                <th className="border p-2 text-right">GST %</th>
-                <th className="border p-2 text-right">CGST</th>
-                <th className="border p-2 text-right">SGST</th>
-                <th className="border p-2 text-right">P/F</th>
-                <th className="border p-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border p-2">{bill.hsnCode}</td>
-                <td className="border p-2 text-right">₹{basic.toFixed(2)}</td>
-                <td className="border p-2 text-right">{bill.gstPercentage}%</td>
-                <td className="border p-2 text-right">₹{cgst.toFixed(2)}</td>
-                <td className="border p-2 text-right">₹{sgst.toFixed(2)}</td>
-                <td className="border p-2 text-right">₹{pf.toFixed(2)}</td>
-                <td className="border p-2 text-right font-bold">₹{total.toFixed(2)}</td>
-              </tr>
-            </tbody>
-            <tfoot className="bg-dark-50 font-bold">
-              <tr>
-                <td colSpan={5} className="border p-2 text-right">Total:</td>
-                <td className="border p-2 text-right">₹{pf.toFixed(2)}</td>
-                <td className="border p-2 text-right">₹{total.toFixed(2)}</td>
-              </tr>
-            </tfoot>
-          </table>
-          
-          <div className="text-center text-sm text-dark-500 mt-8">
-            <p>Thank you for your business!</p>
-          </div>
+    <div className="fixed inset-0 bg-dark-900/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto premium-shadow flex flex-col">
+        <div className="p-8 border-b border-dark-100 flex justify-between items-center glass-card sticky top-0 z-10 bg-white/80">
+           <h3 className="text-xl font-black text-dark-900 tracking-tight">Print Preview</h3>
+           <div className="flex gap-3">
+              <button onClick={() => window.print()} className="btn-primary py-2 px-6"><Printer className="w-4 h-4" /> Hard Copy</button>
+              <button onClick={onClose} className="btn-secondary py-2">Close</button>
+           </div>
         </div>
-        
-        <div className="p-8 border-t border-dark-100 glass-card flex gap-3 justify-end sticky bottom-0">
-          <button onClick={() => window.print()} className="btn-primary">
-            <Printer className="w-4 h-4" /> Print Document
-          </button>
-          <button onClick={onClose} className="btn-secondary">Close</button>
+        <div className="p-12 font-inter" id="bill-print">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-black tracking-tight text-dark-900">SHREE SAMARTH ENTERPRISES</h1>
+            <p className="text-xs font-black uppercase tracking-[0.4em] text-dark-400 mt-2">Cement mixer Logistics & Infrastructure</p>
+          </div>
+          <div className="grid grid-cols-2 gap-12 mb-12 pb-12 border-b-2 border-dark-900">
+             <div className="space-y-4">
+                <p className="text-sm font-black uppercase tracking-widest text-dark-400">Transaction ID</p>
+                <p className="text-2xl font-black text-dark-900">INV-{bill.billNo}</p>
+                <p className="text-sm font-bold">{formatDate(bill.billDate)}</p>
+             </div>
+             <div className="text-right space-y-4">
+                <p className="text-sm font-black uppercase tracking-widest text-dark-400">Company GSTIN</p>
+                <p className="text-xl font-black text-dark-900">{companyGst}</p>
+             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-12 mb-12">
+             <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-dark-400">Billed To</p>
+                <p className="font-black text-lg text-dark-900">{bill.clientName}</p>
+                <p className="text-sm font-bold text-dark-600">GST: {bill.clientGstNumber || 'NOT-SPECIFIED'}</p>
+             </div>
+             {bill.vehicleNumber && (
+                <div className="text-right space-y-2">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-dark-400">Unit Reference</p>
+                   <p className="font-black text-lg text-dark-900">{bill.vehicleNumber}</p>
+                </div>
+             )}
+          </div>
+          <table className="w-full mb-12">
+             <thead>
+                <tr className="border-y-2 border-dark-900">
+                   <th className="py-4 text-left text-[10px] font-black uppercase tracking-widest">Operational Detail</th>
+                   <th className="py-4 text-center text-[10px] font-black uppercase tracking-widest">HSN</th>
+                   <th className="py-4 text-right text-[10px] font-black uppercase tracking-widest">Amount (INR)</th>
+                </tr>
+             </thead>
+             <tbody className="divide-y divide-dark-100">
+                <tr className="[&>td]:py-6">
+                   <td className="font-bold text-sm">Services provided via {bill.billType || 'Standard'} Protocol</td>
+                   <td className="text-center font-mono text-xs">{bill.hsnCode}</td>
+                   <td className="text-right font-black">{formatCurrency(bill.basicAmount)}</td>
+                </tr>
+                {bill.pfAmount > 0 && (
+                   <tr className="[&>td]:py-4">
+                      <td className="text-sm">Packing & Forwarding</td>
+                      <td className="text-center">-</td>
+                      <td className="text-right">{formatCurrency(bill.pfAmount)}</td>
+                   </tr>
+                )}
+             </tbody>
+          </table>
+          <div className="ml-auto w-1/2 space-y-3 font-outfit">
+             <div className="flex justify-between text-sm"><span>Subtotal Value</span><span>{formatCurrency(bill.basicAmount)}</span></div>
+             <div className="flex justify-between text-sm"><span>CGST ({bill.gstPercentage || 18 / 2}%)</span><span>{formatCurrency(bill.cgstAmount)}</span></div>
+             <div className="flex justify-between text-sm"><span>SGST ({bill.gstPercentage || 18 / 2}%)</span><span>{formatCurrency(bill.sgstAmount)}</span></div>
+             <div className="flex justify-between text-xl font-black pt-4 border-t-2 border-dark-900">
+                <span className="uppercase tracking-widest text-xs mt-2">Aggregate Total</span>
+                <span>{formatCurrency(bill.totalAmount)}</span>
+             </div>
+          </div>
+          <div className="mt-20 pt-12 border-t border-dark-100 flex justify-between">
+             <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-dark-400">Declaration</p>
+                <p className="text-[9px] text-dark-500 max-w-xs leading-relaxed italic">This is an electronically generated record and does not require a physical holographic signature for official validation under the GST network protocols.</p>
+             </div>
+             <div className="text-right">
+                <div className="w-48 h-px bg-dark-900 ml-auto mb-2" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Authorized Signatory</p>
+             </div>
+          </div>
         </div>
       </motion.div>
     </div>

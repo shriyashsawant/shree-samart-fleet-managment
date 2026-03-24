@@ -44,40 +44,7 @@ def home():
     })
 
 
-def detect_document_type(text):
-    """Detect document type from OCR text"""
-    text_upper = text.upper()
-    
-    # Priority 1: Invoice / Sales Bill / Tax Invoice
-    if any(k in text_upper for k in ['TAX INVOICE', 'SALES INVOICE', 'CASH MEMO', 'BILL NO', 'GSTIN']):
-        return 'invoice'
-    
-    # Priority 2: Fitness Certificate (check BEFORE RC since fitness docs also have chassis)
-    if any(k in text_upper for k in ['FITNESS CERTIFICATE', 'FORM 38', 'FORM.38', 'CERTIFICATE OF FITNESS', 'CERTIFICATEOFFITNESS']):
-        return 'fitness'
-    if any(k in text_upper for k in ['REGISTRATION CERTIFICATE', 'FORM 23', 'RC BOOK']):
-        return 'vehicle_rc'
-    if any(k in text_upper for k in ['DRIVING LICENCE', 'DRIVING LICENSE', 'DL NO']):
-        return 'driving_license'
-    if any(k in text_upper for k in ['AADHAAR', 'UIDAI', 'GOVERNMENT OF INDIA']):
-        return 'aadhaar'
-    
-    # Priority 3: Commercial Documents
-    if any(k in text_upper for k in ['PUC', 'POLLUTION', 'EMISSION']):
-        return 'puc'
-    if any(k in text_upper for k in ['INSURANCE', 'POLICY', 'PREMIUM', 'LIABILITY']):
-        return 'insurance'
-    if any(k in text_upper for k in ['TAX RECEIPT', 'ROAD TAX', 'VIVA']):
-        return 'tax_receipt'
-    # Permit detection
-    if any(k in text_upper for k in ['PERMIT', 'GOODS PERMIT', 'TRANSPORT PERMIT', 'PERMIT NO', 'VALIDITY OF PERMIT', 'PERMIT IN RESPECT']):
-        return 'permit'
-    
-    # FALLBACK: Keyword density search for invoice
-    if len(re.findall(r'GST|CGST|SGST|IGST|AMOUNT|TOTAL', text_upper)) >= 2:
-        return 'invoice'
-    
-    return 'unknown'
+from utils.ocr_utils import clean_ocr_text, detect_document_type
 
 
 def validate_fields(result, doc_type):
@@ -170,21 +137,12 @@ def extract_document():
     
     try:
         processed_path = preprocess_image(temp_path)
-        from ocr_engine import extract_with_ocr_space, extract_with_local
+        from ocr_engine import extract_text
         
-        text = extract_with_ocr_space(processed_path)
-        
-        if not text:
-            on_render = os.environ.get('RENDER') == 'true'
-            if on_render:
-                print("OCR.space failed. Skipping local Paddle fallback on Render to avoid OOM crash.")
-                return jsonify({'error': 'OCR.space API limit reached or failed. Try again later.'}), 429
-            else:
-                print("OCR.space failed, trying local Tesseract...")
-                text = extract_with_local(processed_path)
+        text = extract_text(processed_path)
         
         if not text:
-            return jsonify({'error': 'Failed to extract text after multiple attempts'}), 400
+            return jsonify({'error': 'Failed to extract text using Tesseract or OCR.space. Please ensure the image is clear.'}), 400
         
         # Apply learned corrections from memory
         memory = load_memory()

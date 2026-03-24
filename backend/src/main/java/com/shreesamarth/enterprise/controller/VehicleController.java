@@ -60,6 +60,7 @@ public class VehicleController {
                 v.getModel(),
                 v.getManufacturer(),
                 v.getRegistrationDate(),
+                v.getManufacturingYear(),
                 v.getPurchaseDate(),
                 v.getChassisNumber(),
                 v.getEngineNumber(),
@@ -68,8 +69,13 @@ public class VehicleController {
                 v.getInsuranceExpiry(),
                 v.getPermitNumber(),
                 v.getPermitExpiry(),
+                v.getPermitIssueDate(),
                 v.getFitnessExpiry(),
+                v.getPucExpiry(),
+                v.getEmissionLevel(),
                 v.getTaxReceiptDate(),
+                v.getTaxPeriodFrom(),
+                v.getTaxPeriodTo(),
                 v.getTaxAmount(),
                 v.getEmiAmount(),
                 v.getEmiBank(),
@@ -197,6 +203,9 @@ public class VehicleController {
             if (extractedExpiry == null) {
                 extractedExpiry = parseOcrDate(ocrData.get("certificate_expires"));
             }
+            if (extractedExpiry == null) {
+                extractedExpiry = parseOcrDate(ocrData.get("puc_validity"));
+            }
             if (extractedExpiry != null) {
                 document.setExpiryDate(extractedExpiry);
             }
@@ -216,83 +225,51 @@ public class VehicleController {
         String docType = documentType.toUpperCase();
         
         if (docType.contains("RC") || docType.contains("REGISTRATION")) {
-            if (fields.get("chassis_number") != null) {
-                vehicle.setChassisNumber(fields.get("chassis_number").toString());
+            if (fields.get("chassis_number") != null) vehicle.setChassisNumber(fields.get("chassis_number").toString());
+            if (fields.get("engine_number") != null) vehicle.setEngineNumber(fields.get("engine_number").toString());
+            if (fields.get("registration_date") != null) vehicle.setRegistrationDate(parseOcrDate(fields.get("registration_date")));
+            if (fields.get("owner_name") != null) vehicle.setOwnerName(fields.get("owner_name").toString());
+            if (fields.get("vehicle_number") != null && vehicle.getVehicleNumber() == null) vehicle.setVehicleNumber(fields.get("vehicle_number").toString());
+            if (fields.get("manufacturing_year") != null) {
+                try {
+                    vehicle.setManufacturingYear(Integer.parseInt(fields.get("manufacturing_year").toString()));
+                } catch(Exception e){}
             }
-            if (fields.get("engine_number") != null) {
-                vehicle.setEngineNumber(fields.get("engine_number").toString());
-            }
-            if (fields.get("registration_date") != null) {
-                vehicle.setRegistrationDate(parseOcrDate(fields.get("registration_date")));
-            }
-            if (fields.get("owner_name") != null) {
-                vehicle.setOwnerName(fields.get("owner_name").toString());
-            }
-            if (fields.get("vehicle_number") != null && vehicle.getVehicleNumber() == null) {
-                vehicle.setVehicleNumber(fields.get("vehicle_number").toString());
-            }
+            
         } else if (docType.contains("INSURANCE")) {
-            if (fields.get("insurance_company") != null) {
-                vehicle.setInsuranceCompany(fields.get("insurance_company").toString());
-            }
-            if (fields.get("expiry_date") != null) {
-                vehicle.setInsuranceExpiry(parseOcrDate(fields.get("expiry_date")));
-            }
-            if (fields.get("policy_number") != null) {
-                // Could store in a field or just ignore for now
-            }
+            if (fields.get("insurance_company") != null) vehicle.setInsuranceCompany(fields.get("insurance_company").toString());
+            if (fields.get("expiry_date") != null) vehicle.setInsuranceExpiry(parseOcrDate(fields.get("expiry_date")));
+            
         } else if (docType.contains("FITNESS")) {
-            if (fields.get("chassis_number") != null && (vehicle.getChassisNumber() == null || vehicle.getChassisNumber().isEmpty())) {
-                vehicle.setChassisNumber(fields.get("chassis_number").toString());
-            }
-            if (fields.get("engine_number") != null && (vehicle.getEngineNumber() == null || vehicle.getEngineNumber().isEmpty())) {
-                vehicle.setEngineNumber(fields.get("engine_number").toString());
-            }
-            if (fields.get("expiry_date") != null) {
-                vehicle.setFitnessExpiry(parseOcrDate(fields.get("expiry_date")));
-            }
-            if (fields.get("certificate_expires") != null) {
-                vehicle.setFitnessExpiry(parseOcrDate(fields.get("certificate_expires")));
-            }
+            if (fields.get("chassis_number") != null && (vehicle.getChassisNumber() == null || vehicle.getChassisNumber().isEmpty())) vehicle.setChassisNumber(fields.get("chassis_number").toString());
+            if (fields.get("engine_number") != null && (vehicle.getEngineNumber() == null || vehicle.getEngineNumber().isEmpty())) vehicle.setEngineNumber(fields.get("engine_number").toString());
+            if (fields.get("expiry_date") != null) vehicle.setFitnessExpiry(parseOcrDate(fields.get("expiry_date")));
+            if (fields.get("certificate_expires") != null) vehicle.setFitnessExpiry(parseOcrDate(fields.get("certificate_expires")));
+            
         } else if (docType.contains("PERMIT")) {
-            if (fields.get("permit_number") != null) {
-                vehicle.setPermitNumber(fields.get("permit_number").toString());
-            }
-            if (fields.get("permit_no") != null) {
-                vehicle.setPermitNumber(fields.get("permit_no").toString());
-            }
-            if (fields.get("expiry_date") != null) {
-                vehicle.setPermitExpiry(parseOcrDate(fields.get("expiry_date")));
-            }
-            if (fields.get("valid_to") != null) {
-                vehicle.setPermitExpiry(parseOcrDate(fields.get("valid_to")));
-            }
-            if (fields.get("owner_name") != null && (vehicle.getOwnerName() == null || vehicle.getOwnerName().isEmpty())) {
-                vehicle.setOwnerName(fields.get("owner_name").toString());
-            }
+            if (fields.get("permit_number") != null) vehicle.setPermitNumber(fields.get("permit_number").toString());
+            if (fields.get("permit_no") != null) vehicle.setPermitNumber(fields.get("permit_no").toString());
+            if (fields.get("expiry_date") != null) vehicle.setPermitExpiry(parseOcrDate(fields.get("expiry_date")));
+            if (fields.get("valid_to") != null) vehicle.setPermitExpiry(parseOcrDate(fields.get("valid_to")));
+            if (fields.get("valid_from") != null) vehicle.setPermitIssueDate(parseOcrDate(fields.get("valid_from")));
+            if (fields.get("owner_name") != null && (vehicle.getOwnerName() == null || vehicle.getOwnerName().isEmpty())) vehicle.setOwnerName(fields.get("owner_name").toString());
+
         } else if (docType.contains("TAX")) {
-            if (fields.get("tax_amount") != null) {
+            if (fields.get("tax_amount") != null || fields.get("amount") != null) {
                 try {
-                    String amountStr = fields.get("tax_amount").toString().replace(",", "").replace("₹", "").trim();
+                    String amountStr = (fields.get("tax_amount") != null ? fields.get("tax_amount").toString() : fields.get("amount").toString()).replace(",", "").replace("₹", "").trim();
                     vehicle.setTaxAmount(new java.math.BigDecimal(amountStr));
-                } catch (NumberFormatException e) {
-                    // Ignore if parsing fails
-                }
+                } catch (Exception e) {}
             }
-            if (fields.get("amount") != null) {
-                try {
-                    String amountStr = fields.get("amount").toString().replace(",", "").replace("₹", "").trim();
-                    vehicle.setTaxAmount(new java.math.BigDecimal(amountStr));
-                } catch (NumberFormatException e) {
-                    // Ignore if parsing fails
-                }
-            }
-            if (fields.get("tax_date") != null) {
-                vehicle.setTaxReceiptDate(parseOcrDate(fields.get("tax_date")));
-            }
-            if (fields.get("payment_date") != null) {
-                vehicle.setTaxReceiptDate(parseOcrDate(fields.get("payment_date")));
-            }
+            if (fields.get("tax_date") != null) vehicle.setTaxReceiptDate(parseOcrDate(fields.get("tax_date")));
+            if (fields.get("payment_date") != null) vehicle.setTaxReceiptDate(parseOcrDate(fields.get("payment_date")));
+            if (fields.get("period_from") != null) vehicle.setTaxPeriodFrom(parseOcrDate(fields.get("period_from")));
+            if (fields.get("period_to") != null) vehicle.setTaxPeriodTo(parseOcrDate(fields.get("period_to")));
+
+        } else if (docType.contains("PUC")) {
+            if (fields.get("emission_level") != null) vehicle.setEmissionLevel(fields.get("emission_level").toString());
+            if (fields.get("puc_validity") != null) vehicle.setPucExpiry(parseOcrDate(fields.get("puc_validity")));
+            if (fields.get("expiry_date") != null) vehicle.setPucExpiry(parseOcrDate(fields.get("expiry_date")));
         }
     }
 

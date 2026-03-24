@@ -168,9 +168,24 @@ public class DriverDocumentController {
             if (ocrData.get("name") != null && (driver.getName() == null || driver.getName().isEmpty())) {
                 driver.setName(ocrData.get("name").toString());
             }
+            if (ocrData.get("dob") != null) {
+                driver.setDateOfBirth(parseOcrDate(ocrData.get("dob")));
+            }
+            if (ocrData.get("blood_group") != null) {
+                driver.setBloodGroup(ocrData.get("blood_group").toString());
+            }
+            if (ocrData.get("state") != null) {
+                driver.setState(ocrData.get("state").toString());
+            }
         } else if (docType.contains("AADHAAR") || docType.contains("AADHAR")) {
             if (ocrData.get("aadhaar_number") != null && (driver.getAadhaarNumber() == null || driver.getAadhaarNumber().isEmpty())) {
                 driver.setAadhaarNumber(ocrData.get("aadhaar_number").toString());
+            }
+            if (ocrData.get("dob") != null) {
+                driver.setDateOfBirth(parseOcrDate(ocrData.get("dob")));
+            }
+            if (ocrData.get("name") != null && (driver.getName() == null || driver.getName().isEmpty())) {
+                driver.setName(ocrData.get("name").toString());
             }
         }
     }

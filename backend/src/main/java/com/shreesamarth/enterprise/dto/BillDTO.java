@@ -28,5 +28,16 @@ public class BillDTO {
     private BigDecimal totalAmount;
     private String billType;
     private String status;
+    private String companyName;
+    private String companyGst;
+    private String companyMobile;
+    private String partyName;
+    private String partyGst;
+    private String partyPan;
+    private BigDecimal igstAmount;
+    private String bankName;
+    private String bankAccountNo;
+    private String bankIfsc;
+    private Boolean mathValid;
     private LocalDateTime createdAt;
 }

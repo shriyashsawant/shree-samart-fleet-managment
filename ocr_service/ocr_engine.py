@@ -1,32 +1,18 @@
 """
-OCR Engine - Supports both PaddleOCR (local) and OCR.space (cloud)
-Use PaddleOCR for unlimited calls, OCR.space as fallback
+OCR Engine - Primary: Tesseract (Local), Fallback: OCR.space (Cloud)
+Optimized for production reliability on Render.
 """
 
 import requests
 import os
+import pytesseract
+from PIL import Image
 
-# Set Paddle flags for memory efficiency on restricted cloud environments (Render)
-"""
-OCR Engine - Supports both Tesseract (local) and OCR.space (cloud)
-Use Tesseract for unlimited calls, OCR.space as fallback
-"""
-
-import requests
-import os
-
-# Set Paddle flags for memory efficiency on restricted cloud environments (Render)
-os.environ['FLAGS_cpu_num_threads'] = '1'
-os.environ['FLAGS_eager_delete_tensor_gb'] = '0.0'
-os.environ['FLAGS_fraction_of_gpu_memory_to_use'] = '0.0'
-os.environ['PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK'] = 'True'
-
-try:
-    import pytesseract
-    from PIL import Image
-    TESSERACT_AVAILABLE = True
-except ImportError:
-    TESSERACT_AVAILABLE = False
+# Tesseract Configuration - handle windows path if testing locally
+if os.name == 'nt':
+    TESSERACT_CMD = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    if os.path.exists(TESSERACT_CMD):
+        pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
 # OCR.space configuration
 OCR_SPACE_API_KEY = os.environ.get('OCR_SPACE_API_KEY', 'helloworld')
@@ -35,11 +21,9 @@ OCR_SPACE_URL = 'https://api.ocr.space/parse/image'
 
 def extract_with_local(image_path):
     """Extract text from image using local Tesseract OCR"""
-    if not TESSERACT_AVAILABLE:
-        print("Tesseract is not available.")
-        return None
-        
     try:
+        # Check if tesseract is actually installed/callable
+        # On Render/Linux, 'tesseract' should be in the PATH
         img = Image.open(image_path)
         text = pytesseract.image_to_string(img)
         if text and text.strip():
@@ -63,7 +47,7 @@ def extract_with_ocr_space(image_path):
                     'isOverlayRequired': False,
                     'detectOrientation': True,
                     'scale': True,
-                    'OCREngine': 2,
+                    'OCREngine': 2, # Engine 2 is usually better for invoices/tabular data
                 },
                 timeout=30
             )
@@ -71,6 +55,7 @@ def extract_with_ocr_space(image_path):
         result = response.json()
         
         if result.get('IsErroredOnProcessing'):
+            print(f"OCR.space processing error: {result.get('ErrorMessage')}")
             return None
         
         if result.get('ParsedResults'):
@@ -84,24 +69,24 @@ def extract_with_ocr_space(image_path):
 
 def extract_text(image_path):
     """
-    Extract text from image using available OCR engine
-    Priority on Cloud: OCR.space (to save RAM) -> Tesseract
-    Priority Local: Tesseract (unlimited) -> OCR.space
+    Main extraction flow.
+    Priority: Tesseract (Cheap/Unlimited) -> OCR.space (Reliable/Fallback)
     """
-    # Detect if we are on Render (Cloud)
-    on_render = os.environ.get('RENDER') == 'true'
+    # 1. Try Tesseract first (assuming it's installed in production as per user)
+    print("Attempting local Tesseract extraction...")
+    text = extract_with_local(image_path)
+    if text and len(text.strip()) > 50: # Ensure we got more than just junk
+        return text.strip()
     
-    if on_render:
-        print("Running on Render: Prioritizing Cloud OCR...")
-        text = extract_with_ocr_space(image_path)
-        if text: return text
-        return extract_with_local(image_path)
-    else:
-        # Running locally: Use Tesseract (much faster/unlimited)
-        text = extract_with_local(image_path)
-        if text: return text
-        return extract_with_ocr_space(image_path)
+    # 2. Try OCR.space if Tesseract failed or returned insufficient text
+    print("Tesseract yielded insufficient results. Falling back to OCR.space...")
+    text = extract_with_ocr_space(image_path)
+    if text:
+        return text.strip()
+    
+    return None
 
 # Test function
 if __name__ == '__main__':
-    print(f"Tesseract available: {TESSERACT_AVAILABLE}")
+    # Add testing logic here if needed
+    pass
