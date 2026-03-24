@@ -30,14 +30,17 @@ public class Trip {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Vehicle vehicle;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Driver driver;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Client client;
 
     @Column(name = "site_location", length = 200)
