@@ -7,74 +7,46 @@ import requests
 import os
 
 # Set Paddle flags for memory efficiency on restricted cloud environments (Render)
-os.environ['FLAGS_use_mkldnn'] = '0'
+"""
+OCR Engine - Supports both Tesseract (local) and OCR.space (cloud)
+Use Tesseract for unlimited calls, OCR.space as fallback
+"""
+
+import requests
+import os
+
+# Set Paddle flags for memory efficiency on restricted cloud environments (Render)
 os.environ['FLAGS_cpu_num_threads'] = '1'
 os.environ['FLAGS_eager_delete_tensor_gb'] = '0.0'
 os.environ['FLAGS_fraction_of_gpu_memory_to_use'] = '0.0'
 os.environ['PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK'] = 'True'
 
-# Try to import PaddleOCR (for production)
 try:
-    from paddleocr import PaddleOCR
-    PADDLE_AVAILABLE = True
+    import pytesseract
+    from PIL import Image
+    TESSERACT_AVAILABLE = True
 except ImportError:
-    PADDLE_AVAILABLE = False
+    TESSERACT_AVAILABLE = False
 
 # OCR.space configuration
 OCR_SPACE_API_KEY = os.environ.get('OCR_SPACE_API_KEY', 'helloworld')
 OCR_SPACE_URL = 'https://api.ocr.space/parse/image'
 
 
-# Initialize OCR models GLOBALLY at startup to avoid downloads during requests
-_ocr_instance = None
-
-def get_ocr_instance():
-    global _ocr_instance
-    if _ocr_instance is None:
-        try:
-            print("Initializing PaddleOCR models...")
-            # Use stable settings for cloud environment
-            _ocr_instance = PaddleOCR(use_angle_cls=True, lang='en')
-            print("PaddleOCR models loaded successfully.")
-        except Exception as e:
-            print(f"CRITICAL: Failed to load PaddleOCR models: {e}")
-            return None
-    return _ocr_instance
-
-def extract_with_paddle(image_path):
-    """Extract text from image using local PaddleOCR"""
-    if not PADDLE_AVAILABLE:
-        print("PaddleOCR is not available.")
+def extract_with_local(image_path):
+    """Extract text from image using local Tesseract OCR"""
+    if not TESSERACT_AVAILABLE:
+        print("Tesseract is not available.")
         return None
         
     try:
-        ocr = get_ocr_instance()
-        if not ocr:
-            return None
-            
-        # Run OCR - try v2 syntax first, then v3
-        try:
-            result = ocr.ocr(image_path, cls=True)
-        except AttributeError:
-            try:
-                result = ocr.predict(image_path)
-            except Exception:
-                result = None
-        
-        if result and result[0]:
-            text_lines = []
-            for line in result[0]:
-                if isinstance(line, list) and len(line) > 1:
-                    if isinstance(line[1], (list, tuple)):
-                        text_lines.append(line[1][0])
-                    elif isinstance(line[1], str):
-                        text_lines.append(line[1])
-            
-            return '\n'.join(text_lines)
-        
+        img = Image.open(image_path)
+        text = pytesseract.image_to_string(img)
+        if text and text.strip():
+            return text.strip()
         return None
     except Exception as e:
-        print(f"PaddleOCR error: {e}")
+        print(f"Tesseract OCR error: {e}")
         return None
 
 
@@ -113,28 +85,23 @@ def extract_with_ocr_space(image_path):
 def extract_text(image_path):
     """
     Extract text from image using available OCR engine
-    Priority on Cloud: OCR.space (to save RAM) -> PaddleOCR
-    Priority Local: PaddleOCR (unlimited) -> OCR.space
+    Priority on Cloud: OCR.space (to save RAM) -> Tesseract
+    Priority Local: Tesseract (unlimited) -> OCR.space
     """
     # Detect if we are on Render (Cloud)
     on_render = os.environ.get('RENDER') == 'true'
     
     if on_render:
         print("Running on Render: Prioritizing Cloud OCR...")
-        # Try Cloud first to avoid OOM
         text = extract_with_ocr_space(image_path)
         if text: return text
-        
-        # Fallback to local (might crash if bill is complex/image is large)
-        return extract_with_paddle(image_path)
+        return extract_with_local(image_path)
     else:
-        # Running locally: Use PaddleOCR (much faster/unlimited)
-        text = extract_with_paddle(image_path)
+        # Running locally: Use Tesseract (much faster/unlimited)
+        text = extract_with_local(image_path)
         if text: return text
         return extract_with_ocr_space(image_path)
 
-
 # Test function
 if __name__ == '__main__':
-    print(f"PaddleOCR available: {PADDLE_AVAILABLE}")
-    print("To install PaddleOCR: pip install paddlepaddle paddleocr")
+    print(f"Tesseract available: {TESSERACT_AVAILABLE}")

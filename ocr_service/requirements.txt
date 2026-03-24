@@ -1,6 +1,5 @@
 # STABLE OCR STACK (v2 ecosystem)
-paddlepaddle==2.6.2
-paddleocr==2.7.3
+pytesseract
 numpy<2.0.0
 opencv-python-headless
 # Misc dependencies

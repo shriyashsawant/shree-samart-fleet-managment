@@ -92,13 +92,13 @@ def scan_all_amounts_by_position(text):
     keyword_positions = {}
     for i, line in enumerate(lines):
         line_lower = line.lower()
-        if any(k in line_lower for k in ['subtotal', 'basic', 'taxable']):
+        if any(k in line_lower for k in ['subtotal', 'sub total', 'basic', 'taxable', 'total amount before']):
             keyword_positions['basic'] = i
         elif 'cgst' in line_lower:
             keyword_positions['cgst'] = i
         elif 'sgst' in line_lower:
             keyword_positions['sgst'] = i
-        elif any(k in line_lower for k in ['grand total', 'grandtotal', 'payable', 'invoice total']):
+        elif any(k in line_lower for k in ['grand total', 'grandtotal', 'payable', 'invoice total', 'total']):
             keyword_positions['total'] = i
     
     # For basic: look for FIRST amount near subtotal keyword (usually on same line or next)
@@ -194,7 +194,8 @@ def extract_all_gsts(text, company_gst=None):
     Returns (company_gst, party_gst)."""
     GST_STRICT = r'[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z][0-9A-Z]{2}'
 
-    normalized = text.upper()
+    # Remove spaces and dashes since OCR often breaks GSTs with them
+    normalized = text.upper().replace(' ', '').replace('-', '')
     found = re.findall(GST_STRICT, normalized)
 
     for blob in re.findall(r'[0-9]{2}[A-Z0-9]{28,32}', normalized):
@@ -321,7 +322,7 @@ def parse_invoice(text, company_gst=None):
     if account_match:
         result['bank_account_no'] = account_match.group(1)
     else:
-        account_match = re.search(r'(?:A/C|Account|Account\s*No)[:\s]*(\d{9,18})', text, re.IGNORECASE)
+        account_match = re.search(r'(?:A/C|A/c|Account|Account\s*No\.?|A/c\s*No\.?|A\\c\s*No\.?)[:\s\-]*(\d{9,18})', text, re.IGNORECASE)
         if account_match:
             result['bank_account_no'] = account_match.group(1)
         else:
@@ -363,7 +364,7 @@ def parse_invoice(text, company_gst=None):
         result['company_name'] = lines[0].strip()
     
     # Party Name Logic (Enhanced)
-    party_keywords = ['BILL TO', 'TO,', 'TO :', 'M/S', 'PARTY NAME', 'CONSIGNEE', 'CLIENT', 'BUYER', 'NAME:', 'SOLD BY']
+    party_keywords = ['BILL TO', 'TO,', 'TO :', 'TO', 'M/S', 'M/S.', 'PARTY NAME', 'CONSIGNEE', 'CLIENT', 'BUYER', 'NAME:', 'SOLD BY']
     for i, line in enumerate(lines):
         line_up = line.upper()
         if any(k in line_up for k in party_keywords):
