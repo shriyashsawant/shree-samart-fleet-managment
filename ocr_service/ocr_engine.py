@@ -31,19 +31,26 @@ def extract_with_local(image_path):
         if str(image_path).lower().endswith('.pdf'):
             try:
                 from pdf2image import convert_from_path
-                # Convert at 150 DPI (Balanced for accuracy vs 512MB RAM)
-                images = convert_from_path(image_path, dpi=150, first_page=1, last_page=1)
-                if images:
-                    img = images[0]
+                # Convert up to 3 pages at 150 DPI (Balanced for accuracy vs RAM)
+                images = convert_from_path(image_path, dpi=150, first_page=1, last_page=3)
+                if not images:
+                    return None
             except Exception as pe:
                 print(f"PDF Conversion Error: {pe}")
                 raise pe
         else:
-            img = Image.open(image_path)
+            images = [Image.open(image_path)]
             
-        if not img: return None
-            
-        text = pytesseract.image_to_string(img)
+        full_text = []
+        for index, img_curr in enumerate(images):
+            try:
+                page_text = pytesseract.image_to_string(img_curr)
+                if page_text:
+                    full_text.append(page_text)
+            except Exception as e:
+                print(f"Failed extracting on page {index}: {e}")
+                
+        text = "\n".join(full_text)
         if text and text.strip():
             return text.strip()
         return None
@@ -78,8 +85,9 @@ def extract_with_ocr_space(image_path):
             return str(result) if isinstance(result, str) else None
             
         if result.get('IsErroredOnProcessing'):
-            print(f"OCR.space processing error: {result.get('ErrorMessage')}")
-            return None
+            error_msg = result.get('ErrorMessage')
+            print(f"OCR.space processing error: {error_msg}")
+            raise Exception(f"OCR.space API Error: {error_msg}")
         
         if result.get('ParsedResults'):
             return result['ParsedResults'][0].get('ParsedText', '')
