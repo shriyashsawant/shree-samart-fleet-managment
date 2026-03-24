@@ -1,12 +1,16 @@
 package com.shreesamarth.enterprise.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TripRequest {
     @JsonProperty("vehicleId")
     private Long vehicleId;
@@ -58,23 +62,25 @@ public class TripRequest {
     
     public Long resolveVehicleId() {
         if (vehicleId != null) return vehicleId;
-        if (vehicle != null) return vehicle.getId();
+        if (vehicle != null && vehicle.getId() != null) return vehicle.getId();
         return null;
     }
     
     public Long resolveDriverId() {
         if (driverId != null) return driverId;
-        if (driver != null) return driver.getId();
+        if (driver != null && driver.getId() != null) return driver.getId();
         return null;
     }
     
     public Long resolveClientId() {
         if (clientId != null) return clientId;
-        if (client != null) return client.getId();
+        if (client != null && client.getId() != null) return client.getId();
         return null;
     }
     
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class VehicleRef {
         private Long id;
     }

@@ -116,6 +116,7 @@ public class TripService {
         
         // Load and set relationships - use resolve methods to handle both vehicleId and nested vehicle object
         Long vid = request.resolveVehicleId();
+        System.out.println("DEBUG: vehicleId=" + request.getVehicleId() + ", vehicle=" + request.getVehicle() + ", resolved=" + vid);
         if (vid != null) {
             Vehicle vehicle = vehicleRepository.findById(vid)
                     .orElseThrow(() -> new RuntimeException("Vehicle not found"));
