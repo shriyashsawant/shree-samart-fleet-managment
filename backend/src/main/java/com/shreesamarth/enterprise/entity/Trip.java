@@ -82,4 +82,13 @@ public class Trip {
     @JoinColumn(name = "tenant_id")
     @JsonIgnore
     private Tenant tenant;
+
+    @Transient
+    private Long vehicleId;
+
+    @Transient
+    private Long driverId;
+
+    @Transient
+    private Long clientId;
 }

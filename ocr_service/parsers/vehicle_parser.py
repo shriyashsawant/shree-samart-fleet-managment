@@ -350,19 +350,22 @@ def parse_fitness(text):
         result['engine_number'] = engine_match.group(1).strip()
     
     # Certificate expires - handle various OCR formats
-    # Pattern: "Certificate will expire onig" followed by newline and "311 Feb-2027"
-    feb2027_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)[\s\w]*\s*\n\s*(\d{1,3})\s+([A-Za-z]{3})\s*-\s*(2027)', text, re.IGNORECASE)
-    if not feb2027_match:
-        feb2027_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)\.?\s*(\d{1,2})\s*([A-Za-z]{3})\s*-\s*(2027)', text, re.IGNORECASE)
-    if not feb2027_match:
-        feb2027_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)\s*(\d{1,3})\s+([A-Za-z]{3})\s*-\s*(2027)', text, re.IGNORECASE)
-    if feb2027_match:
-        raw_day = feb2027_match.group(1)
-        month = feb2027_match.group(2)
-        year = feb2027_match.group(3)
+    # Pattern: "Certificate will expire on" followed by date like "03-Nov-2026"
+    # Also handle garbled patterns like "311 Feb-2027"
+    exp_match = re.search(r'certificat\w*\s+will\s+expire\w*\s+on\s*\n\s*:?\s*(\d{1,3})\s+([A-Za-z]{3})\s*-\s*(\d{4})', text, re.IGNORECASE)
+    if not exp_match:
+        exp_match = re.search(r'Certificate\s+will\s+expire\s+on\s*\n\s*:?\s*(\d{1,2})[-/]?([A-Za-z]{3})[-/]?(\d{4})', text, re.IGNORECASE)
+    if not exp_match:
+        exp_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)[\s\w]*\s*\n\s*(\d{1,3})\s+([A-Za-z]{3})\s*-\s*(\d{4})', text, re.IGNORECASE)
+    if not exp_match:
+        exp_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)\.?\s*(\d{1,2})\s*([A-Za-z]{3})\s*-\s*(\d{4})', text, re.IGNORECASE)
+    if exp_match:
+        raw_day = exp_match.group(1)
+        month = exp_match.group(2)
+        year = exp_match.group(3)
         day = raw_day.lstrip('0') or '1'
         if len(day) > 2:
-            day = day[-2:]  # "311" -> "11" (take last 2 digits)
+            day = day[-2:]
         date_str = f"{day}-{month[:3]}-{year}"
         result['certificate_expires'] = date_str
         result['expiry_date'] = date_str
@@ -391,6 +394,15 @@ def parse_fitness(text):
     )
     if year_match:
         result['manufacturing_year'] = year_match.group(1)
+    
+    # Fallback: If certificate_expires still not found, look for any date after "expire"
+    if not result['certificate_expires']:
+        fallback_match = re.search(r'expire\w*\s+on[\s\S]{0,20}?(\d{1,2})[-/]?([A-Za-z]{3})[-/]?(\d{4})', text, re.IGNORECASE)
+        if fallback_match:
+            date_str = f"{fallback_match.group(1)}-{fallback_match.group(2)}-{fallback_match.group(3)}"
+            result['certificate_expires'] = date_str
+            result['expiry_date'] = date_str
+            result['fitness_validity'] = date_str
     
     return result
 
@@ -533,13 +545,20 @@ def parse_tax_receipt(text):
         result['chassis_number'] = chassis_match.group(1).upper()
     
     # Tax Amount - look for "GRAND TOTAL (in Rs):2520/-" pattern
+    # Also handle "(S)2520-" where S looks like Rs
     amount_match = re.search(
         r'(?:GRAND\s*TOTAL|Total|Total\s*in\s*Rs)[:\s]*([\d,]+\.?\d*)\s*(?:\/-)?',
         text, re.IGNORECASE
     )
     if not amount_match:
+        # Try pattern like "(S)2520-" - fix the S being caught as part of match
+        amount_match = re.search(r'[(\[]?(?:Rs|S)\s*[)\]]?\s*(\d{3,5})\s*-', text, re.IGNORECASE)
+    if not amount_match:
         # Try pattern like "2520/-" at end
         amount_match = re.search(r'(\d{3,5})\s*/-', text)
+    if not amount_match:
+        # Try to find any standalone 3-4 digit number that looks like tax amount
+        amount_match = re.search(r'(?:GRAND\s*TOTAL|Total)[\s\S]{0,30}?(\d{3,5})', text, re.IGNORECASE)
     if amount_match:
         try:
             result['tax_amount'] = float(amount_match.group(1).replace(',', ''))

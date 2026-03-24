@@ -36,9 +36,13 @@ public class TripService {
             trip.setTripDate(LocalDate.now());
         }
 
-        // Validate and set relationships
+        // Validate and set relationships using object or transient ID fields
         if (trip.getVehicle() != null && trip.getVehicle().getId() != null) {
             Vehicle vehicle = vehicleRepository.findById(trip.getVehicle().getId())
+                    .orElseThrow(() -> new RuntimeException("Vehicle not found"));
+            trip.setVehicle(vehicle);
+        } else if (trip.getVehicleId() != null) {
+            Vehicle vehicle = vehicleRepository.findById(trip.getVehicleId())
                     .orElseThrow(() -> new RuntimeException("Vehicle not found"));
             trip.setVehicle(vehicle);
         }
@@ -47,10 +51,18 @@ public class TripService {
             Driver driver = driverRepository.findById(trip.getDriver().getId())
                     .orElseThrow(() -> new RuntimeException("Driver not found"));
             trip.setDriver(driver);
+        } else if (trip.getDriverId() != null) {
+            Driver driver = driverRepository.findById(trip.getDriverId())
+                    .orElseThrow(() -> new RuntimeException("Driver not found"));
+            trip.setDriver(driver);
         }
 
         if (trip.getClient() != null && trip.getClient().getId() != null) {
             Client client = clientRepository.findById(trip.getClient().getId())
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+            trip.setClient(client);
+        } else if (trip.getClientId() != null) {
+            Client client = clientRepository.findById(trip.getClientId())
                     .orElseThrow(() -> new RuntimeException("Client not found"));
             trip.setClient(client);
         }

@@ -107,10 +107,8 @@ public class DriverDocumentController {
             }
         }
 
-        if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
-            applyOcrToDriver(driver, documentType, fields);
+        if (ocrSuccess) {
+            applyOcrToDriver(driver, documentType, ocrData);
             driverRepository.save(driver);
         }
 
@@ -120,20 +118,20 @@ public class DriverDocumentController {
         
         if (documentNumber != null && !documentNumber.isEmpty()) {
             doc.setDocumentNumber(documentNumber);
-        } else if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
-            if (fields.get("license_number") != null) {
-                doc.setDocumentNumber(fields.get("license_number").toString());
-            }
+        } else if (ocrSuccess && ocrData.get("license_number") != null) {
+            doc.setDocumentNumber(ocrData.get("license_number").toString());
         }
 
         if (expiryDate != null && !expiryDate.isEmpty()) {
             doc.setExpiryDate(LocalDate.parse(expiryDate));
-        } else if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
-            LocalDate extractedExpiry = parseOcrDate(fields.get("expiry_date"));
+        } else if (ocrSuccess) {
+            LocalDate extractedExpiry = parseOcrDate(ocrData.get("expiry_date"));
+            if (extractedExpiry == null) {
+                extractedExpiry = parseOcrDate(ocrData.get("valid_to"));
+            }
+            if (extractedExpiry == null) {
+                extractedExpiry = parseOcrDate(ocrData.get("license_expiry"));
+            }
             if (extractedExpiry != null) {
                 doc.setExpiryDate(extractedExpiry);
             }
@@ -154,22 +152,25 @@ public class DriverDocumentController {
         return ResponseEntity.ok(response);
     }
 
-    private void applyOcrToDriver(Driver driver, String documentType, Map<String, Object> fields) {
+    private void applyOcrToDriver(Driver driver, String documentType, Map<String, Object> ocrData) {
         String docType = documentType.toUpperCase();
         
         if (docType.contains("LICENSE") || docType.contains("DL")) {
-            if (fields.get("license_number") != null && (driver.getDrivingLicense() == null || driver.getDrivingLicense().isEmpty())) {
-                driver.setDrivingLicense(fields.get("license_number").toString());
+            if (ocrData.get("license_number") != null && (driver.getDrivingLicense() == null || driver.getDrivingLicense().isEmpty())) {
+                driver.setDrivingLicense(ocrData.get("license_number").toString());
             }
-            if (fields.get("expiry_date") != null) {
-                driver.setLicenseExpiry(parseOcrDate(fields.get("expiry_date")));
+            if (ocrData.get("expiry_date") != null) {
+                driver.setLicenseExpiry(parseOcrDate(ocrData.get("expiry_date")));
             }
-            if (fields.get("name") != null && (driver.getName() == null || driver.getName().isEmpty())) {
-                driver.setName(fields.get("name").toString());
+            if (ocrData.get("valid_to") != null) {
+                driver.setLicenseExpiry(parseOcrDate(ocrData.get("valid_to")));
+            }
+            if (ocrData.get("name") != null && (driver.getName() == null || driver.getName().isEmpty())) {
+                driver.setName(ocrData.get("name").toString());
             }
         } else if (docType.contains("AADHAAR") || docType.contains("AADHAR")) {
-            if (fields.get("aadhaar_number") != null && (driver.getAadhaarNumber() == null || driver.getAadhaarNumber().isEmpty())) {
-                driver.setAadhaarNumber(fields.get("aadhaar_number").toString());
+            if (ocrData.get("aadhaar_number") != null && (driver.getAadhaarNumber() == null || driver.getAadhaarNumber().isEmpty())) {
+                driver.setAadhaarNumber(ocrData.get("aadhaar_number").toString());
             }
         }
     }
