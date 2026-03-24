@@ -137,10 +137,8 @@ public class BillController {
         if (bill.getBillNo() == null || bill.getBillNo().isEmpty()) {
             int year = LocalDate.now().getYear();
             String prefix = year + "-";
-            List<Bill> thisYearBills = billRepository.findAll().stream()
-                    .filter(b -> b.getBillNo() != null && b.getBillNo().startsWith(prefix))
-                    .toList();
-            int nextNum = thisYearBills.size() + 1;
+            long count = billRepository.countByBillNoStartingWith(prefix);
+            int nextNum = (int)count + 1;
             bill.setBillNo(prefix + String.format("%03d", nextNum));
         }
 

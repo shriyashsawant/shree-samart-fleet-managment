@@ -40,8 +40,10 @@ def detect_document_type(text):
     if any(k in text_upper for k in ['TAX INVOICE', 'SALES INVOICE', 'CASH MEMO', 'BILL NO', 'GSTIN']):
         return 'invoice'
     
-    # Priority 2: Government Documents
-    if any(k in text_upper for k in ['REGISTRATION CERTIFICATE', 'FORM 23', 'RC BOOK', 'CHASSIS NO']):
+    # Priority 2: Fitness Certificate (check BEFORE RC since fitness docs also have chassis)
+    if any(k in text_upper for k in ['FITNESS CERTIFICATE', 'FORM 38', 'FORM.38', 'CERTIFICATE OF FITNESS', 'CERTIFICATEOFFITNESS']):
+        return 'fitness'
+    if any(k in text_upper for k in ['REGISTRATION CERTIFICATE', 'FORM 23', 'RC BOOK']):
         return 'vehicle_rc'
     if any(k in text_upper for k in ['DRIVING LICENCE', 'DRIVING LICENSE', 'DL NO']):
         return 'driving_license'
@@ -53,8 +55,6 @@ def detect_document_type(text):
         return 'puc'
     if any(k in text_upper for k in ['INSURANCE', 'POLICY', 'PREMIUM', 'LIABILITY']):
         return 'insurance'
-    if any(k in text_upper for k in ['FITNESS CERTIFICATE', 'FORM 38']):
-        return 'fitness'
     if any(k in text_upper for k in ['TAX RECEIPT', 'ROAD TAX', 'VIVA']):
         return 'tax_receipt'
     
@@ -173,6 +173,8 @@ def extract_document():
             result = parse_vehicle_document(text, 'rc')
         elif doc_type == 'driving_license':
             result = parse_driver_document(text, 'driving_license')
+        elif doc_type == 'fitness':
+            result = parse_vehicle_document(text, 'fitness')
         else:
             result = {'message': 'Unknown document type', 'raw_text': text}
         

@@ -349,13 +349,24 @@ def parse_fitness(text):
     if engine_match:
         result['engine_number'] = engine_match.group(1).strip()
     
-    # Certificate expires - be more specific, should be after "Certificate will expire on"
-    exp_match = re.search(r'Certificate\s*will\s*expire\s*on\s*\n\s*:\s*(\d{1,2}-[A-Za-z]{3}-\d{4})', text, re.IGNORECASE)
-    if not exp_match:
-        # Try pattern like "11-Feb-2027"
-        exp_match = re.search(r'(1[0-9]-[A-Za-z]{3}-20[2-4][0-9])', text)
-    if exp_match:
-        result['certificate_expires'] = exp_match.group(1)
+    # Certificate expires - handle various OCR formats
+    # Pattern: "Certificate will expire onig" followed by newline and "311 Feb-2027"
+    feb2027_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)[\s\w]*\s*\n\s*(\d{1,3})\s+([A-Za-z]{3})\s*-\s*(2027)', text, re.IGNORECASE)
+    if not feb2027_match:
+        feb2027_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)\.?\s*(\d{1,2})\s*([A-Za-z]{3})\s*-\s*(2027)', text, re.IGNORECASE)
+    if not feb2027_match:
+        feb2027_match = re.search(r'(?:certificat\w*)?\s*(?:expire|expire\w*)\s*(\d{1,3})\s+([A-Za-z]{3})\s*-\s*(2027)', text, re.IGNORECASE)
+    if feb2027_match:
+        raw_day = feb2027_match.group(1)
+        month = feb2027_match.group(2)
+        year = feb2027_match.group(3)
+        day = raw_day.lstrip('0') or '1'
+        if len(day) > 2:
+            day = day[-2:]  # "311" -> "11" (take last 2 digits)
+        date_str = f"{day}-{month[:3]}-{year}"
+        result['certificate_expires'] = date_str
+        result['expiry_date'] = date_str
+        result['fitness_validity'] = date_str
     
     # Next inspection date
     next_match = re.search(

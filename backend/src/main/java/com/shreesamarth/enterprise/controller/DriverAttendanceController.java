@@ -42,16 +42,17 @@ public class DriverAttendanceController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             Authentication auth) {
         Tenant tenant = getCurrentTenant(auth);
-        List<DriverAttendance> allTenant = tenant != null
-            ? attendanceRepository.findByTenantId(tenant.getId())
-            : attendanceRepository.findAll();
-
-        if (date != null) {
-            return ResponseEntity.ok(allTenant.stream()
-                .filter(a -> date.equals(a.getDate()))
-                .collect(Collectors.toList()));
+        
+        if (tenant != null && date != null) {
+            return ResponseEntity.ok(attendanceRepository.findByTenantIdAndDate(tenant.getId(), date));
         }
-        return ResponseEntity.ok(allTenant);
+        if (tenant != null) {
+            return ResponseEntity.ok(attendanceRepository.findByTenantId(tenant.getId()));
+        }
+        if (date != null) {
+            return ResponseEntity.ok(attendanceRepository.findByDate(date));
+        }
+        return ResponseEntity.ok(attendanceRepository.findAll());
     }
 
     @GetMapping("/driver/{driverId}")
@@ -62,20 +63,14 @@ public class DriverAttendanceController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             Authentication auth) {
         Tenant tenant = getCurrentTenant(auth);
-        List<DriverAttendance> allTenant = tenant != null
-            ? attendanceRepository.findByTenantId(tenant.getId())
-            : attendanceRepository.findAll();
-
-        List<DriverAttendance> filtered = allTenant.stream()
-            .filter(a -> a.getDriver() != null && a.getDriver().getId().equals(driverId))
-            .collect(Collectors.toList());
-
-        if (startDate != null && endDate != null) {
-            return ResponseEntity.ok(filtered.stream()
-                .filter(a -> a.getDate() != null && !a.getDate().isBefore(startDate) && !a.getDate().isAfter(endDate))
-                .collect(Collectors.toList()));
+        
+        if (tenant != null && startDate != null && endDate != null) {
+            return ResponseEntity.ok(attendanceRepository.findByTenantIdAndDriverIdAndDateBetween(tenant.getId(), driverId, startDate, endDate));
         }
-        return ResponseEntity.ok(filtered);
+        if (tenant != null) {
+            return ResponseEntity.ok(attendanceRepository.findByTenantIdAndDriverId(tenant.getId(), driverId));
+        }
+        return ResponseEntity.ok(attendanceRepository.findByDriverId(driverId));
     }
 
     @PostMapping("/mark")

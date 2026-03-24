@@ -34,4 +34,6 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     List<Bill> findPotentialDuplicates(@Param("clientId") Long clientId, @Param("amount") BigDecimal amount, @Param("year") int year, @Param("month") int month);
 
     List<Bill> findByTenantId(Long tenantId);
+    
+    long countByBillNoStartingWith(String billNoPrefix);
 }

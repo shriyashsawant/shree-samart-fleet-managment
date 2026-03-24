@@ -49,6 +49,7 @@ public class FirebaseConfig {
                     } catch (Exception e) {
                         log.warn("Firebase credentials not found. File uploads will use local storage. " +
                                  "Set FIREBASE_CREDENTIALS_JSON environment variable or add firebase-service-account.json to resources.");
+                        log.warn("Exception details: {}", e.getMessage());
                         return;
                     }
                 }

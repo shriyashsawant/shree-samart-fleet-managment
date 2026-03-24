@@ -15,4 +15,7 @@ public interface DriverAttendanceRepository extends JpaRepository<DriverAttendan
     Optional<DriverAttendance> findByDriverIdAndDate(Long driverId, LocalDate date);
     List<DriverAttendance> findByDriverIdAndDateBetween(Long driverId, LocalDate startDate, LocalDate endDate);
     List<DriverAttendance> findByTenantId(Long tenantId);
+    List<DriverAttendance> findByTenantIdAndDate(Long tenantId, LocalDate date);
+    List<DriverAttendance> findByTenantIdAndDriverId(Long tenantId, Long driverId);
+    List<DriverAttendance> findByTenantIdAndDriverIdAndDateBetween(Long tenantId, Long driverId, LocalDate startDate, LocalDate endDate);
 }

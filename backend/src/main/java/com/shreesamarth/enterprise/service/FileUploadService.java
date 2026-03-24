@@ -55,6 +55,7 @@ public class FileUploadService {
                     } catch (Exception e) {
                         log.warn("Firebase credentials not found in FileUploadService. Using local storage. " +
                                  "Set FIREBASE_CREDENTIALS_JSON environment variable or add firebase-service-account.json to resources.");
+                        log.warn("Exception details: {}", e.getMessage());
                         return;
                     }
                 }

@@ -34,7 +34,7 @@ def get_ocr_instance():
         try:
             print("Initializing PaddleOCR models...")
             # Use stable settings for cloud environment
-            _ocr_instance = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+            _ocr_instance = PaddleOCR(use_angle_cls=True, lang='en')
             print("PaddleOCR models loaded successfully.")
         except Exception as e:
             print(f"CRITICAL: Failed to load PaddleOCR models: {e}")
@@ -52,15 +52,23 @@ def extract_with_paddle(image_path):
         if not ocr:
             return None
             
-        # Run OCR (v2 returns a list of results)
-        result = ocr.ocr(image_path, cls=True)
+        # Run OCR - try v2 syntax first, then v3
+        try:
+            result = ocr.ocr(image_path, cls=True)
+        except AttributeError:
+            try:
+                result = ocr.predict(image_path)
+            except Exception:
+                result = None
         
         if result and result[0]:
-            # Combine all text lines in the v2 format: [bbox, (text, score)]
             text_lines = []
             for line in result[0]:
-                if isinstance(line, list) and len(line) > 1 and isinstance(line[1], (list, tuple)):
-                    text_lines.append(line[1][0])
+                if isinstance(line, list) and len(line) > 1:
+                    if isinstance(line[1], (list, tuple)):
+                        text_lines.append(line[1][0])
+                    elif isinstance(line[1], str):
+                        text_lines.append(line[1])
             
             return '\n'.join(text_lines)
         
