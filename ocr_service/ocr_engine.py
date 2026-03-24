@@ -75,8 +75,8 @@ def extract_with_local(image_path):
             full_text = []
             try:
                 from pdf2image import convert_from_path
-                # 200 DPI for stability on 512MB RAM tier. (300 DPI caused SIGKILL)
-                images = convert_from_path(image_path, dpi=200, first_page=1, last_page=2)
+                # 150 DPI for stability on 512MB RAM tier. (300/200 DPI caused SIGKILL)
+                images = convert_from_path(image_path, dpi=150, first_page=1, last_page=2)
                 if not images:
                     return None
             except Exception as pe:
