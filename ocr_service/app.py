@@ -178,6 +178,14 @@ def extract_document():
             result = parse_driver_document(text, 'driving_license')
         elif doc_type == 'fitness':
             result = parse_vehicle_document(text, 'fitness')
+        elif doc_type == 'permit':
+            result = parse_vehicle_document(text, 'permit')
+        elif doc_type == 'tax_receipt':
+            result = parse_vehicle_document(text, 'tax_receipt')
+        elif doc_type == 'insurance':
+            result = parse_vehicle_document(text, 'insurance')
+        elif doc_type == 'puc':
+            result = parse_vehicle_document(text, 'puc')
         else:
             result = {'message': 'Unknown document type', 'raw_text': text}
         
