@@ -71,21 +71,19 @@ def extract_with_local(image_path):
         full_text = []
 
         if str(image_path).lower().endswith('.pdf'):
-            # Directly process as Scanned PDF using robust OCR pipeline
+            # Segmented PDF processing: Convert one page at a time to minimize peak RAM
             full_text = []
-            try:
-                from pdf2image import convert_from_path
-                # 150 DPI for stability on 512MB RAM tier. (300/200 DPI caused SIGKILL)
-                images = convert_from_path(image_path, dpi=150, first_page=1, last_page=2)
-                if not images:
-                    return None
-            except Exception as pe:
-                print(f"PDF Conversion Error: {pe}")
-                raise pe
-                
-            for index, img_curr in enumerate(images):
+            from pdf2image import convert_from_path
+            
+            # Extract first 2 pages individually for maximum safety
+            for p_num in range(1, 3):
                 try:
-                    # Apply your exact suggested processing inside the loop
+                    # 120 DPI is the sweet spot for 512MB RAM with complex cv2 filters
+                    images = convert_from_path(image_path, dpi=120, first_page=p_num, last_page=p_num)
+                    if not images:
+                        continue
+                        
+                    img_curr = images[0]
                     thresh = preprocess(img_curr)
 
                     page_text = pytesseract.image_to_string(
@@ -95,12 +93,16 @@ def extract_with_local(image_path):
                     if page_text:
                         full_text.append(page_text)
                     
-                    # Memory Cleanup: Critical for 512MB RAM limit
+                    # Intensive Memory Cleanup
                     del thresh
+                    del img_curr
+                    images.clear()
                     gc.collect()
                     
                 except Exception as e:
-                    print(f"Failed extracting on page {index}: {e}")
+                    print(f"Failed extracting on page {p_num}: {e}")
+                    # If conversion fails for second page (e.g. 1-page PDF), just continue
+                    continue
             
             # Clear memory buffer of loaded images
             images.clear()
