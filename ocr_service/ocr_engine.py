@@ -37,7 +37,7 @@ def extract_with_local(image_path):
                     img = images[0]
             except Exception as pe:
                 print(f"PDF Conversion Error: {pe}")
-                return None
+                raise pe
         else:
             img = Image.open(image_path)
             
