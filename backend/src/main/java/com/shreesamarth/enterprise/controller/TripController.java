@@ -30,7 +30,6 @@ public class TripController {
     public ResponseEntity<TripDTO> createTrip(
             @RequestBody TripRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        System.out.println("TripRequest received: vehicleId=" + request.getVehicleId() + ", driverId=" + request.getDriverId());
         Trip created = tripService.createTripFromRequest(request, 1L);
         return ResponseEntity.ok(toDTO(created));
     }

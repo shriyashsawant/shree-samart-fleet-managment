@@ -40,6 +40,7 @@ com\shreesamarth\enterprise\repository\VehicleLogRepository.class
 com\shreesamarth\enterprise\entity\Payment.class
 com\shreesamarth\enterprise\config\RestTemplateConfig.class
 com\shreesamarth\enterprise\repository\TenantRepository.class
+com\shreesamarth\enterprise\controller\PingController.class
 com\shreesamarth\enterprise\entity\Maintenance.class
 com\shreesamarth\enterprise\security\CustomUserDetailsService.class
 com\shreesamarth\enterprise\dto\VehicleMonthlyProfitDTO.class
@@ -102,6 +103,7 @@ com\shreesamarth\enterprise\entity\Client.class
 com\shreesamarth\enterprise\entity\VehicleCompliance.class
 com\shreesamarth\enterprise\repository\PaymentRepository.class
 com\shreesamarth\enterprise\controller\InventoryController.class
+com\shreesamarth\enterprise\controller\FileController.class
 com\shreesamarth\enterprise\dto\ExpenseBreakdownDTO.class
 com\shreesamarth\enterprise\controller\TripController.class
 com\shreesamarth\enterprise\controller\VehicleComplianceController.class

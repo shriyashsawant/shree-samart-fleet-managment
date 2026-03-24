@@ -1,42 +1,69 @@
 import requests
-import json
-import sys
+import os
 
-image_path = r'c:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\Shree-Samarth Data\Bill\WhatsApp Image 2026-03-17 at 6.09.30 PM (1).jpeg'
-
-API_KEY = 'K89651872288957'
+API_KEY = 'helloworld'
 API_URL = 'https://api.ocr.space/parse/image'
 
-print(f"Testing OCR on: {image_path}", flush=True)
+documents = {
+    'MH09CU1605': [
+        '1605 - Permit.jpeg',
+        'Fitness Certificate -1605.jpeg',
+        'Driving License Front.jpg',
+        'Driving License Back.jpg',
+        'Adhhar Card Front Janak.jpg',
+        'Adhaar Card Back Janak.jpg',
+    ],
+    'MH43Y2651': [
+        'Fitness Certificate 2651.jpeg',
+        'Permit 2651.jpeg',
+        'Tax Recipt 2651.jpeg',
+        'Driving License Rabin.jpg',
+        'Rabin Adhaar Front.jpg',
+        'Rabin Adhaar Back.jpg',
+    ]
+}
 
-try:
-    with open(image_path, 'rb') as f:
-        response = requests.post(
-            API_URL,
-            files={'file': f},
-            data={'apikey': API_KEY, 'language': 'eng'},
-            timeout=60
-        )
+base_path = r'C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\Shree-Samarth Data'
+
+for vehicle, files in documents.items():
+    print(f"\n{'='*60}")
+    print(f"VEHICLE: {vehicle}")
+    print(f"{'='*60}")
     
-    print(f"Status: {response.status_code}", flush=True)
-    
-    result = response.json()
-    print(json.dumps(result, indent=2), flush=True)
-    
-    if result.get('ParsedResults'):
-        text = result['ParsedResults'][0].get('ParsedText', '')
-        print("\n=== EXTRACTED TEXT ===")
-        print(text)
-        print("=== END TEXT ===")
-        
-        # Save to file
-        with open('ocr_raw_text.txt', 'w', encoding='utf-8') as f:
-            f.write(text)
-        print("\nSaved to ocr_raw_text.txt")
-    else:
-        print("No ParsedResults in response")
-        
-except Exception as e:
-    print(f"Error: {e}", flush=True)
-    import traceback
-    traceback.print_exc()
+    for filename in files:
+        filepath = os.path.join(base_path, vehicle, filename)
+        if not os.path.exists(filepath):
+            print(f"\n--- {filename}: FILE NOT FOUND ---")
+            continue
+            
+        print(f"\n--- {filename} ---")
+        try:
+            with open(filepath, 'rb') as f:
+                response = requests.post(
+                    API_URL,
+                    files={'file': f},
+                    data={
+                        'apikey': API_KEY,
+                        'language': 'eng',
+                        'isOverlayRequired': False,
+                        'detectOrientation': True,
+                        'scale': True,
+                        'OCREngine': 2,
+                    },
+                    timeout=60
+                )
+            
+            result = response.json()
+            
+            if result.get('IsErroredOnProcessing'):
+                print(f"Error: {result.get('ErrorMessage')}")
+            elif result.get('ParsedResults'):
+                text = result['ParsedResults'][0].get('ParsedText', '')
+                print(text)
+            else:
+                print("No text detected")
+                
+        except Exception as e:
+            print(f"Error: {e}")
+
+print("\n\nDone!")
