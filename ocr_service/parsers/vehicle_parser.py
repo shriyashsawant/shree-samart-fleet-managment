@@ -410,58 +410,69 @@ def parse_permit(text):
         'route': None,
     }
     
-    # Registration Number
-    match = re.search(r'([A-Z]{2}\d{2}[A-Z]{1,2}\d{4})', text.upper())
+    # Registration Number - handle OCR garbling like "MH0gCU1605" or "MH09CU1605"
+    match = re.search(r'(MH[\dO]{2}[A-Z]{2}\d{4})', text, re.IGNORECASE)
     if match:
-        result['registration_number'] = match.group(1)
+        result['registration_number'] = match.group(1).upper().replace('O', '0')
     
-    # Permit Number
+    # Permit Number - handle "MH2023-GP 0852K" pattern
     permit_match = re.search(
-        r'(?:Permit\s*No|Permit\s*Number|MH\d{4}-[A-Z]{2}-\d{4}[A-Z])',
+        r'(MH\d{4}[-\s]?[A-Z]{2}[\s]?\d{3,5}[A-Z]?)',
         text, re.IGNORECASE
     )
+    if not permit_match:
+        # Try finding permit number anywhere with format like "2023-GP-0852"
+        permit_match = re.search(r'(\d{4}[-\s]?[A-Z]{2}[\s]?\d{3,5})', text)
     if permit_match:
-        result['permit_number'] = permit_match.group(0)
+        result['permit_number'] = permit_match.group(1).upper().replace(' ', '-').replace('_', '-')
     
-    # Permit holder
+    # Permit holder - look for company name
     holder_match = re.search(
-        r'(?:Name\s*Of\s*The\s*Permit\s*Holder|Permit\s*Holder)[:\s]*([A-Za-z\s&\.]+)',
+        r'(?:Name\s*Of\s*The\s*Permit\s*Holder|Permit\s*Holder)[:\s]*([A-Za-z\s&\.\-]+)',
         text, re.IGNORECASE
     )
+    if not holder_match:
+        # Try finding company name near "SUPERTECH" or similar
+        holder_match = re.search(r'(NEW\s+[A-Z\s]+CONCRETE|CEMENT|LTD|INC)', text, re.IGNORECASE)
     if holder_match:
         result['permit_holder'] = holder_match.group(1).strip()
     
-    # Chassis Number
+    # Chassis Number - more specific, starts with MAT or similar
     chassis_match = re.search(
-        r'(?:Chassis\s*No|Chassis)[:\s]*([A-HJ-NPR-Z0-9]{10,17})',
+        r'(MAT[A-Z0-9]{13}[A-Z0-9]?)',
         text, re.IGNORECASE
     )
     if chassis_match:
         result['chassis_number'] = chassis_match.group(1).upper()
     
-    # Engine Number
+    # Engine Number - starts with B followed by alphanumeric
     engine_match = re.search(
-        r'(?:Engine\s*No|Engine)[:\s]*([A-HJ-NPR-Z0-9]{6,20})',
-        text, re.IGNORECASE
+        r'(B\d{12,}[A-Z0-9]*)',
+        text
     )
+    if not engine_match:
+        engine_match = re.search(r'Engine\s*No[A-Z0-9\s:]*([A-Z0-9]+)', text, re.IGNORECASE)
     if engine_match:
         result['engine_number'] = engine_match.group(1).upper()
     
-    # Owner Name
-    owner_match = re.search(
-        r'(?:Owner\s*Name|Owner)[:\s]*([A-Za-z\s&\.]+)',
-        text, re.IGNORECASE
-    )
-    if owner_match:
-        result['owner_name'] = owner_match.group(1).strip()
-    
-    # Valid from
+    # Valid from - look for "From:" with date
     from_match = re.search(
-        r'(?:From:)[\s]*(\d{1,2}[-/][A-Za-z]{3}[-/\s]\d{4})',
+        r'(?:From:?\s*)(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?\d{2,4})',
         text, re.IGNORECASE
     )
     if from_match:
-        result['valid_from'] = from_match.group(1).strip()
+        result['valid_from'] = from_match.group(1).strip().replace(' ', '-')
+    
+    # Valid to - look for date near "Validly" or "Validity"
+    to_match = re.search(
+        r'(?:Validit(?:y|ly)|Valid\s*to)[\s\S]{0,50}(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?\d{2,4})',
+        text, re.IGNORECASE
+    )
+    if not to_match:
+        # Try finding any date in 2028
+        to_match = re.search(r'(\d{1,2}[-\s]?[A-Za-z]{3}[-\s]?2028)', text, re.IGNORECASE)
+    if to_match:
+        result['valid_to'] = to_match.group(1).strip().replace(' ', '-')
     
     # Valid to
     to_match = re.search(

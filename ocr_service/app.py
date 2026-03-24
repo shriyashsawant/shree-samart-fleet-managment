@@ -57,6 +57,9 @@ def detect_document_type(text):
         return 'insurance'
     if any(k in text_upper for k in ['TAX RECEIPT', 'ROAD TAX', 'VIVA']):
         return 'tax_receipt'
+    # Permit detection
+    if any(k in text_upper for k in ['PERMIT', 'GOODS PERMIT', 'TRANSPORT PERMIT', 'PERMIT NO', 'VALIDITY OF PERMIT', 'PERMIT IN RESPECT']):
+        return 'permit'
     
     # FALLBACK: Keyword density search for invoice
     if len(re.findall(r'GST|CGST|SGST|IGST|AMOUNT|TOTAL', text_upper)) >= 2:
