@@ -71,41 +71,49 @@ def extract_with_local(image_path):
         full_text = []
 
         if str(image_path).lower().endswith('.pdf'):
-            # Segmented PDF processing: Convert one page at a time to minimize peak RAM
+            # Ultra-Memory-Safe Segmented PDF processing: Convert to disk-paths only
             full_text = []
             from pdf2image import convert_from_path
+            import tempfile
             
-            # Extract first 2 pages individually for maximum safety
-            for p_num in range(1, 3):
-                try:
-                    # 120 DPI is the sweet spot for 512MB RAM with complex cv2 filters
-                    images = convert_from_path(image_path, dpi=120, first_page=p_num, last_page=p_num)
-                    if not images:
-                        continue
-                        
-                    img_curr = images[0]
-                    thresh = preprocess(img_curr)
-
-                    page_text = pytesseract.image_to_string(
-                        thresh,
-                        config="--oem 3 --psm 6"
+            try:
+                # Store images on disk briefly instead of RAM
+                with tempfile.TemporaryDirectory() as output_path:
+                    page_paths = convert_from_path(
+                        image_path, 
+                        dpi=120, 
+                        first_page=1, 
+                        last_page=2,
+                        fmt="jpeg",
+                        output_folder=output_path,
+                        paths_only=True
                     )
-                    if page_text:
-                        full_text.append(page_text)
                     
-                    # Intensive Memory Cleanup
-                    del thresh
-                    del img_curr
-                    images.clear()
-                    gc.collect()
-                    
-                except Exception as e:
-                    print(f"Failed extracting on page {p_num}: {e}")
-                    # If conversion fails for second page (e.g. 1-page PDF), just continue
-                    continue
-            
-            # Clear memory buffer of loaded images
-            images.clear()
+                    for p_path in page_paths:
+                        try:
+                            with Image.open(p_path) as img_curr:
+                                thresh = preprocess(img_curr)
+                                
+                                page_text = pytesseract.image_to_string(
+                                    thresh,
+                                    config="--oem 3 --psm 6"
+                                )
+                                if page_text:
+                                    full_text.append(page_text)
+                                
+                                del thresh
+                            
+                            # Clean up and flush after each page
+                            gc.collect()
+                            
+                        except Exception as e:
+                            print(f"Failed extracting on page: {e}")
+                            continue
+            except Exception as e:
+                print(f"PDF Conversion Error: {e}")
+                # Fallback to single text if possible or re-raise
+                
+            # Final heap cleanup
             gc.collect()
         else:
             # Normal Image Pipeline
