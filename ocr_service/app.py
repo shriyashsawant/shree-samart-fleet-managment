@@ -134,72 +134,102 @@ def extract_document():
     file.save(temp_path)
     
     try:
-        processed_path = preprocess_image(temp_path)
         from ocr_engine import extract_with_local, extract_with_ocr_space
         
         debug_info = {}
         
-        # 1. Try Tesseract first (assuming it's installed in production as per user)
-        print("Attempting local Tesseract extraction...")
-        try:
-            text = extract_with_local(processed_path)
-            engine = "tesseract"
-        except Exception as e:
-            text = None
-            debug_info['tesseract_error'] = str(e)
-            
-        # 2. Try OCR.space if Tesseract failed or returned insufficient text
-        if not text or len(text.strip()) < 50:
-            print("Tesseract yielded insufficient results. Falling back to OCR.space...")
+        # Smart Hybrid Approach Routing
+        file_size_mb = os.path.getsize(temp_path) / (1024 * 1024)
+        
+        if ext == '.pdf' or file_size_mb > 1.0:
+            print(f"File is {ext} or >1MB ({file_size_mb:.2f}MB). Attempting local Tesseract extraction first...")
             try:
-                text = extract_with_ocr_space(processed_path)
+                texts = extract_with_local(temp_path)
+                engine = "tesseract"
+            except Exception as e:
+                texts = None
+                debug_info['tesseract_error'] = str(e)
+            
+            # 2. Try OCR.space if Tesseract failed or returned insufficient text
+            if not texts or sum(len(t.strip()) for t in texts) < 50:
+                print("Tesseract yielded insufficient results. Falling back to OCR.space...")
+                try:
+                    texts = extract_with_ocr_space(temp_path)
+                    engine = "ocr_space"
+                except Exception as e:
+                    texts = None
+                    debug_info['ocr_space_error'] = str(e)
+        else:
+            print(f"Image is {file_size_mb:.2f}MB (<1MB). Using OCR.space API first for production...")
+            try:
+                texts = extract_with_ocr_space(temp_path)
                 engine = "ocr_space"
             except Exception as e:
-                text = None
+                texts = None
                 debug_info['ocr_space_error'] = str(e)
+            
+            if not texts or sum(len(t.strip()) for t in texts) < 50:
+                print("OCR.space yielded insufficient results. Falling back to local Tesseract...")
+                try:
+                    texts = extract_with_local(temp_path)
+                    engine = "tesseract"
+                except Exception as e:
+                    texts = None
+                    debug_info['tesseract_error'] = str(e)
         
-        if not text:
+        if not texts:
             return jsonify({
                 'error': 'Failed to extract text using Tesseract or OCR.space. Please ensure the image is clear.',
                 'debug_info': debug_info
             }), 400
         
-        # Add metadata to result later
-        
-        # Apply learned corrections from memory
+        parsed_documents = []
         memory = load_memory()
-        text = apply_corrections(text, memory)
-        print("Applied learned corrections to OCR text.")
-
-        doc_type = detect_document_type(text)
         
-        if doc_type == 'invoice':
-            result = parse_invoice(text, company_gst=company_gst)
-        elif doc_type == 'vehicle_rc':
-            result = parse_vehicle_document(text, 'rc')
-        elif doc_type == 'driving_license':
-            result = parse_driver_document(text, 'driving_license')
-        elif doc_type == 'fitness':
-            result = parse_vehicle_document(text, 'fitness')
-        elif doc_type == 'permit':
-            result = parse_vehicle_document(text, 'permit')
-        elif doc_type == 'tax_receipt':
-            result = parse_vehicle_document(text, 'tax_receipt')
-        elif doc_type == 'insurance':
-            result = parse_vehicle_document(text, 'insurance')
-        elif doc_type == 'puc':
-            result = parse_vehicle_document(text, 'puc')
-        else:
-            result = {'message': 'Unknown document type', 'raw_text': text}
-        
-        result['document_type'] = doc_type
-        result = validate_fields(result, doc_type)
-        result = add_confidence(result, text, doc_type)
-        result['raw_text'] = text
-        result['engine'] = engine
-        
-        return jsonify(result)
+        for text in texts:
+            if not text.strip(): continue
+            
+            # Apply learned corrections from memory
+            text = apply_corrections(text, memory)
+            
+            # Detect Document Type & Parse Fields
+            doc_type = detect_document_type(text)
+            
+            if doc_type == 'invoice':
+                result = parse_invoice(text, company_gst=company_gst)
+            elif doc_type == 'vehicle_rc':
+                result = parse_vehicle_document(text, 'rc')
+            elif doc_type == 'driving_license':
+                result = parse_driver_document(text, 'driving_license')
+            elif doc_type == 'fitness':
+                result = parse_vehicle_document(text, 'fitness')
+            elif doc_type == 'permit':
+                result = parse_vehicle_document(text, 'permit')
+            elif doc_type == 'tax_receipt':
+                result = parse_vehicle_document(text, 'tax_receipt')
+            elif doc_type == 'insurance':
+                result = parse_vehicle_document(text, 'insurance')
+            elif doc_type == 'puc':
+                result = parse_vehicle_document(text, 'puc')
+            else:
+                result = {'message': 'Unknown document type'}
+                
+            result['document_type'] = doc_type
+            result = validate_fields(result, doc_type)
+            result = add_confidence(result, text, doc_type)
+            result['raw_text'] = text
+            
+            parsed_documents.append({
+                'type': doc_type,
+                'data': result
+            })
+            
+        return jsonify({
+            'documents': parsed_documents,
+            'engine': engine
+        })
     
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

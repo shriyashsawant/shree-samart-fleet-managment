@@ -15,10 +15,10 @@ def preprocess_image(image_path):
         if img is None:
             return image_path
             
-        # Step 0: Resize if too small (Tesseract performs better on larger text)
+        # Step 0: Ensure image is large enough for Tesseract without blowing up memory
         h, w = img.shape[:2]
-        if w < 1000 or h < 1000:
-            scale = 1000 / max(h, w)
+        if max(h, w) < 1500:
+            scale = 1500 / max(h, w)
             img = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
         
         # Step 1: Convert to grayscale
