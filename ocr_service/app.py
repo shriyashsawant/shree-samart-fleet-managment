@@ -137,19 +137,32 @@ def extract_document():
         processed_path = preprocess_image(temp_path)
         from ocr_engine import extract_with_local, extract_with_ocr_space
         
+        debug_info = {}
+        
         # 1. Try Tesseract first (assuming it's installed in production as per user)
         print("Attempting local Tesseract extraction...")
-        text = extract_with_local(processed_path)
-        engine = "tesseract"
-        
+        try:
+            text = extract_with_local(processed_path)
+            engine = "tesseract"
+        except Exception as e:
+            text = None
+            debug_info['tesseract_error'] = str(e)
+            
         # 2. Try OCR.space if Tesseract failed or returned insufficient text
         if not text or len(text.strip()) < 50:
             print("Tesseract yielded insufficient results. Falling back to OCR.space...")
-            text = extract_with_ocr_space(processed_path)
-            engine = "ocr_space"
+            try:
+                text = extract_with_ocr_space(processed_path)
+                engine = "ocr_space"
+            except Exception as e:
+                text = None
+                debug_info['ocr_space_error'] = str(e)
         
         if not text:
-            return jsonify({'error': 'Failed to extract text using Tesseract or OCR.space. Please ensure the image is clear.'}), 400
+            return jsonify({
+                'error': 'Failed to extract text using Tesseract or OCR.space. Please ensure the image is clear.',
+                'debug_info': debug_info
+            }), 400
         
         # Add metadata to result later
         

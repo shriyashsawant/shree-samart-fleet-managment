@@ -49,7 +49,7 @@ def extract_with_local(image_path):
         return None
     except Exception as e:
         print(f"Tesseract OCR error: {e}")
-        return None
+        raise e
 
 
 def extract_with_ocr_space(image_path):
@@ -87,7 +87,7 @@ def extract_with_ocr_space(image_path):
         return None
     except Exception as e:
         print(f"OCR.space error: {e}")
-        return None
+        raise e
 
 
 def extract_text(image_path):
