@@ -6,6 +6,7 @@ Optimized for production reliability on Render.
 import requests
 import os
 import pytesseract
+import gc
 from PIL import Image
 
 # Tesseract Configuration
@@ -74,8 +75,8 @@ def extract_with_local(image_path):
             full_text = []
             try:
                 from pdf2image import convert_from_path
-                # 300 DPI as recommended for Scanned PDFs
-                images = convert_from_path(image_path, dpi=300, first_page=1, last_page=3)
+                # 200 DPI for stability on 512MB RAM tier. (300 DPI caused SIGKILL)
+                images = convert_from_path(image_path, dpi=200, first_page=1, last_page=2)
                 if not images:
                     return None
             except Exception as pe:
@@ -93,8 +94,17 @@ def extract_with_local(image_path):
                     )
                     if page_text:
                         full_text.append(page_text)
+                    
+                    # Memory Cleanup: Critical for 512MB RAM limit
+                    del thresh
+                    gc.collect()
+                    
                 except Exception as e:
                     print(f"Failed extracting on page {index}: {e}")
+            
+            # Clear memory buffer of loaded images
+            images.clear()
+            gc.collect()
         else:
             # Normal Image Pipeline
             img = Image.open(image_path)
