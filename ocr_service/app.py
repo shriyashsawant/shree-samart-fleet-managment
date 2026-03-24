@@ -114,6 +114,12 @@ def add_confidence(result, text, doc_type):
     expected_fields = {
         'invoice': [('bill_no', 15), ('date', 15), ('party_name', 15), ('party_gst', 15), ('total_amount', 15)],
         'vehicle_rc': [('registration_number', 25), ('chassis_number', 25), ('engine_number', 20)],
+        'fitness': [('registration_number', 20), ('chassis_number', 20), ('engine_number', 20), ('certificate_expires', 20), ('fitness_validity', 20)],
+        'permit': [('permit_number', 25), ('registration_number', 25), ('valid_from', 25), ('valid_to', 25)],
+        'tax_receipt': [('registration_number', 25), ('tax_amount', 25), ('period_from', 25), ('period_to', 25)],
+        'insurance': [('registration_number', 25), ('insurance_company', 25), ('expiry_date', 25), ('policy_number', 25)],
+        'puc': [('registration_number', 25), ('puc_validity', 25), ('expiry_date', 25), ('emission_level', 25)],
+        'driving_license': [('license_number', 25), ('name', 25), ('expiry_date', 25), ('state', 25)],
     }
     fields = expected_fields.get(doc_type, [])
     field_confidences = {}
