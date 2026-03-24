@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# Install system dependencies including Tesseract OCR
+# Cache Buster (Timestamp: 2026-03-25 04:16)
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     poppler-utils \

@@ -1,4 +1,4 @@
-# STABLE OCR STACK (v2 ecosystem)
+# STABLE OCR STACK (v2 ecosystem) - Build Refresh: 2026-03-25 04:17
 pytesseract
 numpy<2.0.0
 opencv-python-headless
