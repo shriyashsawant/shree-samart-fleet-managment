@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: shreesamarth-ocr
+    env: docker
+    # We specify the context and Dockerfile path since it's in a subdirectory
+    rootDir: ocr_service
+    dockerfilePath: ./Dockerfile
+    plan: free # Change this if you are using a paid tier
+    healthCheckPath: /api/ocr/health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: OCR_SPACE_API_KEY
+        value: helloworld # NOTE: Update this via the Render dashboard after deployment
