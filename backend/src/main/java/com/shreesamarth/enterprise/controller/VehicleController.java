@@ -176,10 +176,8 @@ public class VehicleController {
             // OCR failed, continue without OCR data
         }
 
-        if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
-            applyOcrToVehicle(vehicle, documentType, fields);
+        if (ocrSuccess && !ocrData.isEmpty()) {
+            applyOcrToVehicle(vehicle, documentType, ocrData);
             vehicleRepository.save(vehicle);
         }
 
@@ -191,10 +189,14 @@ public class VehicleController {
         
         if (expiryDate != null && !expiryDate.isEmpty()) {
             document.setExpiryDate(LocalDate.parse(expiryDate));
-        } else if (ocrSuccess && ocrData.containsKey("extracted_fields")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> fields = (Map<String, Object>) ocrData.get("extracted_fields");
-            LocalDate extractedExpiry = parseOcrDate(fields.get("expiry_date"));
+        } else if (ocrSuccess && !ocrData.isEmpty()) {
+            LocalDate extractedExpiry = parseOcrDate(ocrData.get("expiry_date"));
+            if (extractedExpiry == null) {
+                extractedExpiry = parseOcrDate(ocrData.get("valid_to"));
+            }
+            if (extractedExpiry == null) {
+                extractedExpiry = parseOcrDate(ocrData.get("certificate_expires"));
+            }
             if (extractedExpiry != null) {
                 document.setExpiryDate(extractedExpiry);
             }
