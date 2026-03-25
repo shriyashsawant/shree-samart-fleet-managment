@@ -31,11 +31,15 @@ public class VehicleDocument {
     @Column(name = "document_name", length = 100)
     private String documentName;
 
+
     @Column(name = "file_path")
     private String filePath;
 
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String remarks;
 
     @CreationTimestamp
     @Column(updatable = false)

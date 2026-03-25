@@ -11,6 +11,8 @@ import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import com.shreesamarth.enterprise.service.OcrService;
+import com.shreesamarth.enterprise.entity.VehicleCompliance;
+import com.shreesamarth.enterprise.repository.VehicleComplianceRepository;
 import com.shreesamarth.enterprise.dto.VehicleDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -160,9 +162,53 @@ public class VehicleController {
         document.setFilePath(fileUrl);
         document.setExpiryDate(expiryDate != null && !expiryDate.isEmpty() ? LocalDate.parse(expiryDate) : null);
 
+        // OCR Pipeline for Standard Upload
+        Map<String, Object> ocrData = new HashMap<>();
+        String detectedType = null;
+        try {
+            Map<String, Object> ocrResponse = ocrService.extractDocument(file);
+            if (ocrResponse != null && ocrResponse.containsKey("documents")) {
+                List<Map<String, Object>> docs = (List<Map<String, Object>>) ocrResponse.get("documents");
+                if (!docs.isEmpty()) {
+                    ocrData = (Map<String, Object>) docs.get(0).get("data");
+                    detectedType = (String) docs.get(0).get("type");
+                }
+            }
+        } catch (Exception e) {}
+
+        if (detectedType != null) {
+            if (detectedType.equals("vehicle_rc")) document.setDocumentType("RC");
+            else if (detectedType.equals("fitness")) document.setDocumentType("FITNESS");
+            else if (detectedType.equals("permit")) document.setDocumentType("PERMIT");
+            else if (detectedType.equals("tax_receipt")) document.setDocumentType("TAX");
+            else if (detectedType.equals("insurance")) document.setDocumentType("INSURANCE");
+            else if (detectedType.equals("puc")) document.setDocumentType("PUC");
+        }
+
+        if (ocrData != null && !ocrData.isEmpty()) {
+            applyOcrToVehicle(vehicle, document.getDocumentType(), ocrData);
+            vehicleRepository.save(vehicle);
+            if (document.getExpiryDate() == null) {
+                LocalDate extractedExpiry = parseOcrDate(ocrData.get("expiry_date"));
+                if (extractedExpiry == null) extractedExpiry = parseOcrDate(ocrData.get("valid_to"));
+                if (extractedExpiry != null) document.setExpiryDate(extractedExpiry);
+            }
+            
+            // Auto-populate remarks
+            StringBuilder sb = new StringBuilder();
+            sb.append("Extracted Meta: ");
+            ocrData.forEach((k, v) -> {
+                if (v != null && !v.toString().isEmpty() && !k.contains("date")) {
+                    sb.append(k).append(": ").append(v).append(", ");
+                }
+            });
+            document.setRemarks(sb.toString().replaceAll(", $", ""));
+        }
+
         VehicleDocument savedDoc = documentRepository.save(document);
         syncReminderForDocument(vehicle, savedDoc);
         syncComplianceForDocument(vehicle, savedDoc);
+
         return ResponseEntity.ok(savedDoc);
     }
 
@@ -181,28 +227,40 @@ public class VehicleController {
 
         Map<String, Object> ocrData = new HashMap<>();
         boolean ocrSuccess = false;
-
+        String detectedType = null;
         try {
             Map<String, Object> ocrResponse = ocrService.extractDocument(file);
             if (ocrResponse != null && ocrResponse.containsKey("documents")) {
                 List<Map<String, Object>> docs = (List<Map<String, Object>>) ocrResponse.get("documents");
                 if (!docs.isEmpty()) {
                     ocrData = (Map<String, Object>) docs.get(0).get("data");
+                    detectedType = (String) docs.get(0).get("type");
                     ocrSuccess = ocrData != null && !ocrData.isEmpty();
                 }
             }
         } catch (Exception e) {
-            // OCR failed, continue without OCR data
+            // OCR failed, continue without OCR
+        }
+
+        // Auto-correct document type if OCR detected something specific
+        String effectiveType = documentType;
+        if (ocrSuccess && detectedType != null) {
+            if (detectedType.equals("vehicle_rc")) effectiveType = "RC";
+            else if (detectedType.equals("fitness")) effectiveType = "FITNESS";
+            else if (detectedType.equals("permit")) effectiveType = "PERMIT";
+            else if (detectedType.equals("tax_receipt")) effectiveType = "TAX";
+            else if (detectedType.equals("insurance")) effectiveType = "INSURANCE";
+            else if (detectedType.equals("puc")) effectiveType = "PUC";
         }
 
         if (ocrSuccess && !ocrData.isEmpty()) {
-            applyOcrToVehicle(vehicle, documentType, ocrData);
+            applyOcrToVehicle(vehicle, effectiveType, ocrData);
             vehicleRepository.save(vehicle);
         }
 
         VehicleDocument document = new VehicleDocument();
         document.setVehicle(vehicle);
-        document.setDocumentType(documentType);
+        document.setDocumentType(effectiveType);
         document.setDocumentName(file.getOriginalFilename());
         document.setFilePath(fileUrl);
         
@@ -222,6 +280,17 @@ public class VehicleController {
             if (extractedExpiry != null) {
                 document.setExpiryDate(extractedExpiry);
             }
+        }
+        
+        if (ocrSuccess && !ocrData.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Extracted Meta: ");
+            ocrData.forEach((k, v) -> {
+                if (v != null && !v.toString().isEmpty() && !k.contains("date")) {
+                    sb.append(k).append(": ").append(v).append(", ");
+                }
+            });
+            document.setRemarks(sb.toString().replaceAll(", $", ""));
         }
 
         VehicleDocument savedDoc = documentRepository.save(document);
@@ -257,18 +326,26 @@ public class VehicleController {
 
     private void syncComplianceForDocument(Vehicle vehicle, VehicleDocument doc) {
         String type = doc.getDocumentType().toUpperCase();
-        if (!type.matches("RC|INSURANCE|FITNESS|PERMIT|PUC|TAX")) return;
-
+        // Corrected Mapping for Frontend
+        String displayType = type;
+        if (type.contains("RC")) displayType = "RC Book";
+        else if (type.contains("TAX")) displayType = "Road Tax";
+        else if (type.contains("FITNESS")) displayType = "Fitness Certificate";
+        else if (type.contains("INSURANCE")) displayType = "Insurance";
+        else if (type.contains("PUC")) displayType = "PUC";
+        else if (type.contains("PERMIT")) displayType = "Permit";
+        
         // Find existing or create new
+        final String finalType = displayType;
         List<VehicleCompliance> existing = complianceRepository.findByVehicleId(vehicle.getId()).stream()
-                .filter(c -> c.getType().equalsIgnoreCase(doc.getDocumentType()))
+                .filter(c -> c.getType().equalsIgnoreCase(finalType))
                 .toList();
         
         VehicleCompliance compliance = existing.isEmpty() ? new VehicleCompliance() : existing.get(0);
         
         compliance.setVehicle(vehicle);
         compliance.setTenant(vehicle.getTenant());
-        compliance.setType(doc.getDocumentType());
+        compliance.setType(displayType);
         compliance.setExpiryDate(doc.getExpiryDate() != null ? doc.getExpiryDate() : LocalDate.now().plusMonths(12));
         compliance.setDocumentPath(doc.getFilePath());
         compliance.setStatus("ACTIVE");
@@ -384,16 +461,67 @@ public class VehicleController {
             if (!file.isEmpty()) {
                 String fileUrl = fileUploadService.uploadFile(file, "vehicle-documents/" + vehicle.getVehicleNumber());
                 
+                // OCR Pipeline for each file in bulk
+                Map<String, Object> ocrData = new HashMap<>();
+                String detectedType = null;
+                boolean ocrSuccess = false;
+                try {
+                    Map<String, Object> ocrResponse = ocrService.extractDocument(file);
+                    if (ocrResponse != null && ocrResponse.containsKey("documents")) {
+                        List<Map<String, Object>> docs = (List<Map<String, Object>>) ocrResponse.get("documents");
+                        if (!docs.isEmpty()) {
+                            ocrData = (Map<String, Object>) docs.get(0).get("data");
+                            detectedType = (String) docs.get(0).get("type");
+                            ocrSuccess = ocrData != null && !ocrData.isEmpty();
+                        }
+                    }
+                } catch (Exception e) {}
+
+                String effectiveType = documentType;
+                if (ocrSuccess && detectedType != null) {
+                    if (detectedType.equals("vehicle_rc")) effectiveType = "RC";
+                    else if (detectedType.equals("fitness")) effectiveType = "FITNESS";
+                    else if (detectedType.equals("permit")) effectiveType = "PERMIT";
+                    else if (detectedType.equals("tax_receipt")) effectiveType = "TAX";
+                    else if (detectedType.equals("insurance")) effectiveType = "INSURANCE";
+                    else if (detectedType.equals("puc")) effectiveType = "PUC";
+                }
+
+                if (ocrSuccess && !ocrData.isEmpty()) {
+                    applyOcrToVehicle(vehicle, effectiveType, ocrData);
+                }
+
                 VehicleDocument document = new VehicleDocument();
                 document.setVehicle(vehicle);
-                document.setDocumentType(documentType);
+                document.setDocumentType(effectiveType);
                 document.setDocumentName(file.getOriginalFilename());
                 document.setFilePath(fileUrl);
                 
-                documents.add(documentRepository.save(document));
+                if (ocrSuccess && !ocrData.isEmpty()) {
+                    LocalDate extractedExpiry = parseOcrDate(ocrData.get("expiry_date"));
+                    if (extractedExpiry == null) extractedExpiry = parseOcrDate(ocrData.get("valid_to"));
+                    if (extractedExpiry == null) extractedExpiry = parseOcrDate(ocrData.get("certificate_expires"));
+                    if (extractedExpiry == null) extractedExpiry = parseOcrDate(ocrData.get("puc_validity"));
+                    if (extractedExpiry != null) document.setExpiryDate(extractedExpiry);
+                    
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Extracted Meta: ");
+                    ocrData.forEach((k, v) -> {
+                        if (v != null && !v.toString().isEmpty() && !k.contains("date")) {
+                            sb.append(k).append(": ").append(v).append(", ");
+                        }
+                    });
+                    document.setRemarks(sb.toString().replaceAll(", $", ""));
+                }
+                
+                VehicleDocument savedDoc = documentRepository.save(document);
+                syncReminderForDocument(vehicle, savedDoc);
+                syncComplianceForDocument(vehicle, savedDoc);
+                documents.add(savedDoc);
             }
         }
         
+        vehicleRepository.save(vehicle);
         return ResponseEntity.ok(documents);
     }
 
@@ -424,9 +552,13 @@ public class VehicleController {
                 .map(Vehicle::getFuelEconomy)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        if (totalVehicles > 0) {
+        long vehiclesWithFuelData = allVehicles.stream()
+                .filter(v -> v.getFuelEconomy() != null)
+                .count();
+
+        if (vehiclesWithFuelData > 0) {
             avgFuelEconomy = avgFuelEconomy.divide(
-                    new BigDecimal(totalVehicles),
+                    new BigDecimal(vehiclesWithFuelData),
                     2,
                     RoundingMode.HALF_UP
             );

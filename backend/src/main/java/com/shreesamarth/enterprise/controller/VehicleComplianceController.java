@@ -17,7 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.security.core.Authentication;
 
 @RestController
@@ -29,6 +31,7 @@ public class VehicleComplianceController {
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
+    private final com.shreesamarth.enterprise.service.OcrService ocrService;
 
     private Tenant getCurrentTenant(Authentication auth) {
         if (auth == null) return null;
@@ -59,9 +62,9 @@ public class VehicleComplianceController {
     public ResponseEntity<VehicleCompliance> createCompliance(
             @RequestParam("vehicleId") Long vehicleId,
             @RequestParam("type") String type,
-            @RequestParam("issueDate") String issueDate,
-            @RequestParam("expiryDate") String expiryDate,
-            @RequestParam("amount") BigDecimal amount,
+            @RequestParam(value = "issueDate", required = false) String issueDate,
+            @RequestParam(value = "expiryDate", required = false) String expiryDate,
+            @RequestParam(value = "amount", required = false) BigDecimal amount,
             @RequestParam(value = "remarks", required = false) String remarks,
             @RequestParam(value = "file", required = false) MultipartFile file,
             Authentication auth) throws IOException {
@@ -74,14 +77,63 @@ public class VehicleComplianceController {
         compliance.setVehicle(vehicle);
         compliance.setType(type);
         compliance.setIssueDate(issueDate != null && !issueDate.isEmpty() ? LocalDate.parse(issueDate) : null);
-        compliance.setExpiryDate(LocalDate.parse(expiryDate));
-        compliance.setAmount(amount);
+        compliance.setExpiryDate(expiryDate != null && !expiryDate.isEmpty() ? LocalDate.parse(expiryDate) : null);
+        compliance.setAmount(amount != null ? amount : BigDecimal.ZERO);
         compliance.setRemarks(remarks);
         if (tenant != null) compliance.setTenant(tenant);
 
         if (file != null && !file.isEmpty()) {
-            String fileUrl = fileUploadService.uploadFile(file, "compliance-documents");
+            String fileUrl = fileUploadService.uploadFile(file, "compliance-documents/" + vehicle.getVehicleNumber());
             compliance.setDocumentPath(fileUrl);
+            
+            // Automatic OCR Integration
+            try {
+                Map<String, Object> ocrResponse = ocrService.extractDocument(file);
+                if (ocrResponse != null && ocrResponse.containsKey("documents")) {
+                    List<Map<String, Object>> docs = (List<Map<String, Object>>) ocrResponse.get("documents");
+                    if (!docs.isEmpty()) {
+                        Map<String, Object> ocrData = (Map<String, Object>) docs.get(0).get("data");
+                        String detectedType = (String) docs.get(0).get("type");
+                        
+                        if (detectedType != null) {
+                            if (detectedType.equals("vehicle_rc")) compliance.setType("RC Book");
+                            else if (detectedType.equals("fitness")) compliance.setType("Fitness Certificate");
+                            else if (detectedType.equals("permit")) compliance.setType("Permit / National Permit");
+                            else if (detectedType.equals("tax_receipt")) compliance.setType("Road Tax");
+                            else if (detectedType.equals("insurance")) compliance.setType("Insurance");
+                            else if (detectedType.equals("puc")) compliance.setType("PUC");
+                        }
+
+                        if (ocrData != null && !ocrData.isEmpty()) {
+                            if (compliance.getExpiryDate() == null) {
+                                String exp = (String) ocrData.getOrDefault("expiry_date", ocrData.get("valid_to"));
+                                if (exp != null) {
+                                    try {
+                                        compliance.setExpiryDate(LocalDate.parse(exp.split("T")[0]));
+                                    } catch (Exception e) {}
+                                }
+                            }
+                            
+                            // Auto-populate remarks with OCR findings
+                            StringBuilder sb = new StringBuilder();
+                            if (compliance.getRemarks() != null) sb.append(compliance.getRemarks()).append(" | ");
+                            sb.append("Extracted Meta: ");
+                            ocrData.forEach((k, v) -> {
+                                if (v != null && !v.toString().isEmpty() && !k.contains("date")) {
+                                    sb.append(k).append(": ").append(v).append(", ");
+                                }
+                            });
+                            compliance.setRemarks(sb.toString().replaceAll(", $", ""));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Best effort OCR 
+            }
+        }
+
+        if (compliance.getExpiryDate() == null) {
+            compliance.setExpiryDate(LocalDate.now().plusMonths(12));
         }
 
         return ResponseEntity.ok(complianceRepository.save(compliance));
