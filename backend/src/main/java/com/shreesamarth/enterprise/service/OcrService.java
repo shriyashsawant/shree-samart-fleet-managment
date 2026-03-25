@@ -21,7 +21,7 @@ public class OcrService {
 
     private static final Logger log = LoggerFactory.getLogger(OcrService.class);
 
-    @Value("${ocr.service.url:https://shree-samarth-ocr.onrender.com}")
+    @Value("${ocr.service.url:https://shreesamarth-ocr.onrender.com}")
     private String ocrServiceUrl;
 
     private final RestTemplate restTemplate;
