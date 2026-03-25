@@ -194,7 +194,7 @@ export default function Compliance() {
              <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-2">Initialize security protocols by depositing the first record.</p>
           </div>
         ) : (
-          compliance.filter(i => (selectedType === 'All' || i.type === selectedType) && i.vehicle?.vehicleNumber?.toUpperCase().includes(searchTerm.toUpperCase())).map((item, i) => {
+          compliance.filter(i => (selectedType === 'All' || i.type === selectedType) && (i.vehicleNumber || '').toUpperCase().includes(searchTerm.toUpperCase())).map((item, i) => {
             const status = getStatus(item.expiryDate)
             return (
               <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
@@ -207,8 +207,8 @@ export default function Compliance() {
                              <Truck className="w-5 h-5" />
                           </div>
                           <div>
-                             <h4 className="text-sm font-black text-dark-900 leading-none">{item.vehicle?.vehicleNumber}</h4>
-                             <p className="text-[9px] font-bold text-dark-400 uppercase tracking-widest mt-1">{item.vehicle?.model}</p>
+                             <h4 className="text-sm font-black text-dark-900 leading-none">{item.vehicleNumber}</h4>
+                             <p className="text-[9px] font-bold text-dark-400 uppercase tracking-widest mt-1">{item.vehicleModel}</p>
                           </div>
                        </div>
                        <span className={cn("px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border", status.color, status.bg, status.border)}>
@@ -240,8 +240,8 @@ export default function Compliance() {
 
                  <div className="px-8 py-6 bg-dark-50/50 mt-4 flex justify-between items-center group-hover:bg-primary-50 transition-colors border-t border-dark-100/50">
                     <div className="flex gap-2">
-                       {item.filePath && (
-                          <button onClick={() => openDocument(item.filePath)}
+                       {(item.documentPath || item.filePath) && (
+                          <button onClick={() => openDocument(item.documentPath || item.filePath)}
                              className="p-2 bg-white rounded-lg border border-dark-100 text-dark-400 hover:text-primary-600 transition-colors shadow-sm"
                           >
                              <FileSearch className="w-4 h-4" />
@@ -329,16 +329,16 @@ export default function Compliance() {
                     <FileSearch className="w-5 h-5 text-primary-400" />
                     <span className="text-[10px] font-black text-white uppercase tracking-widest">Evidence Protocol</span>
                   </div>
-                  <button onClick={() => openDocument(selectedItem.filePath)} className="text-[10px] font-black text-primary-400 hover:text-white uppercase tracking-widest flex items-center gap-2">
+                  <button onClick={() => openDocument(selectedItem.documentPath || selectedItem.filePath)} className="text-[10px] font-black text-primary-400 hover:text-white uppercase tracking-widest flex items-center gap-2">
                     <ExternalLink className="w-4 h-4" /> Assets Link
                   </button>
                 </div>
                 <div className="flex-1 bg-dark-900 rounded-[1.5rem] overflow-hidden relative group">
-                  {selectedItem.filePath && (
+                  {(selectedItem.documentPath || selectedItem.filePath) && (
                     <img 
-                      src={selectedItem.filePath?.startsWith('http') 
-                        ? selectedItem.filePath 
-                        : api.defaults.baseURL + '/api/files/' + selectedItem.filePath} 
+                      src={(selectedItem.documentPath || selectedItem.filePath)?.startsWith('http') 
+                        ? (selectedItem.documentPath || selectedItem.filePath) 
+                        : api.defaults.baseURL + '/api/files/' + (selectedItem.documentPath || selectedItem.filePath)} 
                       alt="Compliance Evidence" 
                       className="w-full h-full object-contain p-4"
                       onError={(e) => { e.target.style.display = 'none' }}
@@ -360,7 +360,7 @@ export default function Compliance() {
                    <div className="space-y-6">
                       <div className="p-6 bg-primary-50 rounded-2xl border border-primary-100">
                          <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Asset Status</p>
-                         <p className="text-sm font-black text-dark-900">{selectedItem.vehicle?.vehicleNumber} - {selectedItem.type}</p>
+                         <p className="text-sm font-black text-dark-900">{selectedItem.vehicleNumber} - {selectedItem.type}</p>
                       </div>
                       <div className="space-y-2">
                          <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest">Terminus Date</label>

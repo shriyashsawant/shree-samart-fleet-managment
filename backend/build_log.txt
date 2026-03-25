@@ -1,0 +1,131 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.shreesamarth:enterprise >---------------------
+[INFO] Building Shree Samarth Enterprise 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ enterprise ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ enterprise ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 113 source files with javac [debug release 17] to target\classes
+[INFO] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java: Some input files use unchecked or unsafe operations.
+[INFO] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java: Recompile with -Xlint:unchecked for details.
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[223,21] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[225,21] cannot find symbol
+  symbol:   variable ocrSuccess
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[225,34] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[225,54] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[234,13] cannot find symbol
+  symbol:   variable ocrSuccess
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[243,13] cannot find symbol
+  symbol:   variable ocrSuccess
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[243,28] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[244,55] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[256,20] cannot find symbol
+  symbol:   variable ocrSuccess
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[256,35] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[257,54] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[259,48] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[262,48] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[265,48] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[278,33] cannot find symbol
+  symbol:   variable ocrData
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[279,40] cannot find symbol
+  symbol:   variable ocrSuccess
+  location: class com.shreesamarth.enterprise.controller.VehicleController
+[INFO] 16 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.371 s
+[INFO] Finished at: 2026-03-25T23:58:36+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project enterprise: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[223,21] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[225,21] cannot find symbol
+[ERROR]   symbol:   variable ocrSuccess
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[225,34] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[225,54] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[234,13] cannot find symbol
+[ERROR]   symbol:   variable ocrSuccess
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[243,13] cannot find symbol
+[ERROR]   symbol:   variable ocrSuccess
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[243,28] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[244,55] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[256,20] cannot find symbol
+[ERROR]   symbol:   variable ocrSuccess
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[256,35] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[257,54] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[259,48] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[262,48] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[265,48] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[278,33] cannot find symbol
+[ERROR]   symbol:   variable ocrData
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java:[279,40] cannot find symbol
+[ERROR]   symbol:   variable ocrSuccess
+[ERROR]   location: class com.shreesamarth.enterprise.controller.VehicleController
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

@@ -511,7 +511,7 @@ function DocumentVault({ vehicleId, documents, onUpload }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
            {documents.map((doc, i) => (
-              <motion.div 
+               <motion.div 
                 key={doc.id}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -519,22 +519,30 @@ function DocumentVault({ vehicleId, documents, onUpload }) {
                 className="bg-white rounded-[2rem] p-8 border border-dark-100 group hover:border-primary-500 transition-all cursor-pointer premium-shadow bg-mesh"
               >
                  <div className="flex items-center gap-6 mb-6">
-                    <div className="w-16 h-16 bg-dark-50 rounded-2xl flex items-center justify-center border border-dark-100 shadow-sm group-hover:scale-110 group-hover:bg-primary-50 group-hover:text-primary-600 transition-all">
-                       <FileText className="w-8 h-8" />
+                    <div className="w-16 h-16 bg-dark-50 rounded-2xl flex items-center justify-center border border-dark-100 shadow-sm group-hover:scale-110 group-hover:bg-primary-50 group-hover:text-primary-600 transition-all overflow-hidden">
+                       {doc.filePath?.startsWith('http') ? (
+                          <img src={doc.filePath} alt={doc.documentName} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' }} />
+                       ) : (
+                          <FileText className="w-8 h-8" />
+                       )}
                     </div>
-                    <div>
-                       <p className="text-[10px] font-black text-dark-400 uppercase tracking-widest mb-1">{doc.documentType}</p>
-                       <p className="text-lg font-black text-dark-900 tracking-tight leading-none">Security Node v{i+1}</p>
-                       {doc.remarks && (
-                          <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest mt-3 leading-tight border-l-2 border-primary-100 pl-2">
-                             {doc.remarks}
-                          </p>
+                    <div className="flex-1 min-w-0">
+                       <span className="inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-primary-50 text-primary-700 border border-primary-100 mb-2">{doc.documentType || 'OTHER'}</span>
+                       <p className="text-sm font-black text-dark-900 tracking-tight leading-none truncate">{doc.documentName || 'Untitled Document'}</p>
+                       {doc.expiryDate && (
+                          <p className="text-[9px] font-bold text-dark-400 uppercase tracking-widest mt-2">Expires: {formatDate(doc.expiryDate)}</p>
                        )}
                     </div>
                  </div>
+                 {doc.remarks && (
+                    <div className="mb-6 p-4 bg-primary-50/50 rounded-xl border border-primary-100/50">
+                       <p className="text-[8px] font-black text-primary-600 uppercase tracking-widest mb-1">AI Extracted Data</p>
+                       <p className="text-[10px] font-bold text-dark-500 leading-tight">{doc.remarks}</p>
+                    </div>
+                 )}
                  <div className="flex items-center justify-between pt-6 border-t border-dark-100/50">
                     <span className="text-[9px] font-black text-dark-300 uppercase tracking-widest flex items-center gap-2">
-                       <Clock className="w-3 h-3" /> {formatDate(doc.updatedAt || doc.createdAt)}
+                       <Clock className="w-3 h-3" /> {formatDate(doc.createdAt)}
                     </span>
                     <button 
                         onClick={() => openDocument(doc.filePath)}

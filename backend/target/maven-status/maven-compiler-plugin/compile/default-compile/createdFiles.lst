@@ -104,6 +104,7 @@ com\shreesamarth\enterprise\dto\AuthDTO.class
 com\shreesamarth\enterprise\repository\VehicleRepository.class
 com\shreesamarth\enterprise\controller\DebugController.class
 com\shreesamarth\enterprise\entity\Client.class
+com\shreesamarth\enterprise\dto\ComplianceDTO.class
 com\shreesamarth\enterprise\entity\VehicleCompliance.class
 com\shreesamarth\enterprise\repository\PaymentRepository.class
 com\shreesamarth\enterprise\controller\InventoryController.class

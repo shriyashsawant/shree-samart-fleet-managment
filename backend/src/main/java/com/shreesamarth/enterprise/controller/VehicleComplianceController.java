@@ -1,5 +1,6 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.dto.ComplianceDTO;
 import com.shreesamarth.enterprise.entity.Tenant;
 import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 
 @RestController
@@ -41,20 +43,42 @@ public class VehicleComplianceController {
         return user.getTenant();
     }
 
+    private ComplianceDTO toDTO(VehicleCompliance c) {
+        ComplianceDTO dto = new ComplianceDTO();
+        dto.setId(c.getId());
+        dto.setType(c.getType());
+        dto.setIssueDate(c.getIssueDate());
+        dto.setExpiryDate(c.getExpiryDate());
+        dto.setAmount(c.getAmount());
+        dto.setDocumentPath(c.getDocumentPath());
+        dto.setStatus(c.getStatus());
+        dto.setRemarks(c.getRemarks());
+        dto.setCreatedAt(c.getCreatedAt());
+        if (c.getVehicle() != null) {
+            dto.setVehicleId(c.getVehicle().getId());
+            dto.setVehicleNumber(c.getVehicle().getVehicleNumber());
+            dto.setVehicleModel(c.getVehicle().getModel());
+        }
+        return dto;
+    }
+
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<List<VehicleCompliance>> getAllCompliance(Authentication auth) {
+    public ResponseEntity<List<ComplianceDTO>> getAllCompliance(Authentication auth) {
         Tenant tenant = getCurrentTenant(auth);
         List<VehicleCompliance> all = tenant != null
             ? complianceRepository.findByTenantId(tenant.getId())
             : complianceRepository.findAll();
-        return ResponseEntity.ok(all);
+        List<ComplianceDTO> dtos = all.stream().map(this::toDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/vehicle/{vehicleId}")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<VehicleCompliance>> getComplianceByVehicle(@PathVariable Long vehicleId) {
-        return ResponseEntity.ok(complianceRepository.findByVehicleId(vehicleId));
+    public ResponseEntity<List<ComplianceDTO>> getComplianceByVehicle(@PathVariable Long vehicleId) {
+        List<ComplianceDTO> dtos = complianceRepository.findByVehicleId(vehicleId)
+                .stream().map(this::toDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @PostMapping
