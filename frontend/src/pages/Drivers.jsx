@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Users, Edit, Trash2, Phone, Calendar, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, MapPin, ArrowUpRight, ArrowLeft, MoreVertical, FileSearch, ExternalLink, FileText } from 'lucide-react'
+import { Plus, Users, Edit, Trash2, Phone, Calendar, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, MapPin, ArrowUpRight, ArrowLeft, MoreVertical, FileSearch, ExternalLink, FileText, Zap } from 'lucide-react'
 import { driverAPI, vehicleAPI, attendanceAPI, driverDocumentAPI, expenseAPI, paymentAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn, openDocument } from '../lib/utils'
 import { format } from 'date-fns'
@@ -178,6 +178,8 @@ function PersonnelConsole({ driver, onClose }) {
   const [docFile, setDocFile] = useState(null)
   const [docType, setDocType] = useState('LICENSE')
   const [docNumber, setDocNumber] = useState('')
+  const [useOcr, setUseOcr] = useState(false)
+  const [extracting, setExtracting] = useState(false)
 
   useEffect(() => { 
      loadAttendance()
@@ -246,16 +248,31 @@ function PersonnelConsole({ driver, onClose }) {
   const handleDocUpload = async (e) => {
      e.preventDefault()
      if (!docFile) return
+     setExtracting(true)
      const data = new FormData()
      data.append('driverId', driver.id)
      data.append('documentType', docType)
      data.append('documentNumber', docNumber)
      data.append('file', docFile)
      try {
-        await driverDocumentAPI.upload(data)
+        if (useOcr) {
+           const res = await driverDocumentAPI.uploadWithOcr(data)
+           if (res.data.ocrData) {
+              const ocr = res.data.ocrData
+              if (ocr.license_number) setDocNumber(ocr.license_number)
+              else if (ocr.aadhaar_number) setDocNumber(ocr.aadhaar_number)
+           }
+        } else {
+           await driverDocumentAPI.upload(data)
+        }
         loadDocuments()
         setDocFile(null); setDocNumber('')
-     } catch (e) { console.error(e) }
+     } catch (e) { 
+        console.error(e) 
+        alert('Upload failed. ' + (e.response?.data?.error || ''))
+     } finally {
+        setExtracting(false)
+     }
   }
 
   const deleteRecord = async (id) => {
@@ -470,7 +487,40 @@ function PersonnelConsole({ driver, onClose }) {
                                 </div>
                              </div>
                           </div>
-                          <button type="submit" disabled={!docFile} className="btn-primary w-full disabled:opacity-30 disabled:grayscale">Encrypt & Deposit</button>
+                          <div className="flex items-center gap-3 p-4 bg-primary-50/50 rounded-2xl border border-primary-100">
+                             <div className="flex-1">
+                                <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest">Neural Scan Extraction</p>
+                                <p className="text-[8px] font-bold text-dark-400 uppercase mt-0.5">Automate field filling with OCR</p>
+                             </div>
+                             <button
+                                type="button"
+                                onClick={() => setUseOcr(!useOcr)}
+                                className={cn(
+                                   "w-12 h-6 rounded-full transition-all relative p-1",
+                                   useOcr ? "bg-primary-600" : "bg-dark-200"
+                                )}
+                             >
+                                <div className={cn("w-4 h-4 bg-white rounded-full transition-all shadow-sm", useOcr ? "translate-x-6" : "translate-x-0")} />
+                             </button>
+                          </div>
+
+                          <button 
+                            type="submit" 
+                            disabled={!docFile || extracting} 
+                            className="btn-primary w-full disabled:opacity-30 disabled:grayscale flex items-center justify-center gap-2"
+                          >
+                             {extracting ? (
+                                <>
+                                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                   Scanning...
+                                </>
+                             ) : (
+                                <>
+                                   {useOcr ? <Zap className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                                   {useOcr ? 'Analyze & Deposit' : 'Encrypt & Deposit'}
+                                </>
+                             )}
+                          </button>
                        </form>
                     </div>
 

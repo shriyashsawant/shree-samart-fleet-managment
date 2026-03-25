@@ -22,6 +22,7 @@ com\shreesamarth\enterprise\service\OcrService.class
 com\shreesamarth\enterprise\dto\VehicleProfileDTO$DriverInfo.class
 com\shreesamarth\enterprise\controller\DriverAdvanceController.class
 com\shreesamarth\enterprise\entity\Expense.class
+com\shreesamarth\enterprise\controller\AutomationController.class
 com\shreesamarth\enterprise\dto\VehicleLogDTO.class
 com\shreesamarth\enterprise\config\SendGridConfig.class
 com\shreesamarth\enterprise\repository\TyreRepository.class
@@ -68,6 +69,7 @@ com\shreesamarth\enterprise\repository\TripRepository.class
 com\shreesamarth\enterprise\repository\ClientRepository.class
 com\shreesamarth\enterprise\dto\AuthResponse.class
 com\shreesamarth\enterprise\dto\TripRequest$VehicleRef.class
+com\shreesamarth\enterprise\service\AutomationService.class
 com\shreesamarth\enterprise\config\FirebaseConfig.class
 com\shreesamarth\enterprise\service\EmailService.class
 com\shreesamarth\enterprise\dto\VehicleSummaryDTO.class

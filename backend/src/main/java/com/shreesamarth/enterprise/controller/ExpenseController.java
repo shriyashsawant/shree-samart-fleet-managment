@@ -107,7 +107,11 @@ public class ExpenseController {
             expense.setDriver(driver);
         }
         
-        return ResponseEntity.ok(expenseRepository.save(expense));
+        Expense saved = expenseRepository.save(expense);
+        if ("DIESEL".equalsIgnoreCase(saved.getExpenseType()) || "FUEL".equalsIgnoreCase(saved.getExpenseType())) {
+            updateVehicleFuelEconomy(saved);
+        }
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")
@@ -133,7 +137,11 @@ public class ExpenseController {
                         expense.setDriver(existing.getDriver());
                     }
                     
-                    return ResponseEntity.ok(expenseRepository.save(expense));
+                    Expense saved = expenseRepository.save(expense);
+                    if ("DIESEL".equalsIgnoreCase(saved.getExpenseType()) || "FUEL".equalsIgnoreCase(saved.getExpenseType())) {
+                        updateVehicleFuelEconomy(saved);
+                    }
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -159,5 +167,29 @@ public class ExpenseController {
         String fileUrl = fileUploadService.uploadFile(file, "expense-bills");
         expense.setBillFilePath(fileUrl);
         return ResponseEntity.ok(expenseRepository.save(expense));
+    }
+
+    private void updateVehicleFuelEconomy(Expense expense) {
+        if (expense.getVehicle() == null || expense.getFuelQuantity() == null || expense.getOdometerReading() == null) return;
+        if (expense.getFuelQuantity().doubleValue() <= 0) return;
+
+        // Find the most recent previous fuel expense
+        List<Expense> pastFuel = expenseRepository.findAll().stream()
+                .filter(e -> e.getVehicle().getId().equals(expense.getVehicle().getId()))
+                .filter(e -> ("DIESEL".equalsIgnoreCase(e.getExpenseType()) || "FUEL".equalsIgnoreCase(e.getExpenseType())))
+                .filter(e -> e.getOdometerReading() != null && e.getOdometerReading() < expense.getOdometerReading())
+                .sorted((a, b) -> b.getOdometerReading().compareTo(a.getOdometerReading()))
+                .toList();
+
+        if (!pastFuel.isEmpty()) {
+            Expense prev = pastFuel.get(0);
+            long distance = expense.getOdometerReading() - prev.getOdometerReading();
+            if (distance > 0) {
+                double economy = (double) distance / expense.getFuelQuantity().doubleValue();
+                Vehicle v = expense.getVehicle();
+                v.setFuelEconomy(java.math.BigDecimal.valueOf(economy).setScale(2, java.math.RoundingMode.HALF_UP));
+                vehicleRepository.save(v);
+            }
+        }
     }
 }

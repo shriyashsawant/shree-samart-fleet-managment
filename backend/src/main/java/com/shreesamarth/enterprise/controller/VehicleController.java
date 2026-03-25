@@ -1,9 +1,11 @@
 package com.shreesamarth.enterprise.controller;
 
+import com.shreesamarth.enterprise.entity.Reminder;
 import com.shreesamarth.enterprise.entity.Tenant;
 import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleDocument;
+import com.shreesamarth.enterprise.repository.ReminderRepository;
 import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
 import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
@@ -36,6 +38,7 @@ public class VehicleController {
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
     private final OcrService ocrService;
+    private final ReminderRepository reminderRepository;
 
     private Tenant getCurrentTenant(Authentication auth) {
         if (auth == null) return null;
@@ -156,7 +159,9 @@ public class VehicleController {
         document.setFilePath(fileUrl);
         document.setExpiryDate(expiryDate != null && !expiryDate.isEmpty() ? LocalDate.parse(expiryDate) : null);
 
-        return ResponseEntity.ok(documentRepository.save(document));
+        VehicleDocument savedDoc = documentRepository.save(document);
+        syncReminderForDocument(vehicle, savedDoc);
+        return ResponseEntity.ok(savedDoc);
     }
 
     @PostMapping("/{id}/documents/extract-ocr")
@@ -218,6 +223,7 @@ public class VehicleController {
         }
 
         VehicleDocument savedDoc = documentRepository.save(document);
+        syncReminderForDocument(vehicle, savedDoc);
 
         Map<String, Object> response = new HashMap<>();
         response.put("document", savedDoc);
@@ -225,6 +231,25 @@ public class VehicleController {
         response.put("vehicleUpdated", ocrSuccess);
 
         return ResponseEntity.ok(response);
+    }
+
+    private void syncReminderForDocument(Vehicle vehicle, VehicleDocument doc) {
+        if (doc.getExpiryDate() == null) return;
+        
+        // Find existing reminder for this specific document type or create new one
+        List<Reminder> existingReminders = reminderRepository.findByReferenceTypeAndReferenceId("VEHICLE_DOCUMENT", doc.getId());
+        Reminder reminder = existingReminders.isEmpty() ? new Reminder() : existingReminders.get(0);
+        
+        reminder.setTenant(vehicle.getTenant());
+        reminder.setReminderType("COMPLIANCE");
+        reminder.setTitle(doc.getDocumentType() + " Expiry for " + vehicle.getVehicleNumber());
+        reminder.setDescription("Automated compliance guard for " + doc.getDocumentName());
+        reminder.setExpiryDate(doc.getExpiryDate());
+        reminder.setReferenceType("VEHICLE_DOCUMENT");
+        reminder.setReferenceId(doc.getId());
+        reminder.setStatus("PENDING");
+        
+        reminderRepository.save(reminder);
     }
 
     private void applyOcrToVehicle(Vehicle vehicle, String documentType, Map<String, Object> fields) {

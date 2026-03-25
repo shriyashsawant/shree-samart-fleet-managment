@@ -1,0 +1,37 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.shreesamarth:enterprise >---------------------
+[INFO] Building Shree Samarth Enterprise 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ enterprise ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ enterprise ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 113 source files with javac [debug release 17] to target\classes
+[INFO] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java: Some input files use unchecked or unsafe operations.
+[INFO] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/controller/VehicleController.java: Recompile with -Xlint:unchecked for details.
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/service/AutomationService.java:[90,90] id has private access in com.shreesamarth.enterprise.entity.Driver
+[INFO] 1 error
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.598 s
+[INFO] Finished at: 2026-03-25T05:01:03+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project enterprise: Compilation failure
+[ERROR] /C:/Users/SHRIYASH SAWANT/OneDrive/Desktop/Shree-Samarth/backend/src/main/java/com/shreesamarth/enterprise/service/AutomationService.java:[90,90] id has private access in com.shreesamarth.enterprise.entity.Driver
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

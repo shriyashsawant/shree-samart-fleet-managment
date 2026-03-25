@@ -1,3 +1,4 @@
+C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\AutomationController.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\VehicleProfileDTO.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\controller\DebugController.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\IdleVehicleAlertDTO.java
@@ -94,6 +95,7 @@ C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\co
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\dto\AuthResponse.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\ShreeSamarthApplication.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\security\JwtService.java
+C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\service\AutomationService.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\config\DataInitializer.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\Expense.java
 C:\Users\SHRIYASH SAWANT\OneDrive\Desktop\Shree-Samarth\backend\src\main\java\com\shreesamarth\enterprise\entity\VehicleTelematics.java

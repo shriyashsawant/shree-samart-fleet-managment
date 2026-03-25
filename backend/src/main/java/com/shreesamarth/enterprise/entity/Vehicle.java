@@ -133,4 +133,29 @@ public class Vehicle {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    @PreUpdate
+    public void normalizeVehicleNumber() {
+        if (this.vehicleNumber != null) {
+            // Remove all non-alphanumeric characters and convert to uppercase
+            String clean = this.vehicleNumber.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+            
+            // Format as XX-00-XX-0000 or XX-00-X-0000
+            if (clean.length() >= 8) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(clean.substring(0, 2)).append("-"); // State
+                sb.append(clean.substring(2, 4)).append("-"); // District
+                
+                // Handle 1 or 2 letter series (e.g., MH12C1605 or MH12CU1605)
+                int seriesEnd = clean.length() - 4;
+                sb.append(clean.substring(4, seriesEnd)).append("-"); // Series
+                sb.append(clean.substring(seriesEnd)); // Number
+                
+                this.vehicleNumber = sb.toString();
+            } else {
+                this.vehicleNumber = clean;
+            }
+        }
+    }
 }

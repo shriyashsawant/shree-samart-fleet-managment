@@ -475,7 +475,14 @@ function BillModal({ clients, vehicles, bill, nextBillNo, extractedData, onClose
         </div>
         <form onSubmit={handle} className="p-10 space-y-8 bg-mesh">
           <div className="grid grid-cols-2 gap-8">
-            <FormGroup label="Bill No" value={f.billNo} onChange={v => setF({...f, billNo:v})} required />
+            <FormGroup 
+              label="Bill No" 
+              value={f.billNo} 
+              onChange={v => setF({...f, billNo:v})} 
+              required 
+              placeholder={bill ? "e.g. 2024-001" : "AUTO-GENERATED"}
+              helperText={!bill && `Sequential: ${nextBillNo || 'Loading...'}`}
+            />
             <FormGroup label="Date" value={f.billDate} onChange={v => setF({...f, billDate:v})} type="date" required />
             <div className="col-span-2">
               <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest mb-2 ml-1">Counterparty Selection</label>
@@ -532,11 +539,19 @@ function StatMini({ label, value, icon: Icon, color }) {
   )
 }
 
-function FormGroup({ label, value, onChange, type = "text", required }) {
+function FormGroup({ label, value, onChange, type = "text", required, placeholder, helperText }) {
   return (
     <div className="space-y-1.5">
       <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest ml-1">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} className="interactive-field" required={required} />
+      <input 
+        type={type} 
+        value={value} 
+        onChange={e => onChange(e.target.value)} 
+        className="interactive-field" 
+        required={required} 
+        placeholder={placeholder}
+      />
+      {helperText && <p className="text-[8px] font-bold text-primary-500 uppercase tracking-tight ml-1">{helperText}</p>}
     </div>
   )
 }

@@ -268,7 +268,13 @@ function TripModal({ trip, vehicles, drivers, clients, onClose, onSave }) {
 
         <form onSubmit={handleSubmit} className="p-10 space-y-8 overflow-y-auto bg-mesh font-inter">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FormGroup label="Voyage Number" value={formData.tripNumber} onChange={(v) => setFormData({ ...formData, tripNumber: v })} placeholder="e.g. TR-2024-001" />
+            <FormGroup 
+              label="Voyage Number" 
+              value={formData.tripNumber} 
+              onChange={(v) => setFormData({ ...formData, tripNumber: v })} 
+              placeholder={trip ? "e.g. TR-2024-001" : "AUTO-GENERATED"} 
+              helperText={!trip && "Leave empty for automatic numbering"}
+            />
             <FormGroup label="Operational Date" value={formData.tripDate} onChange={(v) => setFormData({ ...formData, tripDate: v })} type="date" required />
             <div className="space-y-1.5">
               <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">Voyage Status</label>
@@ -329,7 +335,7 @@ function TripModal({ trip, vehicles, drivers, clients, onClose, onSave }) {
   )
 }
 
-function FormGroup({ label, value, onChange, type = "text", required, placeholder }) {
+function FormGroup({ label, value, onChange, type = "text", required, placeholder, helperText }) {
   return (
     <div className="space-y-1.5">
       <label className="block text-[10px] font-black text-dark-400 uppercase tracking-widest">{label}</label>
@@ -341,6 +347,7 @@ function FormGroup({ label, value, onChange, type = "text", required, placeholde
         required={required}
         placeholder={placeholder}
       />
+      {helperText && <p className="text-[8px] font-bold text-primary-500 uppercase tracking-tight ml-1">{helperText}</p>}
     </div>
   )
 }

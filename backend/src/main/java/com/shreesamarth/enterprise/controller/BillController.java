@@ -225,8 +225,14 @@ public class BillController {
         Map<String, Object> ocrData = new HashMap<>();
         boolean ocrSuccess = false;
         try {
-            ocrData = ocrService.extractDocument(file);
-            ocrSuccess = (ocrData != null && !ocrData.isEmpty());
+            Map<String, Object> ocrResponse = ocrService.extractDocument(file);
+            if (ocrResponse != null && ocrResponse.containsKey("documents")) {
+                List<Map<String, Object>> docs = (List<Map<String, Object>>) ocrResponse.get("documents");
+                if (!docs.isEmpty()) {
+                    ocrData = (Map<String, Object>) docs.get(0).get("data");
+                    ocrSuccess = (ocrData != null && !ocrData.isEmpty());
+                }
+            }
         } catch (Exception e) {
             // Error logged in OcrService
         }

@@ -111,4 +111,22 @@ public class Bill {
     @JoinColumn(name = "tenant_id")
     @JsonIgnore
     private Tenant tenant;
+
+    @PrePersist
+    @PreUpdate
+    public void autoFillHsnAndStatus() {
+        if (this.hsnCode == null || this.hsnCode.isEmpty()) {
+            if (this.billType != null) {
+                String type = this.billType.toUpperCase();
+                if (type.contains("DIESEL") || type.contains("MAINTENANCE") || type.contains("TYRE") || type.contains("SPARES")) {
+                    this.hsnCode = "9973";
+                } else if (type.contains("RENT") || type.contains("TRIP") || type.contains("TRANSPORT")) {
+                    this.hsnCode = "9963";
+                }
+            }
+        }
+        if (this.status == null) {
+            this.status = "PENDING";
+        }
+    }
 }
