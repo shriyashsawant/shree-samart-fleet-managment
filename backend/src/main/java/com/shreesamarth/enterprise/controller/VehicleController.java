@@ -39,6 +39,7 @@ public class VehicleController {
     private final FileUploadService fileUploadService;
     private final OcrService ocrService;
     private final ReminderRepository reminderRepository;
+    private final VehicleComplianceRepository complianceRepository;
 
     private Tenant getCurrentTenant(Authentication auth) {
         if (auth == null) return null;
@@ -161,6 +162,7 @@ public class VehicleController {
 
         VehicleDocument savedDoc = documentRepository.save(document);
         syncReminderForDocument(vehicle, savedDoc);
+        syncComplianceForDocument(vehicle, savedDoc);
         return ResponseEntity.ok(savedDoc);
     }
 
@@ -224,6 +226,7 @@ public class VehicleController {
 
         VehicleDocument savedDoc = documentRepository.save(document);
         syncReminderForDocument(vehicle, savedDoc);
+        syncComplianceForDocument(vehicle, savedDoc);
 
         Map<String, Object> response = new HashMap<>();
         response.put("document", savedDoc);
@@ -250,6 +253,27 @@ public class VehicleController {
         reminder.setStatus("PENDING");
         
         reminderRepository.save(reminder);
+    }
+
+    private void syncComplianceForDocument(Vehicle vehicle, VehicleDocument doc) {
+        String type = doc.getDocumentType().toUpperCase();
+        if (!type.matches("RC|INSURANCE|FITNESS|PERMIT|PUC|TAX")) return;
+
+        // Find existing or create new
+        List<VehicleCompliance> existing = complianceRepository.findByVehicleId(vehicle.getId()).stream()
+                .filter(c -> c.getType().equalsIgnoreCase(doc.getDocumentType()))
+                .toList();
+        
+        VehicleCompliance compliance = existing.isEmpty() ? new VehicleCompliance() : existing.get(0);
+        
+        compliance.setVehicle(vehicle);
+        compliance.setTenant(vehicle.getTenant());
+        compliance.setType(doc.getDocumentType());
+        compliance.setExpiryDate(doc.getExpiryDate() != null ? doc.getExpiryDate() : LocalDate.now().plusMonths(12));
+        compliance.setDocumentPath(doc.getFilePath());
+        compliance.setStatus("ACTIVE");
+        
+        complianceRepository.save(compliance);
     }
 
     private void applyOcrToVehicle(Vehicle vehicle, String documentType, Map<String, Object> fields) {

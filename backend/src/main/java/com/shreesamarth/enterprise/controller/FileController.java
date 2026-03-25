@@ -46,9 +46,16 @@ public class FileController {
             
             // Try local file first
             String filePath = relativePath;
+            if (filePath.startsWith("/")) {
+                filePath = filePath.substring(1);
+            }
             if (filePath.startsWith("./")) {
                 filePath = filePath.substring(2);
             }
+            
+            // Normalize path to handle potential double slashes
+            filePath = filePath.replace("//", "/");
+            
             File file = new File("uploads/" + filePath);
             if (file.exists() && file.isFile()) {
                 Resource resource = new FileSystemResource(file);
