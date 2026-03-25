@@ -21,6 +21,7 @@ export default function Compliance() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedType, setSelectedType] = useState('All')
+  const [selectedItem, setSelectedItem] = useState(null)
 
   const [formData, setFormData] = useState({
     vehicleId: '',
@@ -81,6 +82,25 @@ export default function Compliance() {
       } catch (error) {
         console.error('Authorization failed:', error)
       }
+    }
+  }
+
+  const handleUpdate = async (e) => {
+    e.preventDefault()
+    try {
+      // Only send editable fields, prevent vehicle detachment
+      await api.put(`/api/compliance/${selectedItem.id}`, {
+        id: selectedItem.id,
+        type: selectedItem.type,
+        expiryDate: selectedItem.expiryDate,
+        amount: selectedItem.amount,
+        remarks: selectedItem.remarks,
+        status: selectedItem.status || 'ACTIVE'
+      })
+      setSelectedItem(null)
+      fetchData()
+    } catch (error) {
+       alert('Update failed.')
     }
   }
 
@@ -209,14 +229,19 @@ export default function Compliance() {
                           <span className="text-[10px] font-black text-dark-300 uppercase tracking-widest">Premium Value</span>
                           <span className="text-xs font-mono font-black text-dark-900 text-gradient">{formatCurrency(item.amount)}</span>
                        </div>
+                        {item.remarks && (
+                           <div className="pt-4 border-t border-dark-50">
+                              <p className="text-[8px] font-black text-primary-600 uppercase tracking-widest mb-1">Extracted Metadata</p>
+                              <p className="text-[10px] font-bold text-dark-500 italic leading-tight">{item.remarks}</p>
+                           </div>
+                        )}
                     </div>
                  </div>
 
                  <div className="px-8 py-6 bg-dark-50/50 mt-4 flex justify-between items-center group-hover:bg-primary-50 transition-colors border-t border-dark-100/50">
                     <div className="flex gap-2">
                        {item.filePath && (
-                          <button 
-                              onClick={() => openDocument(item.filePath)}
+                          <button onClick={() => openDocument(item.filePath)}
                              className="p-2 bg-white rounded-lg border border-dark-100 text-dark-400 hover:text-primary-600 transition-colors shadow-sm"
                           >
                              <FileSearch className="w-4 h-4" />
@@ -226,8 +251,7 @@ export default function Compliance() {
                           <Trash2 className="w-4 h-4" />
                        </button>
                     </div>
-                     <button 
-                         onClick={() => item.filePath && openDocument(item.filePath)}
+                     <button onClick={() => setSelectedItem(item)}
                         className="text-[10px] font-black text-primary-600 uppercase tracking-widest flex items-center gap-1 group/btn"
                      >
                         Access Dossier <ArrowUpRight className="w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
@@ -287,6 +311,85 @@ export default function Compliance() {
                   <button type="submit" className="btn-primary flex-1">Authorize Vault Deposit</button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedItem && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedItem(null)} className="absolute inset-0 bg-dark-900/80 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }}
+              className="relative bg-white rounded-[3rem] shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col md:flex-row h-[85vh] premium-shadow"
+            >
+              <div className="md:w-3/5 bg-dark-950 p-6 flex flex-col border-r border-dark-800">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <FileSearch className="w-5 h-5 text-primary-400" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Evidence Protocol</span>
+                  </div>
+                  <button onClick={() => openDocument(selectedItem.filePath)} className="text-[10px] font-black text-primary-400 hover:text-white uppercase tracking-widest flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4" /> Assets Link
+                  </button>
+                </div>
+                <div className="flex-1 bg-dark-900 rounded-[1.5rem] overflow-hidden relative group">
+                  {selectedItem.filePath && (
+                    <img 
+                      src={selectedItem.filePath?.startsWith('http') 
+                        ? selectedItem.filePath 
+                        : api.defaults.baseURL + '/api/files/' + selectedItem.filePath} 
+                      alt="Compliance Evidence" 
+                      className="w-full h-full object-contain p-4"
+                      onError={(e) => { e.target.style.display = 'none' }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="md:w-2/5 p-12 overflow-y-auto bg-mesh flex flex-col font-inter">
+                <div className="flex justify-between items-start mb-10">
+                   <div>
+                      <h3 className="text-2xl font-black text-dark-900 uppercase">Registry Audit</h3>
+                      <p className="text-[10px] font-bold text-dark-400 uppercase tracking-widest mt-1">Audit Code: {selectedItem.id}</p>
+                   </div>
+                   <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-dark-100 rounded-full"><X className="w-8 h-8 text-dark-200" /></button>
+                </div>
+
+                <form onSubmit={handleUpdate} className="space-y-8 flex-1">
+                   <div className="space-y-6">
+                      <div className="p-6 bg-primary-50 rounded-2xl border border-primary-100">
+                         <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Asset Status</p>
+                         <p className="text-sm font-black text-dark-900">{selectedItem.vehicle?.vehicleNumber} - {selectedItem.type}</p>
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest">Terminus Date</label>
+                         <input type="date" value={selectedItem.expiryDate?.split('T')[0]} 
+                           onChange={(e) => setSelectedItem({...selectedItem, expiryDate: e.target.value})}
+                           className="interactive-field"
+                         />
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest">Registry Fee (₹)</label>
+                         <input type="number" value={selectedItem.amount} 
+                           onChange={(e) => setSelectedItem({...selectedItem, amount: e.target.value})}
+                           className="interactive-field font-mono"
+                         />
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black text-dark-400 uppercase tracking-widest">Audit Remarks</label>
+                         <textarea value={selectedItem.remarks} 
+                           onChange={(e) => setSelectedItem({...selectedItem, remarks: e.target.value})}
+                           className="interactive-field h-32 resize-none text-[11px] leading-relaxed"
+                         />
+                      </div>
+                   </div>
+                   <div className="pt-10 mt-auto border-t border-dark-100 flex gap-4">
+                      <button type="button" onClick={() => setSelectedItem(null)} className="btn-secondary flex-1">Abort Audit</button>
+                      <button type="submit" className="btn-primary flex-1 shadow-xl">Commit Changes</button>
+                   </div>
+                </form>
+              </div>
             </motion.div>
           </div>
         )}

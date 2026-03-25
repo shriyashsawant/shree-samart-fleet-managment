@@ -19,24 +19,27 @@ export default function VehicleProfile() {
   const [tyres, setTyres] = useState([])
   const [compliance, setCompliance] = useState([])
   const [payments, setPayments] = useState([])
+  const [documents, setDocuments] = useState([])
   const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => { loadProfile() }, [id])
 
   const loadProfile = async () => {
     try {
-      const [profileRes, tripsRes, tyresRes, compRes, paymentsRes] = await Promise.all([
+      const [profileRes, tripsRes, tyresRes, compRes, paymentsRes, docsRes] = await Promise.all([
         analyticsAPI.getVehicleProfile(id),
         tripAPI.getByVehicle(id),
         tyreAPI.getByVehicle(id),
         complianceAPI.getByVehicle(id),
-        paymentAPI.getAll({ vehicleId: id })
+        paymentAPI.getAll({ vehicleId: id }),
+        vehicleAPI.getDocuments(id)
       ])
       setProfile(profileRes.data)
       setTrips(tripsRes.data)
       setTyres(tyresRes.data)
       setCompliance(compRes.data)
       setPayments(paymentsRes.data)
+      setDocuments(docsRes.data)
     } catch (error) {
       console.error('Failed to load vehicle profile:', error)
     } finally {
@@ -206,7 +209,7 @@ export default function VehicleProfile() {
           { activeTab === 'trips' && <TabTable headers={['Date', 'Route', 'Payload', 'Yield', 'Status']} data={trips.reverse().map(t => [formatDate(t.tripDate), t.siteLocation || 'Transit', `${t.quantity || 0}T`, formatCurrency(t.tripCharges), <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-black border uppercase tracking-widest", t.status === 'COMPLETED' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-primary-50 text-primary-600 border-primary-100")}>{t.status}</span>])} /> }
           { activeTab === 'tyres' && <TabTable headers={['Serial', 'Position', 'Brand', 'Status', 'Retreads']} data={tyres.map(t => [t.serialNumber, t.position, t.brand, <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-black border uppercase tracking-widest", t.status === 'ACTIVE' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : t.status === 'RETREADED' ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-rose-50 text-rose-600 border-rose-100")}>{t.status}</span>, `x${t.retreadCount}`])} /> }
           { activeTab === 'compliance' && <TabTable headers={['Protocol', 'Terminus', 'Premium', 'Status']} data={compliance.map(c => [c.type, formatDate(c.expiryDate), formatCurrency(c.amount), <StatusBadge date={c.expiryDate} />])} /> }
-          { activeTab === 'documents' && <DocumentVault vehicleId={id} compliance={compliance} onUpload={loadProfile} /> }
+          { activeTab === 'documents' && <DocumentVault vehicleId={id} documents={documents} onUpload={loadProfile} /> }
           { activeTab === 'expenses' && <TabTable headers={['Date', 'Type', 'Amount', 'Notes']} data={profile.latestExpenses.map(e => [formatDate(e.date), e.expenseType, formatCurrency(e.amount), e.notes || '-'])} /> }
           { activeTab === 'maintenance' && <TabTable headers={['Date', 'Service', 'Cost', 'Next Due']} data={profile.latestMaintenance.map(m => [formatDate(m.date), m.maintenanceType, formatCurrency(m.cost), formatDate(m.nextDueDate)])} /> }
           { activeTab === 'payments' && <TabTable headers={['Date', 'Type', 'Amount', 'Mode', 'Status']} data={payments.map(p => [formatDate(p.paymentDate), p.paymentType, formatCurrency(p.amount), p.paymentMode || 'CASH', <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-widest">PAID</span>])} /> }
@@ -420,7 +423,7 @@ function ComplianceRow({ label, status, expiry, warning }) {
   )
 }
 
-function DocumentVault({ vehicleId, compliance, onUpload }) {
+function DocumentVault({ vehicleId, documents, onUpload }) {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [docType, setDocType] = useState('RC')
@@ -507,7 +510,7 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-           {compliance.filter(c => c.documentPath).map((doc, i) => (
+           {documents.map((doc, i) => (
               <motion.div 
                 key={doc.id}
                 initial={{ opacity: 0, y: 15 }}
@@ -520,8 +523,13 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                        <FileText className="w-8 h-8" />
                     </div>
                     <div>
-                       <p className="text-[10px] font-black text-dark-400 uppercase tracking-widest mb-1">{doc.type}</p>
+                       <p className="text-[10px] font-black text-dark-400 uppercase tracking-widest mb-1">{doc.documentType}</p>
                        <p className="text-lg font-black text-dark-900 tracking-tight leading-none">Security Node v{i+1}</p>
+                       {doc.remarks && (
+                          <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest mt-3 leading-tight border-l-2 border-primary-100 pl-2">
+                             {doc.remarks}
+                          </p>
+                       )}
                     </div>
                  </div>
                  <div className="flex items-center justify-between pt-6 border-t border-dark-100/50">
@@ -529,7 +537,7 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                        <Clock className="w-3 h-3" /> {formatDate(doc.updatedAt || doc.createdAt)}
                     </span>
                     <button 
-                        onClick={() => openDocument(doc.documentPath)}
+                        onClick={() => openDocument(doc.filePath)}
                        className="p-2 bg-dark-900 text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0"
                     >
                        <ExternalLink className="w-4 h-4" />
@@ -537,14 +545,14 @@ function DocumentVault({ vehicleId, compliance, onUpload }) {
                  </div>
               </motion.div>
            ))}
-            {compliance.filter(c => c.documentPath).length === 0 && (
+            {documents.length === 0 && (
                <div className="col-span-full py-32 text-center bg-dark-50/20 border border-dashed border-dark-100 rounded-[2.5rem]">
                   <FileSearch className="w-16 h-16 text-dark-100 mx-auto mb-6 opacity-30" />
                   <p className="font-black text-[10px] text-dark-300 uppercase tracking-[0.3em]">No encrypted asset twins detected</p>
                   <button className="mt-8 text-[9px] font-black text-primary-600 uppercase tracking-[0.2em] hover:underline"onClick={() => setShowUploadModal(true)}>Connect Storage Node</button>
                </div>
             )}
-         </div>
+        </div>
 
          {showUploadModal && (
            <div className="fixed inset-0 bg-dark-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">

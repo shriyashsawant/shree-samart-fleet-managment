@@ -157,6 +157,7 @@ export default function Drivers() {
           <PersonnelConsole 
             driver={consoleDriver}
             onClose={() => { setShowConsoleModal(false); setConsoleDriver(null); }}
+            onUpdate={loadData}
           />
         )}
       </AnimatePresence>
@@ -164,7 +165,7 @@ export default function Drivers() {
   )
 }
 
-function PersonnelConsole({ driver, onClose }) {
+function PersonnelConsole({ driver, onClose, onUpdate }) {
   const [activeTab, setActiveTab] = useState('attendance')
   const [attendance, setAttendance] = useState([])
   const [documents, setDocuments] = useState([])
@@ -266,6 +267,7 @@ function PersonnelConsole({ driver, onClose }) {
            await driverDocumentAPI.upload(data)
         }
         loadDocuments()
+        if (typeof onUpdate === 'function') onUpdate()
         setDocFile(null); setDocNumber('')
      } catch (e) { 
         console.error(e) 

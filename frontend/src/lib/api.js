@@ -236,6 +236,13 @@ export const ocrAPI = {
     })
   },
   healthCheck: () => api.get('/api/ocr/health'),
+  uploadAndMap: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/api/ocr/upload-and-map', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
 }
 
 export const tenantAPI = {
