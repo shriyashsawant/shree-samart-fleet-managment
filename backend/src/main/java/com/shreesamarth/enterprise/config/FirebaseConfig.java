@@ -27,12 +27,12 @@ public class FirebaseConfig {
     @Value("${firebase.bucket.name:shree-samarth-d9ed1.appspot.com}")
     private String bucketName;
 
+    private GoogleCredentials credentials;
+
     @PostConstruct
     public void initialize() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
-                GoogleCredentials credentials;
-                
                 // Check if credentials are provided as environment variable
                 if (firebaseCredentialsJson != null && !firebaseCredentialsJson.isEmpty()) {
                     credentials = GoogleCredentials.fromStream(
@@ -47,15 +47,14 @@ public class FirebaseConfig {
                         );
                         log.info("Firebase initialized with classpath credentials");
                     } catch (Exception e) {
-                        log.warn("Firebase credentials not found. File uploads will use local storage. " +
-                                 "Set FIREBASE_CREDENTIALS_JSON environment variable or add firebase-service-account.json to resources.");
-                        log.warn("Exception details: {}", e.getMessage());
+                        log.warn("Firebase credentials not found. Set FIREBASE_CREDENTIALS_JSON or add firebase-service-account.json.");
                         return;
                     }
                 }
 
                 FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(credentials)
+                    .setStorageBucket(bucketName)
                     .build();
 
                 FirebaseApp.initializeApp(options);
@@ -68,11 +67,29 @@ public class FirebaseConfig {
 
     @Bean
     public Storage storage() {
+        try {
+            if (credentials != null) {
+                return StorageOptions.newBuilder()
+                        .setCredentials(credentials)
+                        .build()
+                        .getService();
+            }
+        } catch (Exception e) {
+            log.warn("Could not create Storage with credentials, falling back to default instance");
+        }
         return StorageOptions.getDefaultInstance().getService();
     }
 
     @Bean
     public Bucket bucket() {
-        return storage().get(bucketName);
+        try {
+            Storage s = storage();
+            if (s != null && bucketName != null) {
+                return s.get(bucketName);
+            }
+        } catch (Exception e) {
+            log.warn("Could not get bucket: {}", e.getMessage());
+        }
+        return null;
     }
 }

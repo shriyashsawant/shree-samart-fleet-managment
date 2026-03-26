@@ -10,4 +10,5 @@ import java.util.List;
 public interface VehicleDocumentRepository extends JpaRepository<VehicleDocument, Long> {
     List<VehicleDocument> findByVehicleId(Long vehicleId);
     List<VehicleDocument> findByVehicleIdAndDocumentType(Long vehicleId, String documentType);
+    java.util.Optional<VehicleDocument> findByFilePath(String filePath);
 }

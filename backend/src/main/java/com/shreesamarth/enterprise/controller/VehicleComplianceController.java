@@ -235,8 +235,24 @@ public class VehicleComplianceController {
     @Transactional
     public ResponseEntity<Void> deleteCompliance(@PathVariable Long id) {
         complianceRepository.findById(id).ifPresent(c -> {
-            // Delete file from Firebase/local storage
-            fileUploadService.deleteFile(c.getDocumentPath());
+            // 1. Delete by file path (if available)
+            if (c.getDocumentPath() != null) {
+                vehicleDocumentRepository.findByFilePath(c.getDocumentPath())
+                        .ifPresent(vehicleDocumentRepository::delete);
+                
+                // Also delete physical file
+                fileUploadService.deleteFile(c.getDocumentPath());
+            }
+            
+            // 2. EXTRA SAFETY: Find and delete document by vehicle and type to stop re-syncs
+            if (c.getVehicle() != null && c.getType() != null) {
+                // We need to reverse-map the compliance type back to a rough document type pattern
+                // to catch any remaining documents that would trigger sync.
+                vehicleDocumentRepository.findByVehicleId(c.getVehicle().getId()).stream()
+                    .filter(doc -> mapDocTypeToCompliance(doc.getDocumentType()).equalsIgnoreCase(c.getType()))
+                    .forEach(vehicleDocumentRepository::delete);
+            }
+            
             complianceRepository.delete(c);
         });
         return ResponseEntity.ok().build();

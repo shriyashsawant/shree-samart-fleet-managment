@@ -37,9 +37,7 @@ export default function Compliance() {
 
   const syncAndFetch = async () => {
     try {
-      // First, sync compliance from existing vehicle documents (idempotent)
-      await api.post('/api/compliance/sync-from-documents').catch(() => {})
-      // Then fetch the data  
+      // Fetch the data directly. Manual sync is preferred to preserve explicit deletions.
       const [compRes, vehRes] = await Promise.all([
         api.get('/api/compliance'),
         vehicleAPI.getAll()

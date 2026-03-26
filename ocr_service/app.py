@@ -138,44 +138,28 @@ def extract_document():
         
         debug_info = {}
         
-        # Smart Hybrid Approach Routing
+        # Calculate file size for logging
         file_size_mb = os.path.getsize(temp_path) / (1024 * 1024)
         
-        if ext == '.pdf' or file_size_mb > 1.0:
-            print(f"File is {ext} or >1MB ({file_size_mb:.2f}MB). Attempting local Tesseract extraction first...")
-            try:
-                texts = extract_with_local(temp_path)
-                engine = "tesseract"
-            except Exception as e:
-                texts = None
-                debug_info['tesseract_error'] = str(e)
-            
-            # 2. Try OCR.space if Tesseract failed or returned insufficient text
-            if not texts or sum(len(t.strip()) for t in texts) < 50:
-                print("Tesseract yielded insufficient results. Falling back to OCR.space...")
-                try:
-                    texts = extract_with_ocr_space(temp_path)
-                    engine = "ocr_space"
-                except Exception as e:
-                    texts = None
-                    debug_info['ocr_space_error'] = str(e)
-        else:
-            print(f"Image is {file_size_mb:.2f}MB (<1MB). Using OCR.space API first for production...")
+        # 1. ALWAYS try local Tesseract first (assuming it's installed/available)
+        # Tesseract is faster for single page images and doesn't hit cloud timeouts
+        print(f"File: {file.filename} ({file_size_mb:.2f}MB). Attempting local Tesseract extraction first...")
+        try:
+            texts = extract_with_local(temp_path)
+            engine = "tesseract"
+        except Exception as e:
+            texts = None
+            debug_info['tesseract_error'] = str(e)
+        
+        # 2. Try OCR.space ONLY if Tesseract failed or returned insufficient text
+        if not texts or sum(len(t.strip()) for t in texts) < 50:
+            print("Tesseract yielded insufficient results or failed. Falling back to OCR.space...")
             try:
                 texts = extract_with_ocr_space(temp_path)
                 engine = "ocr_space"
             except Exception as e:
                 texts = None
                 debug_info['ocr_space_error'] = str(e)
-            
-            if not texts or sum(len(t.strip()) for t in texts) < 50:
-                print("OCR.space yielded insufficient results. Falling back to local Tesseract...")
-                try:
-                    texts = extract_with_local(temp_path)
-                    engine = "tesseract"
-                except Exception as e:
-                    texts = None
-                    debug_info['tesseract_error'] = str(e)
         
         if not texts:
             return jsonify({
