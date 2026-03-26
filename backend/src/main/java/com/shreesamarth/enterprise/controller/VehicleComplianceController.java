@@ -5,8 +5,10 @@ import com.shreesamarth.enterprise.entity.Tenant;
 import com.shreesamarth.enterprise.entity.User;
 import com.shreesamarth.enterprise.entity.Vehicle;
 import com.shreesamarth.enterprise.entity.VehicleCompliance;
+import com.shreesamarth.enterprise.entity.VehicleDocument;
 import com.shreesamarth.enterprise.repository.UserRepository;
 import com.shreesamarth.enterprise.repository.VehicleComplianceRepository;
+import com.shreesamarth.enterprise.repository.VehicleDocumentRepository;
 import com.shreesamarth.enterprise.repository.VehicleRepository;
 import com.shreesamarth.enterprise.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class VehicleComplianceController {
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
     private final com.shreesamarth.enterprise.service.OcrService ocrService;
+    private final VehicleDocumentRepository vehicleDocumentRepository;
 
     private Tenant getCurrentTenant(Authentication auth) {
         if (auth == null) return null;
@@ -62,6 +65,18 @@ public class VehicleComplianceController {
         return dto;
     }
 
+    private String mapDocTypeToCompliance(String docType) {
+        if (docType == null) return "Other";
+        String upper = docType.toUpperCase();
+        if (upper.contains("RC")) return "RC Book";
+        if (upper.contains("TAX")) return "Road Tax";
+        if (upper.contains("FITNESS")) return "Fitness Certificate";
+        if (upper.contains("INSURANCE")) return "Insurance";
+        if (upper.contains("PUC")) return "PUC";
+        if (upper.contains("PERMIT")) return "Permit";
+        return docType;
+    }
+
     @GetMapping
     @Transactional(readOnly = true)
     public ResponseEntity<List<ComplianceDTO>> getAllCompliance(Authentication auth) {
@@ -79,6 +94,46 @@ public class VehicleComplianceController {
         List<ComplianceDTO> dtos = complianceRepository.findByVehicleId(vehicleId)
                 .stream().map(this::toDTO).collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
+    }
+
+    /**
+     * Backfill: Scans all VehicleDocuments and creates missing compliance records.
+     * Safe to call multiple times — it skips documents that already have compliance.
+     */
+    @PostMapping("/sync-from-documents")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> syncFromDocuments() {
+        List<VehicleDocument> allDocs = vehicleDocumentRepository.findAll();
+        int created = 0;
+
+        for (VehicleDocument doc : allDocs) {
+            Vehicle vehicle = doc.getVehicle();
+            if (vehicle == null) continue;
+
+            String compType = mapDocTypeToCompliance(doc.getDocumentType());
+
+            // Check if compliance already exists for this vehicle + type
+            boolean exists = complianceRepository.findByVehicleId(vehicle.getId()).stream()
+                    .anyMatch(c -> c.getType().equalsIgnoreCase(compType));
+            if (exists) continue;
+
+            VehicleCompliance compliance = new VehicleCompliance();
+            compliance.setVehicle(vehicle);
+            compliance.setTenant(vehicle.getTenant());
+            compliance.setType(compType);
+            compliance.setExpiryDate(doc.getExpiryDate() != null ? doc.getExpiryDate() : LocalDate.now().plusMonths(12));
+            compliance.setDocumentPath(doc.getFilePath());
+            compliance.setStatus("ACTIVE");
+            compliance.setRemarks(doc.getRemarks());
+            complianceRepository.save(compliance);
+            created++;
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "synced", created,
+            "totalDocuments", allDocs.size(),
+            "message", "Compliance records synchronized from vehicle documents"
+        ));
     }
 
     @PostMapping
@@ -120,12 +175,7 @@ public class VehicleComplianceController {
                         String detectedType = (String) docs.get(0).get("type");
                         
                         if (detectedType != null) {
-                            if (detectedType.equals("vehicle_rc")) compliance.setType("RC Book");
-                            else if (detectedType.equals("fitness")) compliance.setType("Fitness Certificate");
-                            else if (detectedType.equals("permit")) compliance.setType("Permit / National Permit");
-                            else if (detectedType.equals("tax_receipt")) compliance.setType("Road Tax");
-                            else if (detectedType.equals("insurance")) compliance.setType("Insurance");
-                            else if (detectedType.equals("puc")) compliance.setType("PUC");
+                            compliance.setType(mapDocTypeToCompliance(detectedType));
                         }
 
                         if (ocrData != null && !ocrData.isEmpty()) {
@@ -138,7 +188,6 @@ public class VehicleComplianceController {
                                 }
                             }
                             
-                            // Auto-populate remarks with OCR findings
                             StringBuilder sb = new StringBuilder();
                             if (compliance.getRemarks() != null) sb.append(compliance.getRemarks()).append(" | ");
                             sb.append("Extracted Meta: ");
@@ -165,13 +214,19 @@ public class VehicleComplianceController {
 
     @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity<VehicleCompliance> updateCompliance(@PathVariable Long id, @RequestBody VehicleCompliance compliance) {
+    public ResponseEntity<VehicleCompliance> updateCompliance(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         return complianceRepository.findById(id)
                 .map(existing -> {
-                    compliance.setId(id);
-                    compliance.setCreatedAt(existing.getCreatedAt());
-                    compliance.setTenant(existing.getTenant());
-                    return ResponseEntity.ok(complianceRepository.save(compliance));
+                    if (updates.containsKey("type")) existing.setType((String) updates.get("type"));
+                    if (updates.containsKey("expiryDate") && updates.get("expiryDate") != null) {
+                        existing.setExpiryDate(LocalDate.parse(updates.get("expiryDate").toString().split("T")[0]));
+                    }
+                    if (updates.containsKey("amount") && updates.get("amount") != null) {
+                        existing.setAmount(new BigDecimal(updates.get("amount").toString()));
+                    }
+                    if (updates.containsKey("remarks")) existing.setRemarks((String) updates.get("remarks"));
+                    if (updates.containsKey("status")) existing.setStatus((String) updates.get("status"));
+                    return ResponseEntity.ok(complianceRepository.save(existing));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

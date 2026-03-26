@@ -33,7 +33,25 @@ export default function Compliance() {
   })
   const [file, setFile] = useState(null)
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { syncAndFetch() }, [])
+
+  const syncAndFetch = async () => {
+    try {
+      // First, sync compliance from existing vehicle documents (idempotent)
+      await api.post('/api/compliance/sync-from-documents').catch(() => {})
+      // Then fetch the data  
+      const [compRes, vehRes] = await Promise.all([
+        api.get('/api/compliance'),
+        vehicleAPI.getAll()
+      ])
+      setCompliance(compRes.data)
+      setVehicles(vehRes.data)
+    } catch (error) {
+      console.error('Compliance load failed:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -44,7 +62,7 @@ export default function Compliance() {
       setCompliance(compRes.data)
       setVehicles(vehRes.data)
     } catch (error) {
-      console.error('Teletransmission failed:', error)
+      console.error('Compliance load failed:', error)
     } finally {
       setLoading(false)
     }

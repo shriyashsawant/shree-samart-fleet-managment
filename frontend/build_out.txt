@@ -1,0 +1,30 @@
+﻿[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 2869 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m    0.76 kB[22m[1m[22m[2m Γöé gzip:   0.43 kB[22m
+[2mdist/[22m[35massets/index-CzzkZypM.css  [39m[1m[2m   63.34 kB[22m[1m[22m[2m Γöé gzip:   9.51 kB[22m
+[2mdist/[22m[36massets/index-Cdc9f6mu.js   [39m[1m[33m1,032.90 kB[39m[22m[2m Γöé gzip: 279.46 kB[22m
+node.exe : [33m
+At line:1 char:1
++ & "C:\nodejs/node.exe" "C:\nodejs/node_mo
+dules/npm/bin/npx-cli.js" vi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified 
+   : ([33m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeComman 
+   dError
+ 
+(!) Some chunks are larger than 500 kB 
+after minification. Consider:
+- Using dynamic import() to code-split the 
+application
+- Use 
+build.rollupOptions.output.manualChunks to 
+improve chunking: https://rollupjs.org/conf
+iguration-options/#output-manualchunks
+- Adjust chunk size limit for this warning 
+via build.chunkSizeWarningLimit.[39m
+[32mΓ£ô built in 8.87s[39m
