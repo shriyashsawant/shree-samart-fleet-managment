@@ -5,7 +5,7 @@ import {
   Activity, MapPin, Shield, FileText, TrendingDown, Wrench, TrendingUp, 
   Truck, Phone, Calendar, Info, Clock, ArrowUpRight, Plus, Disc, 
   Map as MapIcon, ChevronRight, Download, Eye, ExternalLink, Radius,
-  Users, Receipt, ChevronLeft, CreditCard, Hash, IndianRupee, ArrowDownRight, MoreVertical, Printer, Edit, Settings, Fuel, CheckCircle2, Navigation, FileSearch, Upload, X, AlertCircle
+  Users, Receipt, ChevronLeft, CreditCard, Hash, IndianRupee, ArrowDownRight, MoreVertical, Printer, Edit, Settings, Fuel, CheckCircle2, Navigation, FileSearch, Upload, X, AlertCircle, Trash2
 } from 'lucide-react'
 import { analyticsAPI, vehicleAPI, tripAPI, tyreAPI, complianceAPI, tyreLogAPI, paymentAPI } from '../lib/api'
 import { formatCurrency, formatDate, cn, openDocument } from '../lib/utils'
@@ -13,6 +13,17 @@ import { formatCurrency, formatDate, cn, openDocument } from '../lib/utils'
 export default function VehicleProfile() {
   const { id } = useParams()
   const navigate = useNavigate()
+
+  const handleDeleteDocument = async (docId) => {
+    if (!window.confirm('Delete this document? This will remove the file from storage and the database permanently.')) return
+    try {
+      await vehicleAPI.deleteDocument(id, docId)
+      setDocuments(prev => prev.filter(d => d.id !== docId))
+    } catch (error) {
+      console.error('Delete failed:', error)
+      alert('Failed to delete document.')
+    }
+  }
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
   const [trips, setTrips] = useState([])
@@ -544,12 +555,20 @@ function DocumentVault({ vehicleId, documents, onUpload }) {
                     <span className="text-[9px] font-black text-dark-300 uppercase tracking-widest flex items-center gap-2">
                        <Clock className="w-3 h-3" /> {formatDate(doc.createdAt)}
                     </span>
-                    <button 
-                        onClick={() => openDocument(doc.filePath)}
-                       className="p-2 bg-dark-900 text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0"
-                    >
-                       <ExternalLink className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                       <button 
+                           onClick={() => openDocument(doc.filePath)}
+                          className="p-2 bg-dark-900 text-white rounded-xl shadow-lg hover:bg-dark-700 transition-colors"
+                       >
+                          <ExternalLink className="w-4 h-4" />
+                       </button>
+                       <button 
+                           onClick={(e) => { e.stopPropagation(); handleDeleteDocument(doc.id) }}
+                          className="p-2 bg-rose-600 text-white rounded-xl shadow-lg hover:bg-rose-700 transition-colors"
+                       >
+                          <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
                  </div>
               </motion.div>
            ))}

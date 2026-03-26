@@ -142,6 +142,34 @@ public class VehicleController {
         return ResponseEntity.ok(documentRepository.findByVehicleId(id));
     }
 
+    @DeleteMapping("/{vehicleId}/documents/{docId}")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> deleteDocument(
+            @PathVariable Long vehicleId, @PathVariable Long docId) {
+        return documentRepository.findById(docId)
+                .map(doc -> {
+                    // Delete file from Firebase/local storage
+                    boolean fileDeleted = fileUploadService.deleteFile(doc.getFilePath());
+
+                    // Also remove any compliance record that references this document's path
+                    if (doc.getFilePath() != null) {
+                        complianceRepository.findByVehicleId(vehicleId).stream()
+                                .filter(c -> doc.getFilePath().equals(c.getDocumentPath()))
+                                .forEach(c -> complianceRepository.delete(c));
+                    }
+
+                    // Delete from database
+                    documentRepository.delete(doc);
+
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("deleted", true);
+                    result.put("fileDeleted", fileDeleted);
+                    result.put("documentId", docId);
+                    return ResponseEntity.ok(result);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/{id}/documents")
     @Transactional
     public ResponseEntity<VehicleDocument> uploadDocument(

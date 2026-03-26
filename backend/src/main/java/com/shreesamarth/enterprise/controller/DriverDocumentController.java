@@ -217,7 +217,11 @@ public class DriverDocumentController {
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
-        documentRepository.deleteById(id);
+        documentRepository.findById(id).ifPresent(doc -> {
+            // Delete file from Firebase/local storage
+            fileUploadService.deleteFile(doc.getFilePath());
+            documentRepository.delete(doc);
+        });
         return ResponseEntity.ok().build();
     }
 }

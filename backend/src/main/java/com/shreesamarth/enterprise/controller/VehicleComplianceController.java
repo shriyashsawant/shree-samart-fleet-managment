@@ -234,7 +234,11 @@ public class VehicleComplianceController {
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<Void> deleteCompliance(@PathVariable Long id) {
-        complianceRepository.deleteById(id);
+        complianceRepository.findById(id).ifPresent(c -> {
+            // Delete file from Firebase/local storage
+            fileUploadService.deleteFile(c.getDocumentPath());
+            complianceRepository.delete(c);
+        });
         return ResponseEntity.ok().build();
     }
 }

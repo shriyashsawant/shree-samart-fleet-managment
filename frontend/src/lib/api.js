@@ -81,6 +81,7 @@ export const vehicleAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
+  deleteDocument: (vehicleId, docId) => api.delete(`/api/vehicles/${vehicleId}/documents/${docId}`),
 }
 
 // Vehicle Log APIs
